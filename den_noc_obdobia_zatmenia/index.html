@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Deň, noc a ročné obdobia</title>
+<link rel="icon" href="data:,">
+<script>
+/* =====================================================================
+   TEXTY – všetky texty animácie na jednom mieste.
+   Upravuj len hodnoty v úvodzovkách. HTML značky (<b>, <br>) sú povolené.
+   ===================================================================== */
+const TEXTY = {
+  titul: 'Deň, noc a ročné obdobia',
+  podtitul: 'Prečo sa strieda deň a noc, prečo máme leto a zimu a ako vzniká zatmenie',
+  nav: { scena: 'Scéna', luce: 'Uhol lúčov', omyly: 'Časté omyly', zatmenia: 'Zatmenia', kviz: 'Kvíz', pozn: 'Zjednodušenia' },
+
+  ui: {
+    spustit: '▶ Spustiť', pauza: '❚❚ Pauza',
+    presetDen: 'Deň a noc', presetRok: 'Celý rok',
+    rychlost: 'Rýchlosť:', zaSekundu: 'za 1 s',
+    strobo: 'Pri takejto rýchlosti sa hodina nemení – Zem vidíš každý deň o rovnakom čase, aby bolo vidieť zmenu počas roka.',
+    denVRoku: 'Deň v roku:', hodina: 'Hodina (miestny slnečný čas):',
+    pologula: 'Pologuľa:', sever: 'Severná (Košice)', juh: 'Južná',
+    sklon: 'Sklon osi:', sklon235: '23,5°', sklon0: '0° (experiment)',
+    pohlad: 'Pohľad:', sikmo: 'Šikmo', zhora: 'Zhora', zboku: 'Zboku',
+    hintScena: 'Potiahni do strany: otočíš pohľad · Klikni na objekt: popis',
+    banner0: 'Experiment – sklon osi 0°: Slnko je celý rok nad rovníkom, deň trvá všade 12 h a ročné obdobia zmiznú. Severná aj južná pologuľa sú na tom rovnako, prepínač pologule nemá vplyv.',
+    zemZblizka: 'Zem zblízka',
+    modBok: 'Zboku', modPol: 'Nad pólom', modScena: 'Ako scéna',
+    zadu: 'Bod „tu sme“ je práve na odvrátenej strane Zeme – otoč ju posuvníkom hodiny.',
+    legenda: 'Klikni na názov a zistíš, čo to je:'
+  },
+
+  tuSme: {
+    nazovSever: 'Tu sme: Košice', nazovJuh: 'Južná pologuľa',
+    sirkaSever: '48,7° severnej šírky', sirkaJuh: '48,7° južnej šírky (rovnaká vzdialenosť od rovníka, ale na juhu)',
+    den: '☀️ DEŇ', noc: '🌙 NOC', sumrak: '◐ SÚMRAK',
+    nadObzorom: 'Slnko je {v}° nad obzorom.', podObzorom: 'Slnko je {v}° pod obzorom.',
+    sumrakPop: 'Slnko je tesne pod obzorom ({v}°), obloha je ešte svetlá.',
+    cas: 'Miestny slnečný čas', poludnie: 'Miestne slnečné poludnie',
+    poludnieHodnota: '12:00 slnečného času', hodinkySEC: '≈ {c} na hodinkách (SEČ)', hodinkySELC: '≈ {c} na hodinkách (letný čas)',
+    vyska: 'Výška Slnka na poludnie', dlzka: 'Dĺžka dňa', vychodZapad: 'Východ / západ Slnka',
+    nadhlavnik: 'Slnko v nadhlavníku na poludnie nad',
+    naJuhu: 'Slnko na juhu', naSevere: 'Slnko na severe', nadHlavou: 'priamo nad hlavou',
+    polarnyDen: 'polárny deň – Slnko nezapadne', polarnaNoc: 'polárna noc – Slnko nevyjde',
+    obzor: 'Slnko krúži tesne pri obzore',
+    pasNadpis: 'Deň a noc počas 24 hodín',
+    oblohaNadpis: 'Dráha Slnka po oblohe',
+    oblohaPopis: 'Hrubá čiara = vybraný deň. Slabé čiary: 21. 6. (vyššie) a 21. 12. (nižšie).',
+    inde: 'Dnes na iných miestach',
+    stlpMiesto: 'Miesto', stlpDen: 'Deň', stlpVyska: 'Slnko na poludnie',
+    miesta: [
+      { n: 'Severný pól', lat: 90 },
+      { n: 'Severný polárny kruh', lat: 66.56 },
+      { n: 'Košice', lat: 48.7 },
+      { n: 'Rovník', lat: 0 },
+      { n: 'Južný polárny kruh', lat: -66.56 }
+    ],
+    podObz: 'pod obzorom'
+  },
+
+  mesiace: ['januára','februára','marca','apríla','mája','júna','júla','augusta','septembra','októbra','novembra','decembra'],
+  mesiaceKratko: ['jan','feb','mar','apr','máj','jún','júl','aug','sep','okt','nov','dec'],
+  obdobia: { jar: 'jar', leto: 'leto', jesen: 'jeseň', zima: 'zima', ziadne: 'bez ročných období (sklon 0°)' },
+
+  /* Štyri kľúčové dni. N = poradové číslo dňa v roku (nepriestupný rok). */
+  kluceveDni: [
+    { N: 80,  kratko: '21. 3.',  sever: 'jarná rovnodennosť',   juh: 'jesenná rovnodennosť', typ: 'rovnodennost' },
+    { N: 172, kratko: '21. 6.',  sever: 'letný slnovrat',       juh: 'zimný slnovrat',       typ: 'jun' },
+    { N: 266, kratko: '23. 9.',  sever: 'jesenná rovnodennosť', juh: 'jarná rovnodennosť',   typ: 'rovnodennost' },
+    { N: 355, kratko: '21. 12.', sever: 'zimný slnovrat',       juh: 'letný slnovrat',       typ: 'dec' }
+  ],
+  kluceveVysvetlenie: {
+    rovnodennost: 'Os nie je naklonená ani k Slnku, ani od neho. Hranica dňa a noci prechádza cez oba póly, preto je deň a noc na celej Zemi približne rovnako dlhá – 12 hodín. Na poludnie je Slnko v nadhlavníku nad rovníkom.',
+    jun: 'Severný koniec osi je naklonený k Slnku. Na severnej pologuli je najdlhší deň a Slnko je na poludnie najvyššie v roku. Za severným polárnym kruhom Slnko vôbec nezapadne (polárny deň). Slnko je v nadhlavníku nad obratníkom Raka. Na južnej pologuli je to naopak – najkratší deň.',
+    dec: 'Severný koniec osi je odklonený od Slnka. Na severnej pologuli je najkratší deň a Slnko je na poludnie najnižšie v roku. Za severným polárnym kruhom Slnko nevyjde (polárna noc). Slnko je v nadhlavníku nad obratníkom Kozorožca. Na južnej pologuli je najdlhší deň.',
+    sklon0: ' <i>(Pri sklone 0° sa tento deň od ostatných nelíši.)</i>'
+  },
+
+  /* Popisy objektov – zobrazia sa po kliknutí alebo ukázaní myšou. */
+  info: {
+    slnko: { nazov: 'Slnko', text: 'Hviezda v strede našej sústavy. Svieti a hreje, ale osvetlí vždy len tú polovicu Zeme, ktorá je k nemu práve otočená. Slnko je 109-krát väčšie ako Zem – v animácii nie je v mierke.' },
+    luce: { nazov: 'Slnečné lúče', text: 'Svetlo zo Slnka prichádza k Zemi takmer v rovnobežných lúčoch. Kde dopadajú strmo (zhora), hrejú viac; kde dopadajú šikmo, rozložia sa na väčšiu plochu a hrejú menej.' },
+    zem: { nazov: 'Zem', text: 'Naša planéta robí dva pohyby naraz: <b>otáča sa okolo svojej osi</b> (raz za 24 h → deň a noc) a <b>obieha okolo Slnka</b> (raz za rok → ročné obdobia).' },
+    os: { nazov: 'Zemská os', text: 'Pomyselná priamka cez severný a južný pól, okolo ktorej sa Zem otáča. Je naklonená o 23,5° a počas celého obehu mieri stále rovnakým smerom – k hviezde Polárka. Preto sa k Slnku raz viac nakláňa severná, raz južná pologuľa.' },
+    poly: { nazov: 'Severný a južný pól', text: 'Body, v ktorých os pretína povrch Zeme. Na póloch trvá polárny deň aj polárna noc približne pol roka.' },
+    rovnik: { nazov: 'Rovník', text: 'Kružnica v rovnakej vzdialenosti od oboch pólov. Delí Zem na severnú a južnú pologuľu. Na rovníku trvá deň celý rok približne 12 hodín a Slnko je na poludnie vždy vysoko.' },
+    terminator: { nazov: 'Terminátor – hranica dňa a noci', text: 'Čiara, ktorá oddeľuje osvetlenú (dennú) a tmavú (nočnú) polovicu Zeme. Kto je práve na nej, vidí východ alebo západ Slnka.' },
+    obratniky: { nazov: 'Obratníky', text: 'Rovnobežky 23,5° severnej šírky (<b>obratník Raka</b>) a 23,5° južnej šírky (<b>obratník Kozorožca</b>). Iba medzi nimi môže byť Slnko na poludnie priamo nad hlavou. Nad obratníkom Raka je to 21. 6., nad obratníkom Kozorožca 21. 12.' },
+    polarneKruhy: { nazov: 'Polárne kruhy', text: 'Rovnobežky 66,5° severnej a južnej šírky. Za nimi (bližšie k pólu) nastáva aspoň raz do roka <b>polárny deň</b> (Slnko celý deň nezapadne) a <b>polárna noc</b> (Slnko celý deň nevyjde).' },
+    tuSme: { nazov: 'Tu sme – Košice', text: 'Košice ležia na 48,7° severnej šírky. Bod sa otáča spolu so Zemou. Keď je na osvetlenej strane, je u nás deň, na tmavej strane noc. <b>Miestne slnečné poludnie</b> je vo chvíli, keď je bod najbližšie k Slnku – Slnko je vtedy na oblohe najvyššie (na juhu).' },
+    tuSmeJuh: { nazov: 'Tu sme – 48,7° južnej šírky', text: 'Miesto v rovnakej vzdialenosti od rovníka ako Košice, ale na južnej pologuli. Keď je v Košiciach leto, je tu zima – a naopak. Na poludnie je tu Slnko na <b>severe</b>.' },
+    rovnobezka: { nazov: 'Naša rovnobežka', text: 'Kružnica, po ktorej sa náš bod otočí za 24 hodín. <b>Žltá časť</b> je na svetle – tak dlho trvá deň. <b>Fialová časť</b> je v tme – noc. V lete je žltá časť dlhšia, v zime kratšia.' },
+    poludnik: { nazov: 'Poludník poludnia', text: 'Na všetkých miestach na tejto čiare je práve poludnie – Slnko je tam na oblohe najvyššie. Keď k nej otáčaním Zeme dorazí náš bod, máme miestne slnečné poludnie (12:00 slnečného času).' },
+    draha: { nazov: 'Obežná dráha Zeme', text: 'Cesta Zeme okolo Slnka; jeden obeh trvá rok. Dráha je takmer presný kruh. Pri šikmom pohľade sa kruh javí ako elipsa – to je len perspektíva. Malé šípky ukazujú smer obehu.' },
+    rotacia: { nazov: 'Otáčanie Zeme', text: 'Zem sa otáča <b>zo západu na východ</b> (pri pohľade zhora na severný pól proti smeru hodinových ručičiek). Preto Slnko na oblohe vychádza na východe a zapadá na západe.' },
+    polarka: { nazov: 'Smer k Polárke', text: 'Severný koniec zemskej osi mieri k hviezde Polárka. Polárka je tak ďaleko, že os k nej mieri z každého miesta dráhy – všetky osi na obrázku sú rovnobežné.' }
+  },
+
+  luce: {
+    nadpis: 'Uhol dopadu slnečných lúčov',
+    uvod: 'Zväzok lúčov so šírkou 1 m nesie vždy rovnaké množstvo energie. Keď je Slnko vysoko, dopadne na malú plochu a silno ju zohreje. Keď je nízko, rozloží sa na veľkú plochu – na každý štvorec pripadne menej energie.',
+    vybrany: 'Vybraný deň', leto: '21. 6.', zima: '21. 12.',
+    vysledok: 'Na poludnie {d} je Slnko <b>{a}°</b> nad obzorom. Zväzok široký 1 m osvetlí pás dlhý <b>{l} m</b>, teda na každý m² dopadne len <b>{p} %</b> energie v porovnaní so Slnkom priamo nad hlavou.',
+    podObzorom: 'Na poludnie {d} je Slnko pod obzorom – lúče sem vôbec nedopadajú (polárna noc).',
+    pas: 'osvetlený pás'
+  },
+
+  omyly: {
+    nadpis: 'Časté omyly',
+    omyl: 'Leto máme preto, lebo je Zem vtedy bližšie k Slnku.',
+    pravda: 'Zem je k Slnku najbližšie začiatkom januára (<b>perihélium</b>, asi 147 mil. km) – a to je u nás zima! Najďalej je začiatkom júla (<b>afélium</b>, asi 152 mil. km). Rozdiel je len asi 3 %, dráha je takmer kruh. A keby to bolo vzdialenosťou, mali by obe pologule leto naraz – lenže keď je v Košiciach leto, v Austrálii je zima.',
+    drahaNadpis: 'Skutočný tvar dráhy',
+    drahaPopis: 'Dráha je nakreslená v správnom tvare. Prerušovaná čiara je presný kruh – takmer splýva s dráhou. Veľkosti Slnka a Zeme nie sú v mierke.',
+    grafVzd: 'Vzdialenosť Zeme od Slnka (mil. km)',
+    grafVys: 'Výška Slnka na poludnie (°)',
+    grafDen: 'Dĺžka dňa (hodiny)',
+    grafPopis: 'Porovnaj: vzdialenosť sa počas roka takmer nemení (os grafu začína na nule). Výška Slnka a dĺžka dňa sa menia veľmi – a práve tie spôsobujú ročné obdobia.',
+    vzdTeraz: '{d}: Zem je od Slnka <b>{r} mil. km</b>. Najbližšie ({pd}): {pr} mil. km, najďalej ({ad}): {ar} mil. km – rozdiel len {proc} %.',
+    precoNadpis: 'Prečo je teda leto a zima?',
+    preco: 'Lebo <b>os Zeme je naklonená</b> a stále mieri rovnakým smerom. Počas obehu sa preto k Slnku nakláňa raz severná, raz južná pologuľa. Na pologuli naklonenej k Slnku:<br>1. <b>Slnko vystúpi vyššie</b> – lúče dopadajú strmšie a viac zohrejú každý m² (pozri časť Uhol lúčov).<br>2. <b>Deň je dlhší</b> – Slnko hreje dlhšie a krátka noc nestihne zem ochladiť.',
+    precoTeraz: 'Vybraný deň ({d}): Slnko na poludnie <b>{a}°</b>, deň trvá <b>{h}</b>.'
+  },
+
+  zatmenia: {
+    nadpis: 'Zatmenia Slnka a Mesiaca',
+    uvod: 'Mesiac aj Zem vrhajú do vesmíru tieň. Keď sa Slnko, Mesiac a Zem ocitnú presne v jednej priamke, tieň jedného telesa dopadne na druhé – nastane zatmenie.',
+    btnSlnko: 'Zatmenie Slnka', btnMesiac: 'Zatmenie Mesiaca',
+    poloha: 'Poloha Mesiaca:', vzdial: 'Vzdialenosť Mesiaca od Zeme:', blizko: 'bližšie (perigeum)', daleko: 'ďalej (apogeum)',
+    pozorovatel: 'Pozorovateľ na Zemi:',
+    nebo: 'Čo vidí pozorovateľ',
+    nebo2: 'Mesiac na oblohe',
+    typy: { uplne: 'Úplné zatmenie Slnka', prstencove: 'Prstencové zatmenie Slnka', ciastocne: 'Čiastočné zatmenie Slnka', ziadne: 'Bez zatmenia – Slnko svieti celé',
+            mUplne: 'Úplné zatmenie Mesiaca', mCiastocne: 'Čiastočné zatmenie Mesiaca', mPolotien: 'Polotieňové zatmenie (Mesiac len trochu stmavne)', mZiadne: 'Bez zatmenia – spln' },
+    zakryte: 'Zakrytých {p} % plochy Slnka',
+    legTien: 'tieň – úplné', legPolotien: 'polotieň – čiastočné', legAnti: 'predĺžený tieň – prstencové',
+    slnkoText: '<b>Zatmenie Slnka</b> nastáva pri <b>nove</b>: Mesiac prejde medzi Slnko a Zem a jeho tieň dopadne na Zem.<br>• <b>Úplné</b> je len tam, kam dopadne tmavý <b>tieň</b> Mesiaca – je to úzky pás široký najviac asi 270 km, ktorý sa presúva po Zemi. Na oblohe sa zotmie, uvidíš hviezdy a slnečnú korónu. Trvá najviac asi 7 minút.<br>• <b>Čiastočné</b> je v okolitom <b>polotieni</b> – na území širokom tisíce kilometrov. Mesiac zakryje len časť Slnka.<br>• <b>Prstencové</b> nastane, keď je Mesiac na svojej dráhe ďalej od Zeme (blízko <b>apogea</b>). Vyzerá vtedy menší ako Slnko, jeho tieň nedosiahne zem a okolo Mesiaca zostane svietiaci prstenec. Vidno ho v pásme predĺženého tieňa.<br>Vyskúšaj posuvník vzdialenosti Mesiaca!',
+    mesiacText: '<b>Zatmenie Mesiaca</b> nastáva pri <b>splne</b>: Zem je medzi Slnkom a Mesiacom a Mesiac vojde do tieňa Zeme.<br>• Vidieť ho naraz z <b>celej nočnej strany Zeme</b>, kde je Mesiac nad obzorom – preto ho zažijeme častejšie ako úplné zatmenie Slnka.<br>• <b>Úplné</b>: celý Mesiac je v tieni Zeme. Nezmizne, ale sfarbí sa do <b>medenočervena</b> – zemská atmosféra láme červené svetlo do tieňa. Úplná fáza trvá až vyše hodiny.<br>• <b>Čiastočné</b>: v tieni je len časť Mesiaca.<br>• <b>Polotieňové</b>: Mesiac prejde iba polotieňom a len mierne stmavne – často si to ani nevšimneme.',
+    precoNadpis: 'Prečo nie je zatmenie pri každom nove a splne?',
+    preco: 'Dráha Mesiaca je k dráhe Zeme sklonená asi o <b>5°</b>. Pri väčšine novov prejde Mesiac nad alebo pod spojnicou Slnko–Zem a jeho tieň Zem minie. Zatmenie nastane len vtedy, keď je nov alebo spln práve v mieste, kde Mesiac pretína rovinu dráhy Zeme (v <b>uzle</b>). To sa stáva zhruba dvakrát do roka – v tzv. období zatmení.',
+    obr1: 'Nov mimo uzla – tieň Mesiaca minie Zem, zatmenie nie je.',
+    obr2: 'Nov v uzle – tieň dopadne na Zem, nastane zatmenie Slnka.',
+    bezpecnost: '⚠ Nikdy sa nepozeraj do Slnka priamo, ďalekohľadom ani cez sklo začiernené sadzami – ani počas zatmenia! Používaj iba certifikované okuliare na pozorovanie zatmení.',
+    priklad: 'Príklad: 2. 8. 2027 bude úplné zatmenie Slnka v južnom Španielsku a severnej Afrike – na Slovensku bude len čiastočné.',
+    mierka: 'Obrázok nie je v mierke: Slnko je v skutočnosti 400-krát ďalej ako Mesiac a aj 400-krát väčšie – preto sa na oblohe javia rovnako veľké.'
+  },
+
+  kviz: {
+    nadpis: 'Kvíz',
+    uvod: 'Vyber správnu odpoveď. Nič sa neukladá ani neodosiela.',
+    spravne: '✔ Správne!', nespravne: '✘ Nie celkom.',
+    vysledok: 'Výsledok: {s} z {n} správne.',
+    znova: 'Skúsiť znova',
+    otazky: [
+      { otazka: 'Prečo sa strieda deň a noc?',
+        moznosti: ['Zem obieha okolo Slnka.', 'Zem sa otáča okolo svojej osi.', 'Slnko obieha okolo Zeme.', 'Mesiac zakrýva Slnko.'],
+        spravna: 1, vysvetlenie: 'Zem sa za 24 hodín otočí okolo svojej osi. Polovica otočená k Slnku má deň, druhá noc.' },
+      { otazka: 'Čo je hlavnou príčinou ročných období?',
+        moznosti: ['Meniaca sa vzdialenosť Zeme od Slnka.', 'Sklon zemskej osi.', 'Slnko raz svieti silnejšie, raz slabšie.', 'Otáčanie Zeme okolo osi.'],
+        spravna: 1, vysvetlenie: 'Naklonená os spôsobí, že sa mení výška Slnka na oblohe a dĺžka dňa. Pri sklone 0° by ročné obdobia neboli.' },
+      { otazka: 'Kedy je Zem najbližšie k Slnku?',
+        moznosti: ['Začiatkom júla.', 'Začiatkom januára.', '21. marca.', '21. júna.'],
+        spravna: 1, vysvetlenie: 'V perihéliu je Zem začiatkom januára – vtedy je u nás zima. Vzdialenosť teda leto nespôsobuje.' },
+      { otazka: 'Prečo je v lete teplejšie ako v zime?',
+        moznosti: ['Slnko je vyššie a deň je dlhší.', 'Zem je bližšie k Slnku.', 'Slnko je v lete väčšie.', 'Zem sa v lete otáča pomalšie.'],
+        spravna: 0, vysvetlenie: 'Vysoké Slnko posiela na každý m² viac energie a dlhý deň znamená viac hodín ohrievania.' },
+      { otazka: 'Keď je v Košiciach leto, v Austrálii (na južnej pologuli) je…',
+        moznosti: ['tiež leto.', 'zima.', 'jar.', 'stále rovnako teplo.'],
+        spravna: 1, vysvetlenie: 'Keď je k Slnku naklonená severná pologuľa, južná je od neho odklonená – ročné obdobia sú opačné.' }
+    ]
+  },
+
+  pozn: {
+    nadpis: 'Čo je v animácii zjednodušené',
+    body: [
+      'Veľkosti a vzdialenosti nie sú v mierke. Slnko je 109-krát väčšie ako Zem a je od nej asi 150 miliónov km – to je asi 11 700 priemerov Zeme. Pri skutočnej mierke by Zem nebolo vidieť.',
+      'Dráha Zeme je v hlavnej scéne nakreslená ako kruh. Skutočná dráha je elipsa, ktorá sa od kruhu líši len nepatrne (pozri časť Časté omyly). Pri šikmom pohľade sa kruh javí ako elipsa.',
+      'Rok má v animácii presne 365 dní. Priestupné roky neriešime a dátumy rovnodenností a slnovratov sa v skutočnosti môžu líšiť o deň.',
+      'Deklinácia Slnka sa počíta približným vzorcom δ = 23,44° · sin(2π · (N − 81) / 365). Jeho chyba je do 1–2° (napr. 23. 9. vyjde δ ≈ −1° namiesto 0°).',
+      'Dĺžka dňa sa počíta pre stred slnečného kotúča bez lomu svetla v atmosfére. Skutočný deň je o niekoľko minút dlhší (v Košiciach asi o 8–10 min). Súmrak do dňa nerátame.',
+      'Čas je <b>miestny slnečný čas</b>: Slnko je najvyššie presne o 12:00. Čas na hodinkách sa líši pre časové pásmo, letný čas a nerovnomerný pohyb Zeme (časová rovnica).',
+      'Zem sa v animácii natáča podľa slnečného času; rozdiel medzi hviezdnym a slnečným dňom (asi 4 minúty) zanedbávame.',
+      'Os mieri k Polárke len približne (asi 0,7° od nej) a za tisíce rokov sa jej smer pomaly mení (precesia, 26 000 rokov).',
+      'Obrázky zatmení nie sú v mierke; tvary tieňov sú len schematické. Kontinenty na glóbuse sú veľmi zjednodušené.'
+    ]
+  }
+};
+</script>
+<style>
+/* ===== Farby a základ – rovnaká paleta ako Slnečná sústava ===== */
+:root{
+  --bg:#04060c;--panel:rgba(12,16,28,.86);--line:rgba(140,160,215,.22);
+  --text:#e2e8f5;--muted:#a3adc6;--gold:#f3b453;--gold2:#ffd88a;--blue:#6fb4ff;--red:#ff7a6b;--green:#7fdc8f;--violet:#b9a3ff;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--text);background:var(--bg);
+  background-image:radial-gradient(ellipse at 50% -10%,#14204a 0%,#070b18 50%,#04060c 100%);background-attachment:fixed;
+  font:17px/1.5 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1440px;margin:0 auto;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 12px 40px rgba(0,0,0,.45);padding:16px}
+h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+h2{margin:0 0 10px;font-size:23px;line-height:1.25}
+h3{margin:14px 0 6px;font-size:16px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:650}
+p{margin:0 0 10px}
+.sub{color:var(--muted);margin:4px 0 0;font-size:17px}
+button{font:inherit;font-size:16px;color:var(--text);background:rgba(255,255,255,.07);border:1px solid var(--line);
+  border-radius:10px;padding:8px 14px;min-height:44px;cursor:pointer;transition:background .15s,border-color .15s,color .15s;touch-action:manipulation}
+button:hover{background:rgba(255,255,255,.13);border-color:rgba(160,180,230,.4)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
+button.on{background:rgba(243,180,83,.2);border-color:rgba(243,180,83,.65);color:var(--gold2)}
+button.primary{background:linear-gradient(135deg,#f3b453,#d9772f);color:#1a0e02;border:none;font-weight:700;min-width:140px}
+button.primary:hover{filter:brightness(1.08)}
+
+/* ===== Hlavička a navigácia ===== */
+header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between;margin-bottom:16px}
+nav.skoky{display:flex;flex-wrap:wrap;gap:6px}
+nav.skoky a{color:var(--text);text-decoration:none;font-size:16px;padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.05)}
+nav.skoky a:hover{border-color:var(--gold);color:var(--gold2)}
+
+/* ===== Rozloženie hlavnej časti ===== */
+.hlavna{display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:16px;align-items:start}
+.stlpec{display:flex;flex-direction:column;gap:16px;min-width:0}
+section{scroll-margin-top:12px}
+.sekcia{margin-top:16px}
+@media (max-width:1040px){.hlavna{grid-template-columns:minmax(0,1fr)}}
+
+canvas{display:block;width:100%}
+.sceneCard{position:relative;padding:0;overflow:hidden}
+#cvScena{touch-action:pan-y;cursor:grab}
+#cvScena.drag{cursor:grabbing}
+.overlay{position:absolute;left:12px;top:12px;padding:8px 12px;border-radius:10px;background:rgba(8,12,24,.78);border:1px solid var(--line);pointer-events:none;max-width:calc(100% - 24px)}
+#sceneDate b{font-size:20px;display:block;line-height:1.2}
+#sceneDate span{color:var(--muted)}
+#sceneBanner{position:absolute;left:12px;right:12px;bottom:62px;padding:10px 12px;border-radius:10px;background:rgba(111,180,255,.16);border:1px solid rgba(111,180,255,.5);display:none;pointer-events:none}
+#sceneBanner.show{display:block}
+.sceneBar{position:absolute;left:12px;right:12px;bottom:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;pointer-events:none}
+.sceneBar>*{pointer-events:auto}
+#sceneHint{color:var(--muted);font-size:16px;background:rgba(8,12,24,.7);padding:4px 10px;border-radius:8px}
+.seg{display:inline-flex;flex-wrap:wrap;gap:4px}
+.seg button{padding:6px 12px}
+.pohlady{background:rgba(8,12,24,.75);border-radius:12px;padding:4px}
+@media (max-width:600px){
+  .sceneCard{display:flex;flex-direction:column}
+  .sceneCard .overlay{position:static;order:-1;margin:10px 10px 0;max-width:none}
+  .sceneBar{position:static;padding:0 10px 10px}
+  #sceneHint{display:none}
+  #sceneBanner{position:static;margin:0 10px 10px}
+}
+
+/* ===== Ovládanie ===== */
+.ovl .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sl{display:block;margin-top:12px}
+.sl .lbl{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sl .lbl b{color:var(--gold2);font-variant-numeric:tabular-nums}
+.mini{color:var(--muted);font-size:16px;margin-top:4px}
+.kluc{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.kluc button{padding:6px 4px;line-height:1.2}
+.kluc button small{display:block;font-size:16px;color:var(--muted)}
+.kluc button.on small{color:var(--gold2)}
+@media (max-width:560px){.kluc{grid-template-columns:repeat(2,1fr)}}
+.prep{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:12px}
+.prep>span{min-width:96px;color:var(--muted)}
+
+/* Posuvníky – veľké pre prsty */
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:40px;background:transparent;margin:2px 0 0;cursor:pointer;touch-action:pan-y}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;margin-top:-10px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02;box-shadow:0 0 0 2px var(--gold)}
+input[type=range]::-moz-range-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02}
+
+/* ===== Panel Tu sme ===== */
+#tsStav{font-size:28px;font-weight:750;letter-spacing:.04em;margin:4px 0 0}
+#tsStav.den{color:var(--gold2)}#tsStav.noc{color:var(--violet)}#tsStav.sumrak{color:#ffb38a}
+dl.udaje{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:10px 0 0;font-size:16px}
+dl.udaje dt{color:var(--muted)}
+dl.udaje dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+dl.udaje dd b{color:var(--gold2);font-size:18px}
+table.inde{width:100%;border-collapse:collapse;font-size:16px}
+table.inde th{color:var(--muted);font-weight:600;text-align:left;padding:4px 4px;border-bottom:1px solid var(--line)}
+table.inde td{padding:5px 4px;border-bottom:1px solid rgba(140,160,215,.1);font-variant-numeric:tabular-nums}
+table.inde td+td,table.inde th+th{text-align:right}
+table.inde tr.ja td{color:var(--gold2);font-weight:650}
+
+/* ===== Legenda objektov ===== */
+.legenda{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.legenda button{padding:6px 10px;display:inline-flex;align-items:center;gap:8px}
+.legenda i{display:inline-block;width:18px;height:4px;border-radius:2px}
+.legenda i.dot{width:12px;height:12px;border-radius:50%}
+
+/* ===== Bublina s popisom ===== */
+#bubble{position:fixed;z-index:50;max-width:350px;padding:12px 14px;border-radius:12px;background:rgba(14,20,36,.97);
+  border:1px solid rgba(243,180,83,.55);box-shadow:0 12px 36px rgba(0,0,0,.6);pointer-events:none}
+#bubble.pin{pointer-events:auto}
+#bubble h4{margin:0 34px 4px 0;font-size:18px;color:var(--gold2)}
+#bubble p{margin:0;font-size:16px}
+#bubble .x{position:absolute;right:6px;top:6px;width:36px;min-height:36px;height:36px;padding:0;font-size:20px;display:none}
+#bubble.pin .x{display:block}
+@media (max-width:600px){#bubble.pin{left:8px!important;right:8px;top:auto!important;bottom:8px;max-width:none}}
+
+/* ===== Ďalšie sekcie ===== */
+.dvoj{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.dvoj{grid-template-columns:minmax(0,1fr)}}
+.grafy{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:16px}
+.grafy figure{margin:0}
+figcaption{color:var(--muted);font-size:16px;margin:6px 0 0}
+.box{margin:10px 0;padding:10px 13px;border-radius:10px;border:1px solid}
+.box b.h{display:block;font-size:16px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.box.omyl{background:rgba(255,122,107,.09);border-color:rgba(255,122,107,.45)}.box.omyl b.h{color:var(--red)}
+.box.pravda{background:rgba(127,220,143,.08);border-color:rgba(127,220,143,.4)}.box.pravda b.h{color:var(--green)}
+.box.info{background:rgba(111,180,255,.08);border-color:rgba(111,180,255,.4)}
+.box.pozor{background:rgba(243,180,83,.1);border-color:rgba(243,180,83,.55)}
+.leg{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:16px;color:var(--muted)}
+.leg span{display:inline-flex;align-items:center;gap:6px}
+.leg i{display:inline-block;width:16px;height:16px;border-radius:4px}
+.zatStav{font-size:20px;font-weight:700;color:var(--gold2);margin:8px 0 2px;min-height:30px}
+.uzly{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:8px}
+
+/* Kvíz */
+.otazka{padding:12px 0;border-bottom:1px solid var(--line)}
+.otazka .q{font-size:18px;margin-bottom:8px}
+.moznosti{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}
+.moznosti button{text-align:left}
+.moznosti button:disabled{cursor:default;opacity:.8}
+.moznosti button.ok{background:rgba(127,220,143,.2);border-color:var(--green);color:#d7ffdf;opacity:1}
+.moznosti button.zle{background:rgba(255,122,107,.2);border-color:var(--red);color:#ffe0dc;opacity:1}
+.fb{margin-top:8px;font-size:16px}
+.fb.ok b{color:var(--green)}.fb.zle b{color:var(--red)}
+#kvizVysl{font-size:20px;font-weight:700;color:var(--gold2);margin:12px 0}
+ul.pozn{margin:0;padding-left:22px}
+ul.pozn li{margin:6px 0}
+footer{color:var(--muted);text-align:center;font-size:16px;padding:20px 0 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div><h1 data-t="titul"></h1><p class="sub" data-t="podtitul"></p></div>
+  <nav class="skoky">
+    <a href="#scena" data-t="nav.scena"></a><a href="#luce" data-t="nav.luce"></a><a href="#omyly" data-t="nav.omyly"></a>
+    <a href="#zatmenia" data-t="nav.zatmenia"></a><a href="#kviz" data-t="nav.kviz"></a><a href="#pozn" data-t="nav.pozn"></a>
+  </nav>
+</header>
+
+<!-- ============ HLAVNÁ SCÉNA ============ -->
+<section id="scena" class="hlavna">
+  <div class="stlpec">
+    <div class="card sceneCard">
+      <canvas id="cvScena" aria-label="Slnko a Zem na obežnej dráhe"></canvas>
+      <div id="sceneDate" class="overlay"><b></b><span></span></div>
+      <div id="sceneBanner" data-t="ui.banner0"></div>
+      <div class="sceneBar">
+        <span id="sceneHint" data-t="ui.hintScena"></span>
+        <div class="seg pohlady" id="pohlady">
+          <button data-v="sikmo" class="on" data-t="ui.sikmo"></button><button data-v="zhora" data-t="ui.zhora"></button><button data-v="zboku" data-t="ui.zboku"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card ovl">
+      <div class="row">
+        <button id="play" class="primary"></button>
+        <button id="presetDen" data-t="ui.presetDen"></button>
+        <button id="presetRok" data-t="ui.presetRok"></button>
+      </div>
+      <label class="sl"><span class="lbl"><span data-t="ui.rychlost"></span><b id="rychLbl"></b></span>
+        <input type="range" id="rych" min="0" max="100" step="1" value="17"></label>
+      <div class="mini" id="strobo"></div>
+      <label class="sl"><span class="lbl"><span data-t="ui.denVRoku"></span><b id="denLbl"></b></span>
+        <input type="range" id="den" min="1" max="365" step="1" value="172"></label>
+      <div class="kluc" id="kluc"></div>
+      <label class="sl"><span class="lbl"><span data-t="ui.hodina"></span><b id="hodLbl"></b></span>
+        <input type="range" id="hod" min="0" max="24" step="0.25" value="12"></label>
+      <div class="prep"><span data-t="ui.pologula"></span>
+        <div class="seg"><button id="pSever" class="on" data-t="ui.sever"></button><button id="pJuh" data-t="ui.juh"></button></div></div>
+      <div class="prep"><span data-t="ui.sklon"></span>
+        <div class="seg"><button id="s235" class="on" data-t="ui.sklon235"></button><button id="s0" data-t="ui.sklon0"></button></div></div>
+    </div>
+  </div>
+
+  <aside class="stlpec">
+    <div class="card" id="tuSmeCard">
+      <h2 id="tsNazov"></h2>
+      <div class="mini" id="tsSirka"></div>
+      <div id="tsStav"></div>
+      <div id="tsStavPop"></div>
+      <dl class="udaje">
+        <dt data-t="tuSme.cas"></dt><dd id="tsCas"></dd>
+        <dt data-t="tuSme.poludnie"></dt><dd id="tsPoludnie"></dd>
+        <dt data-t="tuSme.vyska"></dt><dd id="tsVyska"></dd>
+        <dt data-t="tuSme.dlzka"></dt><dd id="tsDlzka"></dd>
+        <dt data-t="tuSme.vychodZapad"></dt><dd id="tsVZ"></dd>
+        <dt data-t="tuSme.nadhlavnik"></dt><dd id="tsNadhl"></dd>
+      </dl>
+      <h3 data-t="tuSme.pasNadpis"></h3>
+      <canvas id="cvPas" aria-label="Deň a noc počas 24 hodín"></canvas>
+      <h3 data-t="tuSme.oblohaNadpis"></h3>
+      <canvas id="cvObloha" aria-label="Dráha Slnka po oblohe"></canvas>
+      <div class="mini" data-t="tuSme.oblohaPopis"></div>
+      <h3 data-t="tuSme.inde"></h3>
+      <table class="inde"><thead><tr><th data-t="tuSme.stlpMiesto"></th><th data-t="tuSme.stlpDen"></th><th data-t="tuSme.stlpVyska"></th></tr></thead><tbody id="tsInde"></tbody></table>
+    </div>
+
+    <div class="card">
+      <h2 data-t="ui.zemZblizka"></h2>
+      <div class="seg" id="detailMod"><button data-m="bok" class="on" data-t="ui.modBok"></button><button data-m="pol" data-t="ui.modPol"></button><button data-m="scena" data-t="ui.modScena"></button></div>
+      <canvas id="cvZem" aria-label="Zem zblízka" style="margin-top:8px"></canvas>
+      <p class="mini" id="zadu"></p>
+      <div class="mini" data-t="ui.legenda"></div>
+      <div class="legenda" id="legenda"></div>
+    </div>
+  </aside>
+</section>
+
+<!-- ============ UHOL DOPADU LÚČOV ============ -->
+<section id="luce" class="card sekcia">
+  <h2 data-t="luce.nadpis"></h2>
+  <p data-t="luce.uvod"></p>
+  <canvas id="cvLuce" aria-label="Uhol dopadu lúčov"></canvas>
+  <div class="leg">
+    <span><i style="background:var(--gold)"></i><span data-t="luce.vybrany"></span></span>
+    <span><i style="background:var(--red)"></i><span data-t="luce.leto"></span></span>
+    <span><i style="background:var(--blue)"></i><span data-t="luce.zima"></span></span>
+  </div>
+  <p id="luceText" style="margin-top:10px"></p>
+  <p class="mini" id="luceRef"></p>
+</section>
+
+<!-- ============ ČASTÉ OMYLY ============ -->
+<section id="omyly" class="card sekcia">
+  <h2 data-t="omyly.nadpis"></h2>
+  <div class="box omyl"><b class="h">Omyl</b><span data-t="omyly.omyl"></span></div>
+  <div class="box pravda"><b class="h">Pravda</b><span data-t="omyly.pravda"></span></div>
+  <div class="grafy">
+    <figure><canvas id="cvDraha" aria-label="Skutočný tvar dráhy Zeme"></canvas><figcaption><b data-t="omyly.drahaNadpis"></b> – <span data-t="omyly.drahaPopis"></span></figcaption></figure>
+    <figure><canvas id="cvGVzd"></canvas><figcaption data-t="omyly.grafVzd"></figcaption></figure>
+    <figure><canvas id="cvGVys"></canvas><figcaption data-t="omyly.grafVys"></figcaption></figure>
+    <figure><canvas id="cvGDen"></canvas><figcaption data-t="omyly.grafDen"></figcaption></figure>
+  </div>
+  <p class="mini" data-t="omyly.grafPopis" style="margin-top:10px"></p>
+  <p id="omylVzd"></p>
+  <div class="box info"><b class="h" data-t="omyly.precoNadpis"></b><span data-t="omyly.preco"></span><p id="precoTeraz" style="margin:8px 0 0"></p></div>
+</section>
+
+<!-- ============ ZATMENIA ============ -->
+<section id="zatmenia" class="card sekcia">
+  <h2 data-t="zatmenia.nadpis"></h2>
+  <p data-t="zatmenia.uvod"></p>
+  <div class="row" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    <div class="seg" id="zatMod"><button data-z="slnko" class="on" data-t="zatmenia.btnSlnko"></button><button data-z="mesiac" data-t="zatmenia.btnMesiac"></button></div>
+    <button id="zatPlay" class="primary"></button>
+  </div>
+  <div class="dvoj" style="margin-top:10px">
+    <div>
+      <canvas id="cvZat" aria-label="Tieň Mesiaca alebo Zeme"></canvas>
+      <div class="leg" id="zatLeg"></div>
+      <label class="sl"><span class="lbl"><span data-t="zatmenia.poloha"></span><b id="zatPolLbl"></b></span>
+        <input type="range" id="zatPol" min="-100" max="100" step="1" value="-80"></label>
+      <label class="sl" id="zatVzdBox"><span class="lbl"><span data-t="zatmenia.vzdial"></span><b id="zatVzdLbl"></b></span>
+        <input type="range" id="zatVzd" min="0" max="100" step="1" value="20"></label>
+      <label class="sl" id="zatPozBox"><span class="lbl"><span data-t="zatmenia.pozorovatel"></span><b id="zatPozLbl"></b></span>
+        <input type="range" id="zatPoz" min="-70" max="70" step="1" value="0"></label>
+    </div>
+    <div>
+      <h3 id="zatNeboNadpis"></h3>
+      <canvas id="cvNebo" aria-label="Pohľad pozorovateľa na oblohu"></canvas>
+      <div class="zatStav" id="zatStav"></div>
+      <div class="mini" id="zatPokr"></div>
+      <div class="box info" id="zatText" style="margin-top:12px"></div>
+    </div>
+  </div>
+  <div class="box pozor" data-t="zatmenia.bezpecnost"></div>
+  <h3 data-t="zatmenia.precoNadpis"></h3>
+  <p data-t="zatmenia.preco"></p>
+  <div class="uzly">
+    <figure style="margin:0"><canvas id="cvUzol1"></canvas><figcaption data-t="zatmenia.obr1"></figcaption></figure>
+    <figure style="margin:0"><canvas id="cvUzol2"></canvas><figcaption data-t="zatmenia.obr2"></figcaption></figure>
+  </div>
+  <p class="mini" style="margin-top:10px"><span data-t="zatmenia.mierka"></span> <span data-t="zatmenia.priklad"></span></p>
+</section>
+
+<!-- ============ KVÍZ ============ -->
+<section id="kviz" class="card sekcia">
+  <h2 data-t="kviz.nadpis"></h2>
+  <p class="mini" data-t="kviz.uvod"></p>
+  <div id="kvizBox"></div>
+  <div id="kvizVysl"></div>
+  <button id="kvizZnova" data-t="kviz.znova"></button>
+</section>
+
+<!-- ============ ZJEDNODUŠENIA ============ -->
+<section id="pozn" class="card sekcia">
+  <h2 data-t="pozn.nadpis"></h2>
+  <ul class="pozn" id="poznList"></ul>
+</section>
+
+<footer>Deň, noc a ročné obdobia · výučbová animácia pre 6. ročník ZŠ</footer>
+</div>
+
+<div id="bubble" hidden><button class="x" id="bubX" aria-label="Zavrieť">×</button><h4></h4><p></p></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   VÝPOČTY – začiatok. Čistá fyzika bez kreslenia (dá sa testovať samostatne).
+   Uhly sú v stupňoch, čas v hodinách.
+   ===================================================================== */
+const DEG = Math.PI / 180;
+const SKLON_OSI = 23.44;                 // sklon zemskej osi (°)
+const LAT_KOSICE = 48.7, LON_KOSICE = 21.26;
+
+/* Deklinácia Slnka δ – zemepisná šírka, nad ktorou je Slnko na poludnie v nadhlavníku.
+   N = poradové číslo dňa (1 = 1. január). Pri sklone 0° je δ stále 0. */
+function deklinacia(N, sklon = SKLON_OSI) {
+  return sklon * Math.sin(2 * Math.PI * (N - 81) / 365);
+}
+
+/* Výška Slnka nad obzorom na poludnie.
+   Zo zadania: 90° − φ + δ. To platí, keď je Slnko na poludnie na juhu (φ ≥ δ).
+   Medzi obratníkmi môže byť Slnko na severe, preto používame všeobecný tvar 90° − |φ − δ|
+   (napr. na rovníku 21. 6.: 90 − |0 − 23,44| = 66,6°, nie 113,4°). */
+function poludnajsiaVyska(fi, delta) {
+  return 90 - Math.abs(fi - delta);
+}
+
+/* Dĺžka dňa = (2/15) · arccos(−tan φ · tan δ) hodín.
+   Okrajové prípady: ak je −tan φ · tan δ ≥ 1, Slnko nevyjde (polárna noc, 0 h);
+   ak je ≤ −1, Slnko nezapadne (polárny deň, 24 h). Na samotnom póle je tan φ nekonečno. */
+function dlzkaDna(fi, delta) {
+  if (Math.abs(fi) >= 89.99) {
+    if (Math.abs(delta) < 1e-9) return { hodiny: 12, typ: 'obzor' };
+    return Math.sign(fi) * delta > 0 ? { hodiny: 24, typ: 'polarnyDen' } : { hodiny: 0, typ: 'polarnaNoc' };
+  }
+  const x = -Math.tan(fi * DEG) * Math.tan(delta * DEG);
+  if (x >= 1) return { hodiny: 0, typ: 'polarnaNoc' };
+  if (x <= -1) return { hodiny: 24, typ: 'polarnyDen' };
+  return { hodiny: (2 / 15) * Math.acos(x) / DEG, typ: 'bezny' };
+}
+
+/* Výška Slnka v ľubovoľnú hodinu (miestny slnečný čas). H = hodinový uhol. */
+function vyskaSlnka(fi, delta, hod) {
+  const H = (hod - 12) * 15 * DEG, f = fi * DEG, d = delta * DEG;
+  const s = Math.sin(f) * Math.sin(d) + Math.cos(f) * Math.cos(d) * Math.cos(H);
+  return Math.asin(Math.max(-1, Math.min(1, s))) / DEG;
+}
+
+/* Azimut Slnka (0° = sever, 90° = východ, 180° = juh, 270° = západ). */
+function azimutSlnka(fi, delta, hod) {
+  const H = (hod - 12) * 15 * DEG, f = fi * DEG, d = delta * DEG;
+  const A = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(f) - Math.tan(d) * Math.cos(f)) / DEG + 180;
+  return (A % 360 + 360) % 360;
+}
+
+/* Časová rovnica v minútach (približne) – o koľko sa slnečné hodiny líšia od stredného času. */
+function casovaRovnica(N) {
+  const B = 2 * Math.PI * (N - 81) / 364;
+  return 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);
+}
+
+/* Vzdialenosť Zeme od Slnka v mil. km (eliptická dráha, perihélium okolo 3. januára). */
+const DRAHA_A = 149.6, DRAHA_E = 0.0167, PERIHELIUM_N = 3;
+function anomalia(N) {
+  const M = 2 * Math.PI * (N - PERIHELIUM_N) / 365.25;
+  return M + 2 * DRAHA_E * Math.sin(M) + 1.25 * DRAHA_E * DRAHA_E * Math.sin(2 * M);
+}
+function vzdialenostOdSlnka(N) {
+  return DRAHA_A * (1 - DRAHA_E * DRAHA_E) / (1 + DRAHA_E * Math.cos(anomalia(N)));
+}
+/* =====================================================================
+   VÝPOČTY – koniec
+   ===================================================================== */
+
+/* ===== Pomocné funkcie ===== */
+const TAU = Math.PI * 2;
+const $ = s => document.querySelector(s);
+const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
+const nf = (x, d = 0) => (Math.abs(x) < 0.5 * Math.pow(10, -d) ? 0 : x).toLocaleString('sk-SK', { minimumFractionDigits: d, maximumFractionDigits: d });
+const sablona = (s, o) => s.replace(/\{(\w+)\}/g, (m, k) => k in o ? o[k] : m);
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const mul = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
+const add = (a, b, k = 1) => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
+const norm = a => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+const FONT = (s = 16, w = 600) => `${w} ${s}px system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif`;
+const DLZKY_MES = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+/* Dátum z poradového čísla dňa: 172 → „21. júna“ */
+function datum(N, kratko) {
+  let n = Math.floor(N), m = 0;
+  while (m < 11 && n > DLZKY_MES[m]) { n -= DLZKY_MES[m]; m++; }
+  return kratko ? `${n}. ${m + 1}.` : `${n}. ${TEXTY.mesiace[m]}`;
+}
+/* Hodiny → „15 h 56 min“ */
+function fmtTrvanie(h) {
+  const m = Math.round(h * 60);
+  return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} min`;
+}
+/* Hodiny → „4:02“ */
+function fmtCas(h) {
+  let m = Math.round(h * 60); m = ((m % 1440) + 1440) % 1440;
+  if (Math.round(h * 60) === 1440) return '24:00';
+  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
+}
+function sirkaText(lat) {
+  if (Math.abs(lat) < 0.05) return '0° (rovník)';
+  return `${nf(Math.abs(lat), 1)}° ${lat > 0 ? 's. š.' : 'j. š.'}`;
+}
+function pocetSlov(n, j, d, v, g) { n = Math.abs(n); if (!Number.isInteger(n)) return g || v; if (n === 1) return j; if (n >= 2 && n <= 4 && Number.isInteger(n)) return d; return v; }
+
+/* ===== Stav aplikácie ===== */
+const STROBO = 0.5;                 // nad touto rýchlosťou (dni/s) sa hodina nemení
+const S = {
+  den: 172, hod: 12, hraj: true, juh: false, sklonOn: true,
+  az: 90 * DEG, el: 28 * DEG, azT: 90 * DEG, elT: 28 * DEG,
+  mod: 'bok', hl: null, dirty: true
+};
+(() => { // začneme dnešným dňom
+  const d = new Date(), z = new Date(d.getFullYear(), 0, 1);
+  let N = Math.floor((d - z) / 864e5) + 1;
+  const prest = (d.getFullYear() % 4 === 0 && d.getFullYear() % 100 !== 0) || d.getFullYear() % 400 === 0;
+  if (prest && N > 59) N--;
+  S.den = clamp(N, 1, 365);
+})();
+const sklon = () => S.sklonOn ? SKLON_OSI : 0;
+const fiPoz = () => S.juh ? -LAT_KOSICE : LAT_KOSICE;
+const denInt = () => clamp(Math.floor(S.den), 1, 365);
+
+/* Obdobie podľa dátumu (astronomické hranice). Na juhu sú opačné. */
+function obdobie(N) {
+  if (!S.sklonOn) return TEXTY.obdobia.ziadne;
+  let k = N >= 80 && N < 172 ? 'jar' : N >= 172 && N < 266 ? 'leto' : N >= 266 && N < 355 ? 'jesen' : 'zima';
+  if (S.juh) k = { jar: 'jesen', leto: 'zima', jesen: 'jar', zima: 'leto' }[k];
+  return TEXTY.obdobia[k];
+}
+
+/* =====================================================================
+   3D geometria. Súradnice ekliptiky: X → jarný bod, Z → kolmo na rovinu dráhy.
+   Os Zeme (rovníkový sever) = (0, sin ε, cos ε) – stále rovnaký smer (k Polárke).
+   ===================================================================== */
+function stavZeme(Ng, hod) {
+  const sk = sklon(), eps = sk * DEG;
+  const lam = TAU * (Ng - 81) / 365;                 // ekliptikálna dĺžka Slnka
+  const d = deklinacia(Ng, sk) * DEG;                // deklinácia podľa vzorca zo zadania
+  const aS = Math.atan2(Math.cos(eps) * Math.sin(lam), Math.cos(lam)); // rektascenzia Slnka
+  const X = [1, 0, 0], Y = [0, Math.cos(eps), -Math.sin(eps)], Z = [0, Math.sin(eps), Math.cos(eps)];
+  const cd = Math.cos(d);
+  const s = norm(add(add(mul(X, cd * Math.cos(aS)), Y, cd * Math.sin(aS)), Z, Math.sin(d))); // smer k Slnku
+  return { X, Y, Z, s, aS, aObs: aS + (hod - 12) * 15 * DEG };
+}
+/* Kamera pre scénu: azimut a výška pohľadu. r = doprava, u = hore, d = k divákovi. */
+function kameraScena(az, el) {
+  const ca = Math.cos(az), sa = Math.sin(az), ce = Math.cos(el), se = Math.sin(el);
+  return { r: [ca, -sa, 0], u: [sa * se, ca * se, ce], d: [-sa * ce, -ca * ce, se] };
+}
+/* Kamera pre detail Zeme */
+function kameraDetail(es) {
+  if (S.mod === 'scena') return kameraScena(S.az, S.el);
+  if (S.mod === 'pol') {                               // nad pólom, Slnko vľavo
+    const d = S.juh ? mul(es.Z, -1) : es.Z;
+    let r = add(es.s, d, -dot(es.s, d));
+    if (Math.hypot(...r) < 1e-6) r = [1, 0, 0];
+    r = norm(mul(r, -1));
+    return { r, u: cross(d, r), d };
+  }
+  const Zg = [0, 0, 1], sh = norm([es.s[0], es.s[1], 0]);   // zboku, Slnko vľavo vpredu
+  const w = cross(Zg, sh), b = 35 * DEG;
+  const d0 = norm(add(mul(w, Math.cos(b)), sh, Math.sin(b)));
+  const e2 = (S.juh ? -14 : 14) * DEG;
+  const d = add(mul(d0, Math.cos(e2)), Zg, Math.sin(e2));
+  const u = add(mul(Zg, Math.cos(e2)), d0, -Math.sin(e2));
+  return { r: cross(u, d), u, d };
+}
+
+/* Zjednodušené obrysy kontinentov [zem. dĺžka, zem. šírka] */
+const KONTINENTY = [
+  [[-168,66],[-162,70],[-156,71.3],[-140,69.6],[-128,70],[-115,68.6],[-95,69],[-85,70],[-80,63],[-94,58.8],[-88,56],[-82,52],[-78,55],[-77,60],[-70,59],[-64,60],[-61,56],[-56,52],[-60,47],[-66,45],[-70,43],[-70.5,41.6],[-74,40.5],[-76,37],[-75.5,35.2],[-81,31.5],[-80,27],[-80.4,25.2],[-82,26.7],[-83,29],[-85,29.8],[-89,30.2],[-94,29.6],[-97.4,27.5],[-97.5,22],[-95.5,18.8],[-91.5,18.5],[-90.5,21],[-87,21.5],[-88.2,16],[-83.5,15],[-83.6,11],[-81.5,9],[-79.5,9.5],[-77.4,8.5],[-78,7.2],[-80.5,7.5],[-83,8.3],[-86,11.5],[-87.5,13],[-92,14.5],[-96,15.7],[-105,19.8],[-105.7,22.7],[-112,29],[-117,32.5],[-120.5,34.5],[-122.5,37.8],[-124.2,40.5],[-124,46],[-124.7,48.4],[-127.5,50.5],[-130,54.5],[-134,58],[-137,59],[-141,60],[-147,61],[-152,59],[-156,57.5],[-162,55],[-158,58.5],[-162,60],[-165,62],[-165,64.5]],
+  [[-73,78],[-60,82],[-30,83.5],[-20,81.5],[-18,76],[-22,70],[-30,68],[-40,65],[-43,60],[-48,61],[-53,66],[-55,70],[-60,76]],
+  [[-80,63.5],[-73,62],[-65,62],[-61.5,66.5],[-68,70],[-72,72],[-80,73.6],[-90,72.5],[-85,70],[-82,68],[-75,67]],
+  [[-77.4,8.5],[-75.5,10.7],[-71.5,12.4],[-68,10.5],[-62,10.7],[-60,8.3],[-57,6],[-52,5],[-50,1.5],[-48,-1],[-44,-2.5],[-39,-3.5],[-35,-5.5],[-35,-9],[-39,-13.5],[-39.5,-18],[-41,-22],[-44.5,-23.2],[-48.5,-26],[-48.7,-28.5],[-52,-32],[-54,-34.8],[-57.5,-35],[-57,-38],[-62,-39],[-65,-41],[-64,-42.5],[-65.5,-45],[-67.5,-46.5],[-66,-48],[-69,-51],[-68.5,-52.5],[-70,-55],[-74,-52],[-75.5,-47],[-73.5,-42],[-73.5,-37],[-71.5,-30],[-70.3,-18.5],[-75,-15.5],[-79.8,-7],[-81,-4.5],[-80,-1],[-80,1],[-78.5,2.5]],
+  [[-9.5,43],[-9,38.8],[-8.8,37],[-6,36.2],[-2,36.7],[0.5,38.5],[0,40],[3.2,42],[3,43.3],[6,43],[9,44.4],[10.5,43],[12.5,41.5],[15.6,38],[16.2,38.9],[16.5,40],[18.5,40.2],[16,41.5],[13.5,43.6],[12.3,45.3],[13.8,45.6],[15.5,43.8],[19.4,41.8],[19.5,40],[21,38],[22.5,36.5],[23.5,38],[22.8,40.4],[26,40.8],[26.5,39.5],[27,38],[27.5,37],[28.5,36.7],[30.5,36.5],[32.5,36.1],[36,36.8],[35.8,34.5],[35,33],[34.3,31.3],[34.9,29.5],[36,27.5],[39,22],[42.8,16],[43.5,12.7],[45,12.8],[52,15.8],[55,17.5],[57.5,18.8],[59.8,22.5],[57,24],[56.3,26.3],[54,24.2],[51.5,24.5],[50.8,26],[48.5,28.5],[48,30],[50,30.2],[51,28],[54.5,26.6],[57,25.6],[61.5,25.2],[66.5,25.4],[67.5,23.9],[70,21],[72.8,21.3],[73,18],[74.5,14],[76.5,8.6],[77.5,8],[78.3,9],[80,10.3],[80.3,13.3],[80.2,15.5],[82.3,17],[85,19.5],[87,21.5],[88.5,21.8],[91.5,22.7],[92.4,21],[94.5,17.5],[94.2,16],[97.7,16.5],[98.5,13],[98.5,10],[98.3,8],[100.3,5.5],[101.3,2.8],[103.5,1.4],[104.2,1.5],[103.4,4.5],[102.3,6.2],[100.5,7.2],[100,10],[99.2,10.5],[100,13.5],[101,12.7],[102.5,12],[103,11],[105,8.7],[106.8,10.4],[109.2,11.6],[109.3,13.5],[108.3,16],[106.5,18],[106.7,20.2],[108,21.5],[110,21],[111,21.5],[113.5,22.5],[116.5,22.9],[119.5,25.5],[120.5,27.5],[122,29.9],[121,32.5],[120.3,34.3],[119.2,35],[122.5,37],[121,37.8],[119,37.2],[118,38.5],[117.7,39],[119.5,39.9],[121.3,40.8],[122.2,40.5],[121.2,39],[122,39],[124.3,39.9],[125.2,37.7],[126.6,34.4],[129.4,35.4],[129.5,36.8],[128.4,38.6],[127.5,39.8],[129.7,41],[130.6,42.4],[133,42.8],[135.5,43.9],[138.2,46.3],[140.4,48.5],[141.4,52.2],[141.2,53.5],[137.4,54],[135.2,54.7],[137.8,56.5],[141,59],[145,59.3],[148.5,59.3],[152.3,59],[155,59.3],[156.7,61.5],[160,61.8],[163.3,62.5],[162,60],[159.8,58],[156.6,57],[155.8,55],[156.7,50.9],[158.4,52.9],[160,54.2],[162.2,56.2],[163.3,58],[165,60],[170.5,60],[175,62],[178.5,62.6],[179.9,64.5],[182,65.4],[186,66],[190,66.2],[187,67],[182,69],[176,69.8],[170,70],[161,69.5],[160,70.8],[150,71.5],[140,72.5],[132,71.5],[128,72.8],[124,73.5],[113,73.7],[110,76.5],[104,77.7],[98,76],[89,75.5],[81,73.5],[80.5,72.3],[75,72.8],[72.5,71],[73,68.5],[69,68.7],[67,69.8],[69,72.8],[64,69.5],[60,68.8],[56,68.4],[53.5,68.2],[45,68.5],[43.5,66.2],[40.5,66.5],[38,64.5],[36.5,64.7],[34.8,65.9],[33,66.6],[38,66.1],[41,67.6],[40,68.8],[33,69.4],[28.5,70.9],[25.5,71.1],[20,70],[15.5,68.5],[13,67.5],[12,65],[10,63.5],[5,62],[5.5,59],[7.5,58],[10.5,59.3],[11.5,58.8],[12.7,56.3],[12.5,55.4],[14.3,55.5],[16,56.2],[16.5,57.5],[16.5,59],[18.5,60.3],[17.3,61.5],[17.8,62.8],[21.5,64.5],[22.3,65.8],[25.5,65],[24.5,64.2],[21.5,61],[22.8,59.9],[28,60.5],[30,59.9],[28,59.4],[23.5,59.2],[24.1,58.3],[21.6,57.4],[21,56],[21.2,55.2],[19.6,54.4],[18.5,54.8],[14.5,53.9],[12,54.2],[10.9,54],[9.9,54.8],[10,56],[10.5,57.6],[8.5,57.1],[8.1,55.6],[8.7,53.9],[7,53.5],[5,53.3],[4,52],[3.3,51.3],[1.6,50.9],[1.4,50.1],[-1.3,49.7],[-1.9,49.7],[-1.4,48.6],[-4.6,48.4],[-4.3,47.8],[-2.2,47.1],[-1.2,46],[-1.4,44],[-1.8,43.4],[-4.5,43.4],[-8,43.7],[-9.3,43.1]],
+  [[-5.7,50],[1.4,51.2],[1.7,52.7],[0.2,53.5],[-1.2,54.7],[-2,56],[-1.8,57.6],[-3,58.6],[-5,58.6],[-6.2,57.5],[-5.6,56.3],[-6.3,55.7],[-4.8,54.8],[-3,53.4],[-4.6,53.2],[-4.2,51.7],[-5.2,51.7],[-3.3,51.4]],
+  [[-6,52.2],[-6.2,53.9],[-5.7,54.6],[-7.3,55.3],[-8.5,54.4],[-10,54.2],[-9.5,53],[-10.3,51.9],[-8.5,51.6]],
+  [[-22,64],[-24,65.5],[-21,66.2],[-16,66.5],[-13.5,65.2],[-15,64.3],[-18.7,63.4]],
+  [[130,31.2],[131.5,31.5],[132,33.8],[135,33.5],[136.8,34.5],[139.8,35],[140.9,36.9],[141.5,40.5],[141.4,41.4],[140,40.5],[139.8,38],[138.5,37.5],[136.8,37.2],[135.5,35.5],[133,35.5],[131,34.4],[130,33.3]],
+  [[140,41.5],[141.2,41.8],[143.3,42],[145.5,43.3],[144.5,44],[141.8,45.4],[141.4,43.2],[140,42.5]],
+  [[95.3,5.6],[97.5,5.2],[100.3,2.3],[104,-1],[106,-3.2],[105.8,-5.8],[104.5,-5.9],[102,-4],[100.4,-1],[98.6,1.8]],
+  [[109,1.5],[109.6,-1],[110.3,-3],[114.5,-4],[116.5,-3],[117.5,0.5],[118.5,1],[117.7,4.2],[119.2,5.3],[117,7],[115.5,5],[113.5,3.5],[111,1.7]],
+  [[105.2,-6.8],[108.3,-7.8],[111,-8.3],[114.5,-8.7],[114.4,-7.7],[112.6,-6.9],[110.5,-6.5],[108.5,-6.4],[106,-5.9]],
+  [[131,-1],[134,-0.8],[138,-1.5],[141,-2.6],[145.8,-5],[147.5,-6.2],[147.8,-8],[150,-10.4],[146,-8.2],[143.5,-9],[141,-9.1],[139.2,-8.2],[138,-5],[135,-4.4],[132.5,-4]],
+  [[49.3,-12],[50.5,-15.5],[49.7,-17.5],[48,-23],[47,-25],[45,-25.5],[43.6,-23.5],[43.3,-21.8],[44.4,-19.5],[44,-17],[46.5,-15.8],[48,-13.5]],
+  [[79.8,8],[80,9.8],[81,8.5],[81.8,7.4],[81.2,6.2],[80.1,6]],
+  [[-85,21.9],[-82,23.2],[-77.5,22.2],[-74.2,20.2],[-77.5,19.9],[-80,21.7]],
+  [[113.4,-22],[113.5,-26],[114.9,-29],[115,-33.6],[116.5,-35],[118,-35],[123.5,-33.9],[126,-32.3],[131,-31.5],[134.2,-32.6],[135.7,-34.8],[137.8,-32.6],[137.8,-35.6],[140,-37.5],[143.5,-38.8],[146.3,-39.1],[148,-37.8],[150,-37.4],[151.2,-33.8],[153,-31],[153.6,-28.2],[153,-25.3],[150.8,-22.6],[149.3,-21.2],[146.3,-19],[145.4,-16],[143.5,-14.2],[142.5,-10.7],[141.5,-13.5],[141.6,-17],[140.5,-17.6],[139,-17],[135.5,-15],[136.8,-12.2],[133.5,-11.8],[132.5,-11.3],[130,-12.8],[129.4,-14.9],[126.8,-13.9],[125,-15],[122.8,-16.5],[122,-18.2],[119.5,-20],[116.7,-20.6],[114,-21.8]],
+  [[172.7,-34.4],[174.6,-36.5],[175.9,-37.4],[178.4,-37.7],[177,-39.3],[176,-41.3],[174.7,-41.3],[175.2,-40],[173.8,-39.2],[174.6,-37.5]],
+  [[172.7,-40.5],[174.3,-41.7],[172.8,-43.6],[171.2,-44.5],[170.6,-45.9],[168.4,-46.6],[166.5,-46],[166.7,-45.3],[168.3,-44],[170.6,-43],[172.1,-41.4]],
+  [[-17,21],[-16.5,19],[-16.7,15],[-17.2,14.7],[-16.7,12.5],[-15,11],[-13.3,9.5],[-11.4,6.9],[-7.6,4.4],[-4,5.2],[-1.9,4.8],[1,6],[2.7,6.3],[5.5,4.3],[7,4.4],[8.5,4.6],[9.7,3.6],[9.8,1],[9.3,-1.5],[11.8,-4.8],[12.2,-6],[13.3,-9],[13.6,-12],[12.4,-14],[11.8,-17.3],[14.5,-22.5],[15.2,-26.8],[16.5,-28.6],[18.4,-34],[20,-34.8],[22.5,-34],[25.6,-33.8],[27.5,-33.2],[30,-31.2],[32.5,-28.5],[32.9,-26],[35.5,-24],[35.5,-21],[34.8,-19.8],[37,-17.5],[40.4,-15],[40.5,-10.5],[39.3,-8],[39.2,-4.7],[41,-2],[43.5,0.9],[46,2.4],[48.6,5.6],[51.2,10.5],[51.2,11.8],[48.5,11.2],[45,10.5],[43.4,11.5],[42.7,13],[39.5,15.6],[38.5,18],[37.3,21],[35.7,23.9],[34.5,26.5],[32.6,29.9],[32.3,31.2],[30,31.4],[28.5,31],[25,31.6],[23,32.6],[20,30.9],[20,32.2],[16.5,31.2],[15.2,32.3],[11.5,33.2],[10.2,34.3],[11,35.2],[10.3,36.8],[11,37],[9.8,37.3],[8,36.9],[3,36.8],[-1,35.3],[-2.2,35.1],[-5.9,35.8],[-6.9,34],[-9.6,32.2],[-9.7,30.4],[-11.5,28.2],[-13.2,27.5],[-14.8,25.9]],
+  [[-180,-78],[-160,-78],[-150,-77],[-140,-75],[-120,-73.5],[-100,-73],[-80,-73],[-70,-69],[-62,-64],[-57,-63.5],[-60,-68],[-62,-73],[-60,-75.5],[-45,-78],[-30,-77],[-20,-73],[-10,-71],[0,-70],[20,-70],[40,-69.5],[60,-67],[80,-67],[100,-66],[120,-66.5],[140,-66.5],[160,-70],[170,-72],[167,-77]]
+];
+const JAZERA = [
+  [[27.6,42.5],[28,43.5],[29.7,45.3],[30.8,46.5],[31.8,46.6],[33.5,46],[32.6,45.4],[33.6,44.4],[35.2,44.8],[36.6,45.2],[35.5,45.4],[34.8,46.1],[35.3,46.5],[37.5,47.1],[39.2,47.2],[38.2,46.5],[37.6,45.7],[36.8,45.1],[38.5,44.4],[39.8,43.5],[41.5,42],[41.6,41.6],[39,41],[36.5,41.3],[35,42],[33,42],[31,41.1],[29,41.2],[28,41.8]],
+  [[47,44.5],[46.8,45.9],[49,46.6],[51.2,47],[53,46.8],[53.2,45.3],[51.3,44.5],[52.7,42.5],[53,40.6],[52.8,39.5],[53.9,37.3],[51,36.8],[49.2,37.6],[48.9,38.4],[49.5,40.2],[49.3,40.8],[47.7,42.1]]
+];
+
+/* Farby objektov (používajú sa aj v legende) */
+const FARBY = {
+  slnko: '#f3b453', rovnik: '#ff7a6b', obratniky: '#f3b453', polarneKruhy: '#7fd6ff', terminator: '#ffffff',
+  tuSme: '#ff4d8d', rovnobezkaDen: '#ffe066', rovnobezkaNoc: '#b9a3ff', poludnik: '#ffd88a', os: '#e2e8f5'
+};
+
+/* =====================================================================
+   Kreslenie glóbusu Zeme (pravouhlé premietanie gule na plátno).
+   o.detail – veľký glóbus so všetkými čiarami; o.hits – zoznam pre klikanie.
+   ===================================================================== */
+function kresliZem(ctx, cx, cy, R, cam, es, o) {
+  const P = v => [dot(v, cam.r), dot(v, cam.u), dot(v, cam.d)];
+  const Xc = P(es.X), Yc = P(es.Y), Zc = P(es.Z), sc = P(es.s);
+  const det = !!o.detail, hits = o.hits, hl = S.hl;
+  const ll = (lat, lon) => {               // zemepisné súradnice → súradnice kamery
+    const f = lat * DEG, a = es.aObs + (lon - LON_KOSICE) * DEG, cf = Math.cos(f);
+    const x = cf * Math.cos(a), y = cf * Math.sin(a), z = Math.sin(f);
+    return [x * Xc[0] + y * Yc[0] + z * Zc[0], x * Xc[1] + y * Yc[1] + z * Zc[1], x * Xc[2] + y * Yc[2] + z * Zc[2]];
+  };
+  const SX = p => cx + R * p[0], SY = p => cy - R * p[1];
+  /* čiara po povrchu – kreslíme len prednú (viditeľnú) časť */
+  const ciara = (pts, key, filter) => {
+    ctx.beginPath(); let pen = false, seg = null;
+    for (const p of pts) {
+      if (p[2] >= 0 && (!filter || filter(p))) {
+        const x = SX(p), y = SY(p);
+        if (pen) ctx.lineTo(x, y); else { ctx.moveTo(x, y); pen = true; if (hits && key) { seg = []; hits.push({ k: key, pr: 2, pts: seg }); } }
+        if (seg) seg.push([x, y]);
+      } else { pen = false; seg = null; }
+    }
+    ctx.stroke();
+  };
+  const rovnobezka = lat => { const a = []; for (let l = 0; l <= 360; l += 4) a.push(ll(lat, l)); return a; };
+  const hr = k => hl === k ? 2 : 1;
+
+  ctx.save();
+  ctx.globalAlpha = o.alpha || 1;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  /* os – časti za glóbusom kreslíme ako prvé */
+  const osL = o.osL || 1.5;
+  const osa = sg => {
+    const p = mul(Zc, sg), x1 = SX(p), y1 = SY(p), x2 = cx + R * osL * p[0], y2 = cy - R * osL * p[1];
+    ctx.strokeStyle = hl === 'os' ? '#ffd88a' : FARBY.os; ctx.lineWidth = (det ? 3 : 2) * hr('os');
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    if (hits) hits.push({ k: 'os', pr: 2, pts: [[x1, y1], [x2, y2]] });
+    return [x2, y2];
+  };
+  let tipS = null, tipJ = null;
+  if (Zc[2] < 0) tipS = osa(1);
+  if (-Zc[2] < 0) tipJ = osa(-1);
+
+  /* guľa: oceán + pevnina */
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.clip();
+  const go = ctx.createRadialGradient(cx - R * .3, cy - R * .35, R * .1, cx, cy, R);
+  go.addColorStop(0, '#3d86d6'); go.addColorStop(1, '#123d78');
+  ctx.fillStyle = go; ctx.fillRect(cx - R, cy - R, 2 * R, 2 * R);
+  const kresliPolygony = (list, farba) => {
+    ctx.fillStyle = farba;
+    for (const poly of list) {
+      const pts = poly.map(([lon, lat]) => ll(lat, lon));
+      if (!pts.some(p => p[2] > 0)) continue;
+      ctx.beginPath();
+      pts.forEach((p, i) => {
+        let x = p[0], y = p[1];
+        if (p[2] < 0) { const l = Math.hypot(x, y) || 1; x /= l; y /= l; } // zadné body na okraj
+        i ? ctx.lineTo(cx + R * x, cy - R * y) : ctx.moveTo(cx + R * x, cy - R * y);
+      });
+      ctx.closePath(); ctx.fill();
+    }
+  };
+  kresliPolygony(KONTINENTY, '#5f9a52');
+  kresliPolygony(JAZERA, '#235fa8');
+
+  /* jemná sieť poludníkov a rovnobežiek (len detail) */
+  if (det) {
+    ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = 1;
+    for (const lat of [-60, -30, 30, 60]) ciara(rovnobezka(lat));
+    for (let lon = 0; lon < 360; lon += 30) { const a = []; for (let la = -90; la <= 90; la += 5) a.push(ll(la, lon)); ciara(a); }
+  }
+  /* lesk na osvetlenej strane */
+  if (sc[2] > -0.4) {
+    const gx = cx + R * sc[0], gy = cy - R * sc[1];
+    const gl = ctx.createRadialGradient(gx, gy, 0, gx, gy, R * 1.3);
+    gl.addColorStop(0, 'rgba(255,245,215,.28)'); gl.addColorStop(1, 'rgba(255,245,215,0)');
+    ctx.fillStyle = gl; ctx.fillRect(cx - R, cy - R, 2 * R, 2 * R);
+  }
+  /* nočná polovica: polkruh terminátora + okraj gule na odvrátenej strane */
+  ctx.fillStyle = 'rgba(3,6,18,.74)';
+  const k = Math.hypot(sc[0], sc[1]);
+  let termU = null, termV = null;
+  ctx.beginPath();
+  if (k < 1e-6) { if (sc[2] < 0) ctx.arc(cx, cy, R, 0, TAU); }
+  else {
+    termU = [-sc[1] / k, sc[0] / k, 0]; termV = cross(sc, termU);
+    for (let i = 0; i <= 48; i++) {
+      const t = Math.PI * i / 48, x = Math.cos(t) * termU[0] + Math.sin(t) * termV[0], y = Math.cos(t) * termU[1] + Math.sin(t) * termV[1];
+      i ? ctx.lineTo(cx + R * x, cy - R * y) : ctx.moveTo(cx + R * x, cy - R * y);
+    }
+    const a0 = Math.atan2(-termU[1], -termU[0]), aN = Math.atan2(-sc[1], -sc[0]);
+    let diff = (aN - a0) % TAU; if (diff < 0) diff += TAU;
+    const smer = diff < Math.PI ? 1 : -1;
+    for (let i = 1; i <= 48; i++) { const a = a0 + smer * Math.PI * i / 48; ctx.lineTo(cx + R * Math.cos(a), cy - R * Math.sin(a)); }
+    ctx.closePath();
+  }
+  ctx.fill();
+  /* stmavnutie okraja – dojem gule */
+  const gr = ctx.createRadialGradient(cx, cy, R * .6, cx, cy, R);
+  gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.35)');
+  ctx.fillStyle = gr; ctx.fillRect(cx - R, cy - R, 2 * R, 2 * R);
+  ctx.restore();
+
+  /* atmosféra */
+  ctx.strokeStyle = 'rgba(120,180,255,.45)'; ctx.lineWidth = det ? 2 : 1;
+  ctx.beginPath(); ctx.arc(cx, cy, R + (det ? 1 : .5), 0, TAU); ctx.stroke();
+  if (hits) hits.push({ k: 'zem', pr: 3, c: [cx, cy, R] });
+
+  /* čiary na povrchu */
+  if (det) {
+    ctx.setLineDash([7, 6]);
+    ctx.strokeStyle = FARBY.obratniky; ctx.lineWidth = 2 * hr('obratniky');
+    ciara(rovnobezka(23.44), 'obratniky'); ciara(rovnobezka(-23.44), 'obratniky');
+    ctx.strokeStyle = FARBY.polarneKruhy; ctx.lineWidth = 2 * hr('polarneKruhy');
+    ciara(rovnobezka(66.56), 'polarneKruhy'); ciara(rovnobezka(-66.56), 'polarneKruhy');
+    /* poludník, kde je práve poludnie */
+    ctx.setLineDash([2, 6]); ctx.strokeStyle = FARBY.poludnik; ctx.lineWidth = 2.5 * hr('poludnik');
+    const lonP = LON_KOSICE + (es.aS - es.aObs) / DEG, mp = [];
+    for (let la = -90; la <= 90; la += 3) mp.push(ll(la, lonP));
+    ciara(mp, 'poludnik');
+    ctx.setLineDash([]);
+    /* naša rovnobežka: žltá vo dne, fialová v noci */
+    const rp = rovnobezka(fiPoz()), lit = p => dot(p, sc) > 0;
+    ctx.lineWidth = 3.5 * hr('rovnobezka');
+    ctx.strokeStyle = FARBY.rovnobezkaDen; ciara(rp, 'rovnobezka', lit);
+    ctx.strokeStyle = FARBY.rovnobezkaNoc; ciara(rp, 'rovnobezka', p => !lit(p));
+  }
+  ctx.strokeStyle = FARBY.rovnik; ctx.lineWidth = (det ? 2.5 : 1.5) * hr('rovnik');
+  ciara(rovnobezka(0), det ? 'rovnik' : null);
+  /* terminátor */
+  if (termU) {
+    ctx.strokeStyle = FARBY.terminator; ctx.lineWidth = (det ? 2.5 : 1.2) * hr('terminator');
+    const tp = []; for (let i = 0; i <= 64; i++) { const t = Math.PI * i / 64; tp.push(add(mul(termU, Math.cos(t)), termV, Math.sin(t))); }
+    ciara(tp, det ? 'terminator' : null);
+  }
+  /* predné časti osi */
+  if (Zc[2] >= 0) tipS = osa(1);
+  if (-Zc[2] >= 0) tipJ = osa(-1);
+  if (det) {             // os prechádza Zemou – prerušovane
+    ctx.setLineDash([4, 5]); ctx.strokeStyle = 'rgba(226,232,245,.45)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(SX(Zc), SY(Zc)); ctx.lineTo(SX(mul(Zc, -1)), SY(mul(Zc, -1))); ctx.stroke(); ctx.setLineDash([]);
+  }
+  /* póly */
+  const pol = (p, tip, txt) => {
+    if (p[2] >= 0) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(SX(p), SY(p), det ? 4.5 : 2.5, 0, TAU); ctx.fill(); if (hits) hits.push({ k: 'poly', pr: 1, c: [SX(p), SY(p), 4] }); }
+    if (o.popisPolov && tip) {
+      ctx.font = FONT(16, 700); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const dx = tip[0] - cx, dy = tip[1] - cy, l = Math.hypot(dx, dy) || 1;
+      const tx = tip[0] + dx / l * 13, ty = tip[1] + dy / l * 13;
+      ctx.fillStyle = 'rgba(8,12,24,.8)'; ctx.beginPath(); ctx.arc(tx, ty, 11, 0, TAU); ctx.fill();
+      ctx.fillStyle = hl === 'poly' ? '#ffd88a' : '#fff'; ctx.fillText(txt, tx, ty + 1);
+      if (hits) hits.push({ k: 'poly', pr: 1, c: [tx, ty, 11] });
+    }
+  };
+  pol(Zc, tipS, 'S'); pol(mul(Zc, -1), tipJ, 'J');
+
+  /* šípka otáčania (zo západu na východ) */
+  if (det) {
+    const th = Math.atan2(Yc[2] - 0.5 * Yc[1], Xc[2] - 0.5 * Xc[1]), rr = 1.17, pts = [];
+    for (let i = 0; i <= 30; i++) { const t = th - 0.85 + 1.7 * i / 30; pts.push(add(mul(Xc, rr * Math.cos(t)), Yc, rr * Math.sin(t))); }
+    const vid = p => p[2] >= 0 || Math.hypot(p[0], p[1]) > 1.02;
+    ctx.strokeStyle = hl === 'rotacia' ? '#ffd88a' : 'rgba(127,220,143,.95)'; ctx.lineWidth = 3 * hr('rotacia');
+    ctx.beginPath(); let pen = false; const seg = [];
+    for (const p of pts) { if (vid(p)) { const x = SX(p), y = SY(p); pen ? ctx.lineTo(x, y) : ctx.moveTo(x, y); pen = true; seg.push([x, y]); } else pen = false; }
+    ctx.stroke();
+    if (hits) hits.push({ k: 'rotacia', pr: 2, pts: seg });
+    const pA = pts[pts.length - 1], pB = pts[pts.length - 3];
+    if (vid(pA)) {
+      const ax = SX(pA), ay = SY(pA), an = Math.atan2(ay - SY(pB), ax - SX(pB));
+      ctx.fillStyle = ctx.strokeStyle; ctx.beginPath();
+      ctx.moveTo(ax + 11 * Math.cos(an), ay + 11 * Math.sin(an));
+      ctx.lineTo(ax + 9 * Math.cos(an + 2.4), ay + 9 * Math.sin(an + 2.4));
+      ctx.lineTo(ax + 9 * Math.cos(an - 2.4), ay + 9 * Math.sin(an - 2.4)); ctx.fill();
+      if (o.sirka > 330) {
+        ctx.font = FONT(16, 600); ctx.textBaseline = 'middle';
+        ctx.textAlign = ax > cx ? 'left' : 'right';
+        stitok(ctx, 'Z → V', ax + (ax > cx ? 14 : -14), ay + (ay > cy ? 12 : -12), 'rgba(127,220,143,1)');
+      }
+    }
+  }
+
+  /* bod „tu sme“ */
+  const pk = ll(fiPoz(), LON_KOSICE);
+  if (o.tuSme !== false && pk[2] >= 0) {
+    const x = SX(pk), y = SY(pk), r = det ? 7 : 3.5;
+    ctx.fillStyle = FARBY.tuSme; ctx.strokeStyle = '#fff'; ctx.lineWidth = det ? 2.5 : 1.5;
+    ctx.beginPath(); ctx.arc(x, y, r * (hl === 'tuSme' ? 1.4 : 1), 0, TAU); ctx.fill(); ctx.stroke();
+    if (hits) hits.push({ k: 'tuSme', pr: 0, c: [x, y, r + 2] });
+    if (det) {
+      ctx.font = FONT(16, 700); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      const lx = x + 12, ly = y - 16;
+      stitok(ctx, 'tu sme', lx, ly, '#ffd0e0');
+      if (hits) hits.push({ k: 'tuSme', pr: 0, c: [lx + 26, ly, 16] });
+    }
+  }
+  ctx.restore();
+  return { tuSmeVidno: pk[2] >= 0, sc };
+}
+
+/* Text s tmavým podkladom */
+function stitok(ctx, t, x, y, farba) {
+  const w = ctx.measureText(t).width, al = ctx.textAlign;
+  const x0 = al === 'center' ? x - w / 2 : al === 'right' ? x - w : x;
+  ctx.fillStyle = 'rgba(8,12,24,.78)';
+  ctx.fillRect(x0 - 5, y - 11, w + 10, 22);
+  ctx.fillStyle = farba || '#e2e8f5'; ctx.fillText(t, x, y + 1);
+}
+
+/* ===== Plátna ===== */
+let DPR = 1;
+const cvScena = $('#cvScena'), cvZem = $('#cvZem'), cvPas = $('#cvPas'), cvObloha = $('#cvObloha'),
+  cvLuce = $('#cvLuce'), cvDraha = $('#cvDraha'), cvGVzd = $('#cvGVzd'), cvGVys = $('#cvGVys'), cvGDen = $('#cvGDen'),
+  cvZat = $('#cvZat'), cvNebo = $('#cvNebo'), cvUzol1 = $('#cvUzol1'), cvUzol2 = $('#cvUzol2');
+function nastavPlatno(cv, h) {
+  const w = cv.clientWidth || 300;
+  cv.style.height = h + 'px';
+  cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  cv._w = w; cv._h = h;
+}
+function zacni(cv) {
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, cv._w, cv._h);
+  return { ctx, W: cv._w, H: cv._h };
+}
+let poslednaSirka = 0;
+function rozmery() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  const ws = cvScena.clientWidth;
+  nastavPlatno(cvScena, Math.round(clamp(ws * 0.66, ws < 600 ? 270 : 320, Math.min(640, window.innerHeight * 0.72))));
+  nastavPlatno(cvZem, Math.round(clamp(cvZem.clientWidth * 0.85, 280, 400)));
+  nastavPlatno(cvPas, 62);
+  nastavPlatno(cvObloha, 210);
+  nastavPlatno(cvLuce, cvLuce.clientWidth < 520 ? 270 : 330);
+  nastavPlatno(cvDraha, Math.round(clamp(cvDraha.clientWidth * 0.82, 240, 320)));
+  for (const c of [cvGVzd, cvGVys, cvGDen]) nastavPlatno(c, Math.round(clamp(cvDraha.clientWidth * 0.82, 240, 320)));
+  nastavPlatno(cvZat, Math.round(clamp(cvZat.clientWidth * 0.5, 230, 420)));
+  nastavPlatno(cvNebo, Math.round(clamp(cvNebo.clientWidth * 0.62, 200, 280)));
+  nastavPlatno(cvUzol1, 190); nastavPlatno(cvUzol2, 190);
+  S.dirty = true; Z.dirty = true; kresliUzly();
+}
+
+/* ===== Hlavná scéna: Slnko a Zem na dráhe ===== */
+const HVIEZDY = (() => { let x = 12345; const r = () => (x = (x * 16807) % 2147483647) / 2147483647; return Array.from({ length: 170 }, () => [r(), r(), r() * 1.2 + .3, r() * .6 + .25]); })();
+let hitsScena = [], hitsZem = [];
+
+function kresliScenu() {
+  const { ctx, W, H } = zacni(cvScena);
+  hitsScena = [];
+  for (const [x, y, r, a] of HVIEZDY) { ctx.fillStyle = `rgba(220,230,255,${a})`; ctx.fillRect(x * W, y * H, r, r); }
+  const cam = kameraScena(S.az, S.el), se = Math.max(Math.sin(S.el), 0.02);
+  const Ro = Math.max(60, Math.min((W - 90) / 2.25, (H - (W < 600 ? 100 : 150)) / (2 * se + 0.5)));
+  const Re = clamp(Ro * 0.13, 13, 44), Rs = clamp(Ro * 0.14, 14, 48);
+  const cx = W / 2, cy = H / 2 - 6;
+  const PS = v => [cx + Ro * dot(v, cam.r), cy - Ro * dot(v, cam.u), dot(v, cam.d)];
+  const hl = S.hl;
+
+  /* dráha */
+  ctx.strokeStyle = hl === 'draha' ? 'rgba(255,216,138,.9)' : 'rgba(150,170,225,.5)'; ctx.lineWidth = hl === 'draha' ? 3 : 1.5;
+  ctx.beginPath(); const op = [];
+  for (let i = 0; i <= 160; i++) { const L = TAU * i / 160, p = PS([Math.cos(L), Math.sin(L), 0]); op.push([p[0], p[1]]); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }
+  ctx.stroke(); hitsScena.push({ k: 'draha', pr: 2, pts: op });
+  /* šípky smeru obehu (proti smeru hodinových ručičiek pri pohľade zo severu) */
+  ctx.fillStyle = ctx.strokeStyle;
+  for (const L of [TAU / 8, 3 * TAU / 8, 5 * TAU / 8, 7 * TAU / 8]) {
+    const a = PS([Math.cos(L), Math.sin(L), 0]), b = PS([Math.cos(L + .04), Math.sin(L + .04), 0]);
+    const an = Math.atan2(b[1] - a[1], b[0] - a[0]);
+    ctx.beginPath(); ctx.moveTo(a[0] + 9 * Math.cos(an), a[1] + 9 * Math.sin(an));
+    ctx.lineTo(a[0] + 7 * Math.cos(an + 2.5), a[1] + 7 * Math.sin(an + 2.5)); ctx.lineTo(a[0] + 7 * Math.cos(an - 2.5), a[1] + 7 * Math.sin(an - 2.5)); ctx.fill();
+  }
+
+  const Ng = S.den + (S.hod - 12) / 24, es = stavZeme(Ng, S.hod);
+  const polohaZeme = e => norm([-e.s[0], -e.s[1], 0]);
+  const veci = [];
+  /* Slnko */
+  veci.push({ z: 0, f: () => {
+    const g = ctx.createRadialGradient(cx, cy, Rs * .3, cx, cy, Rs * 3);
+    g.addColorStop(0, 'rgba(255,200,90,.55)'); g.addColorStop(1, 'rgba(255,150,40,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, Rs * 3, 0, TAU); ctx.fill();
+    const g2 = ctx.createRadialGradient(cx - Rs * .3, cy - Rs * .3, Rs * .1, cx, cy, Rs);
+    g2.addColorStop(0, '#fff6d0'); g2.addColorStop(.55, '#ffd25a'); g2.addColorStop(1, '#f39a2c');
+    ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(cx, cy, Rs, 0, TAU); ctx.fill();
+    if (hl === 'slnko') { ctx.strokeStyle = '#ffd88a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, Rs + 6, 0, TAU); ctx.stroke(); }
+    ctx.font = FONT(16, 700); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    stitok(ctx, 'Slnko', cx, cy + Rs + 18, '#ffd88a');
+    hitsScena.push({ k: 'slnko', pr: 3, c: [cx, cy, Rs + 4] });
+  } });
+  /* štyri kľúčové polohy */
+  const Nint = denInt();
+  TEXTY.kluceveDni.forEach(kd => {
+    const e = stavZeme(kd.N, 12), pz = polohaZeme(e), p = PS(pz), Rg = Re * 0.62;
+    let dd = Math.abs(kd.N - Ng) % 365; dd = Math.min(dd, 365 - dd);
+    const aktivny = Math.abs(kd.N - Nint) < 1;
+    veci.push({ z: p[2], f: () => {
+      if (dd > 14) kresliZem(ctx, p[0], p[1], Rg, cam, e, { alpha: .55, osL: 1.7, tuSme: false });
+      const k = 'den:' + kd.N;
+      ctx.strokeStyle = aktivny || hl === k ? '#ffd88a' : 'rgba(243,180,83,.55)'; ctx.lineWidth = aktivny || hl === k ? 2.5 : 1.5;
+      ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.arc(p[0], p[1], Rg + 6, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+      const dx = p[0] - cx, dy = p[1] - cy, l = Math.hypot(dx, dy) || 1;
+      const off = Rg + 22 + (Math.abs(dx / l) > .6 ? 16 : 0);
+      ctx.font = FONT(16, 700); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const tx = clamp(p[0] + dx / l * off, 34, W - 34), ty = clamp(p[1] + dy / l * off, 14, H - 70);
+      stitok(ctx, kd.kratko, tx, ty, aktivny ? '#ffd88a' : '#e2e8f5');
+      hitsScena.push({ k, pr: 1, c: [p[0], p[1], Math.max(Rg + 8, 22)] });
+      hitsScena.push({ k, pr: 1, c: [tx, ty, 22] });
+    } });
+  });
+  /* aktuálna Zem */
+  const pz = PS(polohaZeme(es));
+  veci.push({ z: pz[2] + 0.001, f: () => {
+    kresliZem(ctx, pz[0], pz[1], Re, cam, es, { hits: hitsScena, osL: 1.75, popisPolov: Re > 20 });
+    if (hl === 'zem') { ctx.strokeStyle = '#ffd88a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(pz[0], pz[1], Re + 6, 0, TAU); ctx.stroke(); }
+  } });
+  veci.sort((a, b) => a.z - b.z).forEach(v => v.f());
+
+  /* ukazovateľ smeru osi k Polárke (vpravo hore) */
+  const zc = [dot(es.Z, cam.r), dot(es.Z, cam.u)], zl = Math.hypot(zc[0], zc[1]);
+  const bx = W - 46, by = 110;
+  ctx.strokeStyle = hl === 'polarka' ? '#ffd88a' : 'rgba(226,232,245,.85)'; ctx.lineWidth = 2;
+  if (zl > 0.15) {
+    const ex = bx + zc[0] / zl * 42 * Math.min(1, zl + .2), ey = by - zc[1] / zl * 42 * Math.min(1, zl + .2);
+    ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(ex, ey); ctx.stroke();
+    hviezdicka(ctx, ex, ey, 7, '#fff3c4');
+  } else hviezdicka(ctx, bx, by, 8, '#fff3c4');
+  ctx.font = FONT(16, 600); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  stitok(ctx, 'k Polárke', bx - 8, by + 24, '#fff3c4');
+  hitsScena.push({ k: 'polarka', pr: 1, c: [bx, by - 10, 36] });
+}
+function hviezdicka(ctx, x, y, r, f) {
+  ctx.fillStyle = f; ctx.beginPath();
+  for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; ctx.lineTo(x + rr * Math.cos(a), y + rr * Math.sin(a)); }
+  ctx.fill();
+}
+
+/* ===== Detail Zeme ===== */
+function kresliDetail() {
+  const { ctx, W, H } = zacni(cvZem);
+  hitsZem = [];
+  const Ng = S.den + (S.hod - 12) / 24, es = stavZeme(Ng, S.hod), cam = kameraDetail(es);
+  const R = Math.min(W, H) * 0.33, cx = W / 2, cy = H / 2 + 4;
+  const sc = [dot(es.s, cam.r), dot(es.s, cam.u), dot(es.s, cam.d)], k = Math.hypot(sc[0], sc[1]);
+  /* slnečné lúče prichádzajúce zo strany Slnka */
+  if (k > 0.25) {
+    const ux = sc[0] / k, uy = -sc[1] / k, px = -uy, py = ux;
+    ctx.strokeStyle = S.hl === 'luce' ? '#ffd88a' : 'rgba(243,180,83,.7)'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 2;
+    const seg = [];
+    for (const o of [-0.8, -0.4, 0, 0.4, 0.8]) {
+      const ox = cx + px * o * R, oy = cy + py * o * R, dIn = Math.sqrt(1 - o * o) * R + 8;
+      const x1 = ox + ux * (R * 1.48), y1 = oy + uy * (R * 1.48), x2 = ox + ux * dIn, y2 = oy + uy * dIn;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 + ux * 9 + px * 5, y2 + uy * 9 + py * 5); ctx.lineTo(x2 + ux * 9 - px * 5, y2 + uy * 9 - py * 5); ctx.fill();
+      seg.push([x1, y1], [x2, y2]);
+    }
+    hitsZem.push({ k: 'luce', pr: 2, pts: seg.slice(0, 2) }, { k: 'luce', pr: 2, pts: seg.slice(4, 6) }, { k: 'luce', pr: 2, pts: seg.slice(8, 10) });
+    ctx.font = FONT(16, 600); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    stitok(ctx, 'Slnko', clamp(cx + ux * R * 1.4, 34, W - 34), clamp(cy + uy * R * 1.4 - (Math.abs(uy) < .5 ? R * .95 : 0), 14, H - 14), '#ffd88a');
+  }
+  const r = kresliZem(ctx, cx, cy, R, cam, es, { detail: true, hits: hitsZem, osL: 1.32, popisPolov: true, sirka: W });
+  setText($('#zadu'), r.tuSmeVidno ? '' : TEXTY.ui.zadu);
+}
+
+/* ===== Panel „tu sme“ ===== */
+const cache = new Map();
+function setText(el, s, html) { if (cache.get(el) === s) return; cache.set(el, s); if (html) el.innerHTML = s; else el.textContent = s; }
+
+function aktualizujPanel() {
+  const T = TEXTY.tuSme, N = denInt(), fi = fiPoz(), sk = sklon();
+  const d = deklinacia(N, sk), Ng = S.den + (S.hod - 12) / 24, dTeraz = deklinacia(Ng, sk);
+  setText($('#tsNazov'), S.juh ? T.nazovJuh : T.nazovSever);
+  setText($('#tsSirka'), S.juh ? T.sirkaJuh : T.sirkaSever);
+  const a = vyskaSlnka(fi, dTeraz, S.hod), stav = $('#tsStav');
+  const typ = a > 0 ? 'den' : a > -6 ? 'sumrak' : 'noc';
+  setText(stav, T[typ]); stav.className = typ;
+  setText($('#tsStavPop'), sablona(a > 0 ? T.nadObzorom : a > -6 ? T.sumrakPop : T.podObzorom, { v: nf(Math.abs(a), Math.abs(a) < 2 ? 1 : 0) }));
+  setText($('#tsCas'), fmtCas(S.hod));
+  /* miestne poludnie a čas na hodinkách (len pre Košice) */
+  let pol = T.poludnieHodnota;
+  if (!S.juh) {
+    const h = 12 - (LON_KOSICE - 15) / 15 - casovaRovnica(N) / 60;
+    pol += '<br><small>' + sablona(N >= 88 && N <= 300 ? T.hodinkySELC : T.hodinkySEC, { c: fmtCas(N >= 88 && N <= 300 ? h + 1 : h) }) + '</small>';
+  }
+  setText($('#tsPoludnie'), pol, true);
+  const hn = poludnajsiaVyska(fi, d);
+  const kde = Math.abs(fi - d) < 0.05 ? T.nadHlavou : fi > d ? T.naJuhu : T.naSevere;
+  setText($('#tsVyska'), hn > 0 ? `<b>${nf(hn, 1)}°</b> <small>(${kde})</small>` : `<b>${nf(hn, 1)}°</b> <small>(${T.polarnaNoc})</small>`, true);
+  const dl = dlzkaDna(fi, d);
+  setText($('#tsDlzka'), `<b>${fmtTrvanie(dl.hodiny)}</b>` + (dl.typ === 'polarnyDen' ? `<br><small>${T.polarnyDen}</small>` : dl.typ === 'polarnaNoc' ? `<br><small>${T.polarnaNoc}</small>` : ''), true);
+  setText($('#tsVZ'), dl.typ === 'bezny' ? `${fmtCas(12 - dl.hodiny / 2)} / ${fmtCas(12 + dl.hodiny / 2)}` : '—');
+  setText($('#tsNadhl'), sirkaText(d));
+  /* tabuľka iných miest */
+  let html = '';
+  for (const m of T.miesta) {
+    const lat = (m.n === 'Košice' && S.juh) ? -LAT_KOSICE : m.lat;
+    const nazov = (m.n === 'Košice' && S.juh) ? '48,7° j. š.' : m.n;
+    const dd = dlzkaDna(lat, d), v = poludnajsiaVyska(lat, d);
+    const den = dd.typ === 'polarnyDen' ? '24 h ☀️' : dd.typ === 'polarnaNoc' ? '0 h 🌙' : fmtTrvanie(dd.hodiny);
+    html += `<tr class="${m.n === 'Košice' ? 'ja' : ''}"><td>${nazov}</td><td>${den}</td><td>${v > 0 ? nf(v, 1) + '°' : T.podObz}</td></tr>`;
+  }
+  setText($('#tsInde'), html, true);
+}
+
+/* 24-hodinový pás: deň a noc */
+function kresliPas() {
+  const { ctx, W, H } = zacni(cvPas);
+  const fi = fiPoz(), d = deklinacia(denInt(), sklon()), dl = dlzkaDna(fi, d);
+  const x0 = 10, x1 = W - 10, y0 = 6, h = 24, X = t => x0 + (x1 - x0) * t / 24;
+  ctx.fillStyle = '#251d52'; ctx.fillRect(x0, y0, x1 - x0, h);
+  ctx.fillStyle = '#f3b453';
+  if (dl.typ === 'polarnyDen') ctx.fillRect(x0, y0, x1 - x0, h);
+  else if (dl.typ !== 'polarnaNoc') ctx.fillRect(X(12 - dl.hodiny / 2), y0, X(12 + dl.hodiny / 2) - X(12 - dl.hodiny / 2), h);
+  ctx.font = FONT(16, 500); ctx.fillStyle = '#a3adc6'; ctx.textBaseline = 'top';
+  for (const t of [0, 6, 12, 18, 24]) { ctx.textAlign = t === 0 ? 'left' : t === 24 ? 'right' : 'center'; ctx.fillText(t + ':00', X(t), y0 + h + 6); ctx.fillRect(X(t) - .5, y0 + h, 1, 4); }
+  const xc = X(S.hod); ctx.fillStyle = '#fff'; ctx.fillRect(xc - 1.5, y0 - 4, 3, h + 8);
+}
+
+/* Dráha Slnka po oblohe (pohľad na juh; na južnej pologuli na sever) */
+function kresliOblohu() {
+  const { ctx, W, H } = zacni(cvObloha);
+  const fi = fiPoz(), sk = sklon(), c = S.juh ? 0 : 180;
+  const y0 = H - 38, top = 16, kY = (y0 - top) / 90;
+  const X = az => { let w = ((az - c + 540) % 360) - 180; return W / 2 + w / 180 * (W / 2 - 12); };
+  const Y = alt => y0 - alt * kY;
+  /* obloha a mriežka */
+  const g = ctx.createLinearGradient(0, top, 0, y0); g.addColorStop(0, '#0d1a3a'); g.addColorStop(1, '#1d3566');
+  ctx.fillStyle = g; ctx.fillRect(0, top, W, y0 - top);
+  ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.lineWidth = 1;
+  for (const a of [30, 60]) { ctx.beginPath(); ctx.moveTo(0, Y(a)); ctx.lineTo(W, Y(a)); ctx.stroke(); }
+  ctx.font = FONT(16, 500); ctx.fillStyle = 'rgba(163,173,198,.85)'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  ctx.fillText('30°', 4, Y(30) - 1); ctx.fillText('60°', 4, Y(60) - 1);
+  /* zem a svetové strany */
+  ctx.fillStyle = '#1c3020'; ctx.fillRect(0, y0, W, H - y0);
+  ctx.strokeStyle = '#7fdc8f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(W, y0); ctx.stroke();
+  ctx.font = FONT(16, 700); ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+  const strany = [[90, 'východ'], [180, 'juh'], [270, 'západ'], [0, 'sever']];
+  for (const [az, t] of strany) {
+    const x = X(az);
+    if (x < 30 || x > W - 30) continue;
+    ctx.fillStyle = (az === c) ? '#ffd88a' : '#e2e8f5'; ctx.fillText(t, x, y0 + 19);
+  }
+  /* dráhy Slnka */
+  const draha = (N, styl, sirka) => {
+    const d = deklinacia(N, sk);
+    ctx.strokeStyle = styl; ctx.lineWidth = sirka; ctx.beginPath();
+    let pen = false, px = 0;
+    for (let h = 0; h <= 24.001; h += 0.1) {
+      const alt = vyskaSlnka(fi, d, h);
+      if (alt < 0) { pen = false; continue; }
+      const x = X(azimutSlnka(fi, d, h)), y = Y(alt);
+      if (pen && Math.abs(x - px) < W / 2) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+      pen = true; px = x;
+    }
+    ctx.stroke();
+  };
+  if (S.sklonOn) { draha(172, 'rgba(255,122,107,.55)', 2); draha(355, 'rgba(111,180,255,.6)', 2); }
+  draha(denInt(), '#f3b453', 4);
+  /* Slnko teraz */
+  const d = deklinacia(denInt(), sk), alt = vyskaSlnka(fi, d, S.hod);
+  if (alt > -2) {
+    const x = X(azimutSlnka(fi, d, S.hod)), y = Y(Math.max(alt, 0));
+    ctx.fillStyle = '#fff3c4'; ctx.beginPath(); ctx.arc(x, y, 9, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#f39a2c'; ctx.lineWidth = 2; ctx.stroke();
+  } else {
+    ctx.font = FONT(16, 600); ctx.fillStyle = '#b9a3ff'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('Slnko je pod obzorom', W / 2, top + 6);
+  }
+}
+
+/* ===== Uhol dopadu lúčov ===== */
+function kresliLuce() {
+  const { ctx, W, H } = zacni(cvLuce);
+  const fi = fiPoz(), sk = sklon(), N = denInt();
+  const gy = H - 64, gx = W * 0.6, px = clamp(W / 7.5, 44, 86);
+  /* zem s mriežkou po 1 m */
+  ctx.fillStyle = '#1c3020'; ctx.fillRect(0, gy, W, H - gy);
+  ctx.strokeStyle = '#7fdc8f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+  ctx.strokeStyle = 'rgba(127,220,143,.4)'; ctx.lineWidth = 1;
+  for (let x = gx % px; x < W; x += px) { ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x, gy + 10); ctx.stroke(); }
+  const zvazok = (a, farba, plny) => {
+    if (a <= 0.3) return null;
+    const ar = a * DEG, L = px / Math.sin(ar), dx = -Math.cos(ar), dy = -Math.sin(ar), far = 3 * Math.max(W, H);
+    const x1 = gx - L / 2, x2 = gx + L / 2;
+    if (plny) {
+      const g = ctx.createLinearGradient(gx + dx * 300, gy + dy * 300, gx, gy);
+      g.addColorStop(0, 'rgba(243,180,83,.08)'); g.addColorStop(1, 'rgba(243,180,83,.4)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x1, gy); ctx.lineTo(x1 + dx * far, gy + dy * far); ctx.lineTo(x2 + dx * far, gy + dy * far); ctx.lineTo(x2, gy); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,216,138,.85)'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < 5; i++) { const x = x1 + (i + .5) / 5 * L; ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x + dx * far, gy + dy * far); ctx.stroke(); }
+    } else {
+      ctx.strokeStyle = farba; ctx.lineWidth = 2; ctx.setLineDash([6, 6]);
+      for (const x of [x1, x2]) { ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x + dx * far, gy + dy * far); ctx.stroke(); }
+      ctx.setLineDash([]);
+    }
+    return { x1, x2, L, dx, dy };
+  };
+  const aLeto = S.sklonOn ? poludnajsiaVyska(fi, deklinacia(172, sk)) : null;
+  const aZima = S.sklonOn ? poludnajsiaVyska(fi, deklinacia(355, sk)) : null;
+  if (aLeto !== null) zvazok(aLeto, 'rgba(255,122,107,.8)', false);
+  if (aZima !== null) zvazok(aZima, 'rgba(111,180,255,.85)', false);
+  const a = poludnajsiaVyska(fi, deklinacia(N, sk));
+  const z = zvazok(a, null, true);
+  /* osvetlené pásy na zemi */
+  const pas = (aa, farba, y) => { if (aa === null || aa <= 0.3) return; const L = px / Math.sin(aa * DEG); ctx.fillStyle = farba; ctx.fillRect(clamp(gx - L / 2, 0, W), y, clamp(gx + L / 2, 0, W) - clamp(gx - L / 2, 0, W), 6); };
+  pas(aLeto, '#ff7a6b', gy + 16); pas(aZima, '#6fb4ff', gy + 26);
+  if (z) {
+    ctx.fillStyle = '#ffd88a'; ctx.fillRect(clamp(z.x1, 0, W), gy - 3, clamp(z.x2, 0, W) - clamp(z.x1, 0, W), 7);
+    /* uhol */
+    ctx.strokeStyle = '#ffd88a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(z.x2, gy, 40, -Math.PI + a * DEG, -Math.PI, true); ctx.stroke();
+    ctx.font = FONT(17, 700); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const am = -Math.PI + a * DEG / 2;
+    stitok(ctx, nf(a, 0) + '°', z.x2 + 62 * Math.cos(am) - (a < 25 ? 0 : 0), gy + 62 * Math.sin(am) - (a < 12 ? 12 : 0), '#ffd88a');
+    /* Slnko a šírka zväzku 1 m */
+    const D = Math.min((gx - 34) / Math.max(-z.dx, .01), (gy - 34) / Math.max(-z.dy, .01));
+    const sx = gx + z.dx * D, sy = gy + z.dy * D;
+    const g = ctx.createRadialGradient(sx, sy, 2, sx, sy, 26); g.addColorStop(0, '#fff6d0'); g.addColorStop(.5, '#ffd25a'); g.addColorStop(1, 'rgba(243,154,44,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, 26, 0, TAU); ctx.fill();
+    const mx = gx + z.dx * D * 0.55, my = gy + z.dy * D * 0.55, nx = z.dy, ny = -z.dx;
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.moveTo(mx - nx * px / 2, my - ny * px / 2); ctx.lineTo(mx + nx * px / 2, my + ny * px / 2); ctx.stroke();
+    ctx.font = FONT(16, 700); ctx.textAlign = 'left';
+    stitok(ctx, '1 m', mx + Math.abs(nx) * px / 2 + 10, my + 4, '#fff');
+    ctx.textAlign = 'center';
+    stitok(ctx, `${TEXTY.luce.pas}: ${nf(z.L / px, 1)} m`, clamp(gx, 110, W - 110), gy + 46, '#ffd88a');
+  }
+  /* texty pod obrázkom */
+  const dTxt = datum(N);
+  setText($('#luceText'), a > 0.3
+    ? sablona(TEXTY.luce.vysledok, { d: dTxt, a: nf(a, 0), l: nf(1 / Math.sin(a * DEG), 2), p: nf(100 * Math.sin(a * DEG), 0) })
+    : sablona(TEXTY.luce.podObzorom, { d: dTxt }), true);
+  setText($('#luceRef'), S.sklonOn
+    ? `21. 6.: ${nf(aLeto, 0)}° → ${nf(1 / Math.sin(aLeto * DEG), 2)} m · 21. 12.: ${nf(aZima, 0)}° → ${aZima > 0 ? nf(1 / Math.sin(aZima * DEG), 2) + ' m' : '—'}`
+    : TEXTY.obdobia.ziadne);
+}
+
+/* ===== Časté omyly: skutočná dráha a grafy ===== */
+function kresliOmyl() {
+  const N = denInt(), Ng = S.den + (S.hod - 12) / 24;
+  { /* dráha v správnom tvare (pohľad zhora) */
+    const { ctx, W, H } = zacni(cvDraha);
+    const Rp = Math.min(W, H) * 0.36, LP = 103 * DEG;
+    const ecc = DRAHA_E, cx0 = W / 2, cy0 = H / 2 + 12;
+    const smer = L => [-Math.sin(L), -Math.cos(L)];          // rovnaká orientácia ako scéna zhora
+    const sp = smer(LP), fx = cx0 + sp[0] * ecc * Rp, fy = cy0 + sp[1] * ecc * Rp;   // Slnko v ohnisku
+    const bod = nu => { const r = (1 - ecc * ecc) / (1 + ecc * Math.cos(nu)) * Rp, d = smer(LP + nu); return [fx + d[0] * r, fy + d[1] * r]; };
+    ctx.setLineDash([5, 6]); ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(cx0, cy0, Rp, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = 'rgba(111,180,255,.9)'; ctx.lineWidth = 2.5; ctx.beginPath();
+    for (let i = 0; i <= 200; i++) { const p = bod(TAU * i / 200); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }
+    ctx.stroke();
+    const g = ctx.createRadialGradient(fx, fy, 1, fx, fy, 16); g.addColorStop(0, '#fff6d0'); g.addColorStop(.5, '#ffd25a'); g.addColorStop(1, 'rgba(243,154,44,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(fx, fy, 16, 0, TAU); ctx.fill();
+    ctx.font = FONT(16, 600); ctx.textBaseline = 'middle';
+    const pp = bod(0), pa = bod(Math.PI);
+    /* značky perihélia a afélia + popisy vo vnútri dráhy */
+    for (const [p, t] of [[pp, 'najbližšie'], [pa, 'najďalej']]) {
+      ctx.fillStyle = '#e2e8f5'; ctx.fillRect(p[0] - 1, p[1] - 8, 2, 16);
+      ctx.textAlign = p[0] < cx0 ? 'left' : 'right';
+      stitok(ctx, t, p[0] + (p[0] < cx0 ? 10 : -10), p[1] + 22, '#c9d2e6');
+    }
+    const pe = bod(anomalia(Ng));
+    ctx.strokeStyle = 'rgba(255,216,138,.7)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(pe[0], pe[1]); ctx.stroke();
+    ctx.fillStyle = '#5aa2ff'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(pe[0], pe[1], 7, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.font = FONT(16, 700);
+    ctx.fillStyle = '#ffd88a'; ctx.fillText('Zem – Slnko: ' + nf(vzdialenostOdSlnka(Ng), 1) + ' mil. km', 6, 4);
+  }
+  const fi = fiPoz(), sk = sklon();
+  graf(cvGVzd, n => vzdialenostOdSlnka(n), 0, 160, [0, 50, 100, 150], v => nf(v, 0), '#6fb4ff', Ng, nf(vzdialenostOdSlnka(Ng), 1));
+  graf(cvGVys, n => poludnajsiaVyska(fi, deklinacia(n, sk)), 0, 90, [0, 30, 60, 90], v => v + '°', '#f3b453', N, nf(poludnajsiaVyska(fi, deklinacia(N, sk)), 0) + '°');
+  graf(cvGDen, n => dlzkaDna(fi, deklinacia(n, sk)).hodiny, 0, 24, [0, 6, 12, 18, 24], v => v + ' h', '#ff7a6b', N, fmtTrvanie(dlzkaDna(fi, deklinacia(N, sk)).hodiny));
+  const T = TEXTY.omyly, rp = vzdialenostOdSlnka(PERIHELIUM_N), ra = vzdialenostOdSlnka(PERIHELIUM_N + 365.25 / 2);
+  setText($('#omylVzd'), sablona(T.vzdTeraz, { d: datum(N), r: nf(vzdialenostOdSlnka(Ng), 1), pd: '3. 1.', pr: nf(rp, 1), ad: '4. 7.', ar: nf(ra, 1), proc: nf((ra - rp) / DRAHA_A * 100, 1) }), true);
+  setText($('#precoTeraz'), sablona(T.precoTeraz, { d: datum(N), a: nf(poludnajsiaVyska(fi, deklinacia(N, sk)), 0), h: fmtTrvanie(dlzkaDna(fi, deklinacia(N, sk)).hodiny) }), true);
+}
+function graf(cv, f, ymin, ymax, ticks, fmt, farba, Nc, popis) {
+  const { ctx, W, H } = zacni(cv);
+  const L = 50, R = 12, T = 14, B = 34, X = n => L + (W - L - R) * (n - 1) / 364, Y = v => T + (H - T - B) * (1 - (v - ymin) / (ymax - ymin));
+  ctx.font = FONT(16, 500); ctx.textBaseline = 'middle'; ctx.textAlign = 'right';
+  for (const t of ticks) {
+    ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(L, Y(t)); ctx.lineTo(W - R, Y(t)); ctx.stroke();
+    ctx.fillStyle = '#a3adc6'; ctx.fillText(fmt(t), L - 6, Y(t));
+  }
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  [[1, 0], [91, 3], [182, 6], [274, 9]].forEach(([n, m]) => { ctx.fillStyle = '#a3adc6'; ctx.fillText(TEXTY.mesiaceKratko[m], clamp(X(n), L + 14, W - 20), H - B + 8); });
+  ctx.strokeStyle = farba; ctx.lineWidth = 3; ctx.beginPath();
+  for (let n = 1; n <= 365; n += 2) { const v = f(n); n === 1 ? ctx.moveTo(X(n), Y(v)) : ctx.lineTo(X(n), Y(v)); }
+  ctx.stroke();
+  const xn = X(clamp(Nc, 1, 365)), yn = Y(f(Nc));
+  ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(xn, T); ctx.lineTo(xn, H - B); ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(xn, yn, 6, 0, TAU); ctx.fill();
+  ctx.font = FONT(16, 700); ctx.textBaseline = 'middle'; ctx.textAlign = xn > W / 2 ? 'right' : 'left';
+  stitok(ctx, popis, xn + (xn > W / 2 ? -10 : 10), clamp(yn - 20, T + 10, H - B - 10), farba);
+}
+
+/* =====================================================================
+   ZATMENIA – schematický bočný pohľad (nie v mierke).
+   Geometria tieňa: dotyčnice zo Slnka k Mesiacu (resp. k Zemi).
+   Typ zatmenia u pozorovateľa určujeme z uhlových polomerov Slnka a Mesiaca.
+   ===================================================================== */
+const Z = { mod: 'slnko', hraj: true, pol: -80, vzd: 20, poz: 0, dirty: true };
+/* Schematické rozmery (ľubovoľné jednotky) */
+const ZS = { Rs: 90, xE: 820, rE: 70, rM: 17, Dmin: 190, Dmax: 235 };   // zatmenie Slnka
+const ZM = { Rs: 60, xE: 560, rE: 40, rM: 11, D: 250 };                 // zatmenie Mesiaca
+
+/* Prekryv dvoch kruhov (polomery r1, r2, vzdialenosť stredov d) – plocha */
+function prekryv(r1, r2, d) {
+  if (d >= r1 + r2) return 0;
+  if (d <= Math.abs(r1 - r2)) return Math.PI * Math.min(r1, r2) ** 2;
+  const a = r1 * r1 * Math.acos((d * d + r1 * r1 - r2 * r2) / (2 * d * r1)), b = r2 * r2 * Math.acos((d * d + r2 * r2 - r1 * r1) / (2 * d * r2));
+  return a + b - 0.5 * Math.sqrt((-d + r1 + r2) * (d + r1 - r2) * (d - r1 + r2) * (d + r1 + r2));
+}
+/* Čo vidí pozorovateľ Q pri zatmení Slnka */
+function typZatmeniaSlnka(Q, M) {
+  const ds = Math.hypot(Q[0], Q[1]), dm = Math.hypot(M[0] - Q[0], M[1] - Q[1]);
+  const as = Math.asin(ZS.Rs / ds), am = Math.asin(ZS.rM / dm);
+  let b = Math.atan2(M[1] - Q[1], M[0] - Q[0]) - Math.atan2(-Q[1], -Q[0]);
+  b = Math.atan2(Math.sin(b), Math.cos(b));
+  const ab = Math.abs(b);
+  const typ = ab + as <= am ? 'uplne' : (ab + am <= as ? 'prstencove' : (ab < as + am ? 'ciastocne' : 'ziadne'));
+  return { typ, as, am, b, kryt: prekryv(as, am, ab) / (Math.PI * as * as) };
+}
+function polohaMesiaca() {
+  if (Z.mod === 'slnko') { const D = ZS.Dmin + (ZS.Dmax - ZS.Dmin) * Z.vzd / 100; return [ZS.xE - D, Z.pol * 1.4]; }
+  return [ZM.xE + ZM.D, Z.pol * 1.3];
+}
+/* Dotyčnice z bodu P ku kružnici (C, r): dva smery */
+function dotycnice(P, C, r) {
+  const dx = C[0] - P[0], dy = C[1] - P[1], d = Math.hypot(dx, dy), b = Math.atan2(dy, dx), t = Math.asin(Math.min(1, r / d));
+  return [b - t, b + t];
+}
+function kresliZatmenie() {
+  const { ctx, W, H } = zacni(cvZat);
+  const slnko = Z.mod === 'slnko', G = slnko ? ZS : ZM;
+  /* priblížený výrez: Slnko je mimo obrázka vľavo, naznačené žiarou */
+  const xmin = slnko ? 380 : 330, xmax = slnko ? 905 : 880, sc = W / (xmax - xmin), cy = H / 2;
+  const X = x => (x - xmin) * sc, Y = y => cy - y * sc;
+  for (const [x, y, r, a] of HVIEZDY) { ctx.fillStyle = `rgba(220,230,255,${a * .7})`; ctx.fillRect(x * W, y * H, r, r); }
+  const M = polohaMesiaca(), S0 = [0, 0];
+  const telo = slnko ? M : [G.xE, 0], rT = slnko ? G.rM : G.rE;     // teleso, ktoré vrhá tieň
+  const far = 2000;
+  const luc = (P, ang) => [P[0] + Math.cos(ang) * far, P[1] + Math.sin(ang) * far];
+  /* polotieň: vnútorné dotyčnice cez bod I medzi Slnkom a telesom */
+  const I = mul([telo[0], telo[1], 0], G.Rs / (G.Rs + rT));
+  const [p1, p2] = dotycnice(I, telo, rT);
+  ctx.save(); ctx.beginPath(); ctx.rect(X(telo[0]), 0, W, H); ctx.clip();   // tiene sú len za telesom
+  ctx.fillStyle = 'rgba(160,170,200,.22)';
+  ctx.beginPath(); ctx.moveTo(X(I[0]), Y(I[1])); const e1 = luc(I, p1), e2 = luc(I, p2);
+  ctx.lineTo(X(e1[0]), Y(e1[1])); ctx.lineTo(X(e2[0]), Y(e2[1])); ctx.closePath(); ctx.fill();
+  /* tieň: vonkajšie dotyčnice sa stretnú vo vrchole A za telesom */
+  const A = add([telo[0], telo[1], 0], [telo[0], telo[1], 0], rT / (G.Rs - rT));
+  const [u1, u2] = dotycnice(A, telo, rT);          // smery z A späť k telesu
+  ctx.fillStyle = 'rgba(5,6,12,.92)';
+  ctx.beginPath(); ctx.moveTo(X(A[0]), Y(A[1]));
+  ctx.lineTo(X(A[0] + Math.cos(u1) * 3000), Y(A[1] + Math.sin(u1) * 3000));
+  ctx.lineTo(X(A[0] + Math.cos(u2) * 3000), Y(A[1] + Math.sin(u2) * 3000)); ctx.closePath(); ctx.fill();
+  /* predĺžený tieň (antumbra) za vrcholom */
+  if (slnko) {
+    ctx.fillStyle = 'rgba(255,150,60,.28)';
+    ctx.beginPath(); ctx.moveTo(X(A[0]), Y(A[1]));
+    ctx.lineTo(X(A[0] - Math.cos(u1) * 3000), Y(A[1] - Math.sin(u1) * 3000));
+    ctx.lineTo(X(A[0] - Math.cos(u2) * 3000), Y(A[1] - Math.sin(u2) * 3000)); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+  /* Slnko */
+  const gS = ctx.createLinearGradient(0, 0, W * 0.16, 0);
+  gS.addColorStop(0, 'rgba(255,214,110,.75)'); gS.addColorStop(1, 'rgba(255,190,80,0)');
+  ctx.fillStyle = gS; ctx.fillRect(0, 0, W * 0.16, H);
+  ctx.font = FONT(16, 700); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  stitok(ctx, '← Slnko (ďaleko)', 10, 20, '#ffd88a');
+  /* Zem */
+  const xE = G.xE, rE = G.rE;
+  const gE = ctx.createRadialGradient(X(xE - rE * .4), Y(rE * .3), 2, X(xE), Y(0), rE * sc);
+  gE.addColorStop(0, '#5aa2ff'); gE.addColorStop(1, '#123d78');
+  ctx.fillStyle = gE; ctx.beginPath(); ctx.arc(X(xE), Y(0), rE * sc, 0, TAU); ctx.fill();
+  ctx.fillStyle = 'rgba(3,6,18,.6)'; ctx.beginPath(); ctx.arc(X(xE), Y(0), rE * sc, -Math.PI / 2, Math.PI / 2); ctx.fill();
+  ctx.font = FONT(16, 700); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  let neboInfo;
+  if (slnko) {
+    /* farba povrchu Zeme podľa toho, čo tam ľudia vidia */
+    for (let t = -88; t < 88; t += 1.5) {
+      const th = t * DEG, Q = [xE - rE * Math.cos(th), rE * Math.sin(th)], r = typZatmeniaSlnka(Q, M);
+      if (r.typ === 'ziadne') continue;
+      ctx.strokeStyle = r.typ === 'uplne' ? '#000' : r.typ === 'prstencove' ? '#ff9640' : `rgba(160,170,200,${.35 + .6 * r.kryt})`;
+      ctx.lineWidth = 7; ctx.beginPath(); ctx.arc(X(xE), Y(0), rE * sc + 3, Math.PI + th - 0.014, Math.PI + th + 0.014 + 0.012); ctx.stroke();
+    }
+    /* Mesiac */
+    ctx.fillStyle = '#cfd3dc'; ctx.beginPath(); ctx.arc(X(M[0]), Y(M[1]), Math.max(2.5, G.rM * sc), 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(10,12,20,.75)'; ctx.beginPath(); ctx.arc(X(M[0]), Y(M[1]), Math.max(2.5, G.rM * sc), -Math.PI / 2, Math.PI / 2); ctx.fill();
+    /* pozorovateľ */
+    const th = Z.poz * DEG, Q = [xE - rE * Math.cos(th), rE * Math.sin(th)];
+    ctx.fillStyle = FARBY.tuSme; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(X(Q[0]), Y(Q[1]), 6, 0, TAU); ctx.fill(); ctx.stroke();
+    neboInfo = typZatmeniaSlnka(Q, M);
+    if (W > 300) { stitok(ctx, 'Mesiac', X(M[0]), Y(M[1]) - 26, '#e2e8f5'); stitok(ctx, 'Zem', X(xE), Y(-rE) + 20, '#9fd0ff'); }
+  } else {
+    /* Mesiac v tieni Zeme */
+    const xm = M[0], rU = rE * (A[0] - xm) / (A[0] - xE), rP = rE * (xm - I[0]) / (xE - I[0]);
+    const dy = Math.abs(M[1]), rM = G.rM;
+    let typ = 'mZiadne';
+    if (dy + rM <= rU) typ = 'mUplne'; else if (dy - rM < rU) typ = 'mCiastocne'; else if (dy - rM < rP) typ = 'mPolotien';
+    const mr = Math.max(3, rM * sc);
+    ctx.fillStyle = typ === 'mUplne' ? '#b5532f' : typ === 'mPolotien' ? '#9a9ea8' : '#e0e3ea';
+    ctx.beginPath(); ctx.arc(X(xm), Y(M[1]), mr, 0, TAU); ctx.fill();
+    if (typ === 'mCiastocne') { ctx.save(); ctx.beginPath(); ctx.arc(X(xm), Y(M[1]), mr, 0, TAU); ctx.clip(); ctx.fillStyle = '#8e3f22'; ctx.beginPath(); ctx.arc(X(xm), Y(0), rU * sc, 0, TAU); ctx.fill(); ctx.restore(); }
+    neboInfo = { typ, rU, rP, dy: M[1], rM };
+    if (W > 300) { stitok(ctx, 'Zem', X(xE), Y(-rE) + 20, '#9fd0ff'); stitok(ctx, 'Mesiac', X(xm), Y(M[1]) - mr - 16, '#e2e8f5'); }
+  }
+  ctx.font = FONT(16, 500); ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillStyle = '#a3adc6';
+  ctx.fillText('nie je v mierke', 8, H - 6);
+  kresliNebo(neboInfo);
+}
+/* Pohľad pozorovateľa na oblohu */
+function kresliNebo(r) {
+  const { ctx, W, H } = zacni(cvNebo), T = TEXTY.zatmenia, cx = W / 2, cy = H / 2;
+  let typText, pokr = '';
+  if (Z.mod === 'slnko') {
+    const k = Math.min(W, H) * 0.24 / r.as, rs = r.as * k, rm = r.am * k, oy = -r.b * k;
+    const tma = r.typ === 'uplne' ? 1 : r.kryt * .7;
+    ctx.fillStyle = `rgb(${Math.round(70 - 62 * tma)},${Math.round(130 - 118 * tma)},${Math.round(205 - 180 * tma)})`;
+    ctx.fillRect(0, 0, W, H);
+    if (r.typ === 'uplne') {           // koróna a hviezdy
+      const g = ctx.createRadialGradient(cx, cy, rs * .9, cx, cy, rs * 2.4);
+      g.addColorStop(0, 'rgba(235,240,255,.85)'); g.addColorStop(1, 'rgba(235,240,255,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rs * 2.4, 0, TAU); ctx.fill();
+      for (const [x, y] of HVIEZDY.slice(0, 25)) { ctx.fillStyle = '#fff'; ctx.fillRect(x * W, y * H, 1.5, 1.5); }
+    }
+    const g2 = ctx.createRadialGradient(cx, cy, 1, cx, cy, rs);
+    g2.addColorStop(0, '#fffbe8'); g2.addColorStop(1, '#ffd25a');
+    ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(cx, cy, rs, 0, TAU); ctx.fill();
+    ctx.fillStyle = r.typ === 'uplne' ? '#05060c' : '#1a1d28';
+    ctx.beginPath(); ctx.arc(cx, cy + oy, rm, 0, TAU); ctx.fill();
+    typText = T.typy[r.typ];
+    if (r.typ !== 'ziadne') pokr = sablona(T.zakryte, { p: nf(Math.min(100, r.kryt * 100), 0) });
+  } else {
+    ctx.fillStyle = '#060a18'; ctx.fillRect(0, 0, W, H);
+    for (const [x, y] of HVIEZDY.slice(0, 40)) { ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(x * W, y * H, 1.3, 1.3); }
+    const k = Math.min(W, H) * 0.26 / r.rM, rm = r.rM * k, oy = r.dy * k;
+    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, rm, 0, TAU); ctx.clip();
+    ctx.fillStyle = '#e8eaf0'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(20,20,30,.28)'; ctx.beginPath(); ctx.arc(cx, cy + oy, r.rP * k, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(150,55,25,.92)'; ctx.beginPath(); ctx.arc(cx, cy + oy, r.rU * k, 0, TAU); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 1; ctx.setLineDash([4, 5]);
+    ctx.beginPath(); ctx.arc(cx, cy + oy, r.rU * k, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+    typText = T.typy[r.typ];
+  }
+  setText($('#zatStav'), typText);
+  setText($('#zatPokr'), pokr);
+}
+/* Prečo nie každý mesiac: nov mimo uzla vs. v uzle */
+function kresliUzly() {
+  [[cvUzol1, 34], [cvUzol2, 0]].forEach(([cv, vys]) => {
+    if (!cv._w) return;
+    const { ctx, W, H } = zacni(cv), cy = H / 2 + 6;
+    const sx = 26, ex = W - 46, er = 26, mx = ex - 92, my = cy - vys;
+    /* rovina dráhy Zeme a sklonená dráha Mesiaca (sklon zveličený) */
+    ctx.strokeStyle = 'rgba(150,170,225,.6)'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 6]);
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = 'rgba(226,232,245,.55)';
+    ctx.beginPath(); ctx.ellipse(ex, cy, 92, 18, vys ? -0.36 : 0, 0, TAU); ctx.stroke();
+    /* tieň Mesiaca */
+    const ang = Math.atan2(my - cy, mx - sx);
+    ctx.fillStyle = 'rgba(5,6,12,.85)'; ctx.beginPath();
+    ctx.moveTo(mx, my - 7); ctx.lineTo(W, my - 7 + (W - mx) * Math.tan(ang) * 0.9 - (W - mx) * 0.03);
+    ctx.lineTo(W, my + 7 + (W - mx) * Math.tan(ang) * 0.9 + (W - mx) * 0.03 - 10); ctx.lineTo(mx, my + 7); ctx.fill();
+    /* Slnko, Zem, Mesiac */
+    const g = ctx.createRadialGradient(sx, cy, 2, sx, cy, 30); g.addColorStop(0, '#fff6d0'); g.addColorStop(.6, '#ffd25a'); g.addColorStop(1, 'rgba(243,154,44,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, cy, 30, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#3d86d6'; ctx.beginPath(); ctx.arc(ex, cy, er, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(3,6,18,.55)'; ctx.beginPath(); ctx.arc(ex, cy, er, -Math.PI / 2, Math.PI / 2); ctx.fill();
+    ctx.fillStyle = '#cfd3dc'; ctx.beginPath(); ctx.arc(mx, my, 8, 0, TAU); ctx.fill();
+    ctx.font = FONT(16, 600); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    stitok(ctx, 'Mesiac', mx, my - 26, '#e2e8f5');
+    stitok(ctx, 'Zem', ex, cy + er + 18, '#9fd0ff');
+    if (!vys) stitok(ctx, 'uzol', mx, cy + 26, '#ffd88a');
+  });
+}
+function aktualizujZatmenieUI() {
+  const T = TEXTY.zatmenia, sl = Z.mod === 'slnko';
+  document.querySelectorAll('#zatMod button').forEach(b => b.classList.toggle('on', b.dataset.z === Z.mod));
+  $('#zatVzdBox').style.display = sl ? '' : 'none';
+  $('#zatPozBox').style.display = sl ? '' : 'none';
+  setText($('#zatNeboNadpis'), sl ? T.nebo : T.nebo2);
+  setText($('#zatText'), sl ? T.slnkoText : T.mesiacText, true);
+  setText($('#zatLeg'), sl
+    ? `<span><i style="background:#05060c;border:1px solid #556"></i>${T.legTien}</span><span><i style="background:rgba(160,170,200,.6)"></i>${T.legPolotien}</span><span><i style="background:#ff9640"></i>${T.legAnti}</span>`
+    : `<span><i style="background:#05060c;border:1px solid #556"></i>tieň Zeme – úplné</span><span><i style="background:rgba(160,170,200,.6)"></i>polotieň</span><span><i style="background:#b5532f"></i>Mesiac v tieni je červený</span>`, true);
+  setText($('#zatPlay'), Z.hraj ? TEXTY.ui.pauza : TEXTY.ui.spustit);
+  $('#zatPol').value = Math.round(Z.pol);
+  setText($('#zatPolLbl'), Math.abs(Z.pol) < 8 ? 'v jednej priamke' : Z.pol < 0 ? 'nad priamkou' : 'pod priamkou');
+  const v = Z.vzd;
+  setText($('#zatVzdLbl'), v < 34 ? T.blizko : v > 66 ? T.daleko : 'stredná');
+  setText($('#zatPozLbl'), Math.abs(Z.poz) < 5 ? 'v strede' : Z.poz > 0 ? 'severnejšie' : 'južnejšie');
+}
+
+/* ===== Bublina s popisom ===== */
+const bub = $('#bubble');
+let bubPin = false;
+function infoPre(k) {
+  if (k.startsWith('den:')) {
+    const kd = TEXTY.kluceveDni.find(x => x.N === +k.slice(4));
+    return { nazov: `${kd.kratko} – ${S.juh ? kd.juh : kd.sever}`, text: TEXTY.kluceveVysvetlenie[kd.typ] + (S.sklonOn ? '' : TEXTY.kluceveVysvetlenie.sklon0) };
+  }
+  if (k === 'tuSme' && S.juh) return TEXTY.info.tuSmeJuh;
+  return TEXTY.info[k];
+}
+function ukazBublinu(k, x, y, pin) {
+  const inf = infoPre(k); if (!inf) return;
+  bubPin = pin; S.hl = k; S.dirty = true;
+  bub.querySelector('h4').innerHTML = inf.nazov; bub.querySelector('p').innerHTML = inf.text;
+  bub.classList.toggle('pin', pin); bub.hidden = false;
+  const bw = bub.offsetWidth, bh = bub.offsetHeight;
+  let L = x + 16, T = y + 16;
+  if (L + bw > innerWidth - 8) L = Math.max(8, x - bw - 16);
+  if (T + bh > innerHeight - 8) T = Math.max(8, y - bh - 16);
+  bub.style.left = L + 'px'; bub.style.top = T + 'px';
+}
+function skryBublinu(sila) {
+  if (bubPin && !sila) return;
+  bub.hidden = true; bubPin = false;
+  if (S.hl) { S.hl = null; S.dirty = true; }
+}
+$('#bubX').addEventListener('click', () => skryBublinu(true));
+document.addEventListener('pointerdown', e => {
+  if (bubPin && !bub.contains(e.target) && !e.target.closest('canvas') && !e.target.closest('.legenda')) skryBublinu(true);
+});
+window.addEventListener('scroll', () => { if (!bubPin) skryBublinu(); }, { passive: true });
+
+/* Vyhľadanie objektu pod prstom/myšou */
+function najdi(hits, x, y, tol) {
+  let best = null, bs = 1e9;
+  for (const h of hits) {
+    let d;
+    if (h.c) d = Math.max(0, Math.hypot(x - h.c[0], y - h.c[1]) - h.c[2]);
+    else {
+      d = 1e9; const p = h.pts;
+      for (let i = 0; i < p.length - 1; i++) {
+        const ax = p[i][0], ay = p[i][1], bx = p[i + 1][0], by = p[i + 1][1], dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1;
+        const t = clamp(((x - ax) * dx + (y - ay) * dy) / l2, 0, 1);
+        d = Math.min(d, Math.hypot(x - ax - t * dx, y - ay - t * dy));
+      }
+    }
+    if (d > tol) continue;
+    const sk = h.pr * 100 + d;
+    if (sk < bs) { bs = sk; best = h; }
+  }
+  return best;
+}
+function interakcia(cv, getHits, otacaj) {
+  let dole = null, tahal = false;
+  cv.addEventListener('pointerdown', e => { dole = { x: e.clientX, y: e.clientY, az: S.azT, el: S.elT, typ: e.pointerType }; tahal = false; });
+  cv.addEventListener('pointermove', e => {
+    const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    if (dole && otacaj) {
+      const dx = e.clientX - dole.x, dy = e.clientY - dole.y;
+      if (!tahal && Math.hypot(dx, dy) > 7) { tahal = true; cv.classList.add('drag'); try { cv.setPointerCapture(e.pointerId); } catch (_) {} skryBublinu(true); }
+      if (tahal) {
+        S.azT = S.az = dole.az - dx * 0.007;
+        if (dole.typ === 'mouse') S.elT = S.el = clamp(dole.el + dy * 0.006, 3 * DEG, 90 * DEG);
+        nastavPohladTlacidla(null); S.dirty = true;
+      }
+      return;
+    }
+    if (e.pointerType === 'mouse') {
+      const h = najdi(getHits(), x, y, 9);
+      cv.style.cursor = h ? 'pointer' : (otacaj ? 'grab' : 'default');
+      if (h) { if (S.hl !== h.k || bub.hidden) ukazBublinu(h.k, e.clientX, e.clientY, false); }
+      else skryBublinu();
+    }
+  });
+  const koniec = e => {
+    if (dole && !tahal && e.type === 'pointerup') {
+      const r = cv.getBoundingClientRect(), h = najdi(getHits(), e.clientX - r.left, e.clientY - r.top, e.pointerType === 'mouse' ? 9 : 20);
+      if (h) {
+        if (h.k.startsWith('den:')) skocNaDen(+h.k.slice(4));
+        ukazBublinu(h.k, e.clientX, e.clientY, true);
+      } else skryBublinu(true);
+    }
+    dole = null; tahal = false; cv.classList.remove('drag');
+  };
+  cv.addEventListener('pointerup', koniec);
+  cv.addEventListener('pointercancel', koniec);
+  cv.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && !dole) skryBublinu(); });
+}
+interakcia(cvScena, () => hitsScena, true);
+interakcia(cvZem, () => hitsZem, false);
+
+/* ===== Ovládanie ===== */
+const elRych = $('#rych'), elDen = $('#den'), elHod = $('#hod');
+const rychlostDni = () => Math.pow(10, Math.log10(1 / 24) + (+elRych.value / 100) * (Math.log10(30) - Math.log10(1 / 24)));
+let tahaDen = false, tahaHod = false;
+function skocNaDen(N) { S.den = N; S.dirty = true; }
+$('#play').addEventListener('click', () => { S.hraj = !S.hraj; S.dirty = true; });
+$('#presetDen').addEventListener('click', () => { elRych.value = 17; S.hraj = true; S.dirty = true; });
+$('#presetRok').addEventListener('click', () => { elRych.value = 82; S.hraj = true; S.dirty = true; });
+elRych.addEventListener('input', () => S.dirty = true);
+elDen.addEventListener('input', () => { S.den = +elDen.value; S.dirty = true; });
+elHod.addEventListener('input', () => { S.hod = +elHod.value; S.dirty = true; });
+for (const [el, f] of [[elDen, v => tahaDen = v], [elHod, v => tahaHod = v]]) {
+  el.addEventListener('pointerdown', () => f(true));
+  el.addEventListener('pointerup', () => f(false));
+  el.addEventListener('pointercancel', () => f(false));
+  el.addEventListener('change', () => f(false));
+}
+$('#pSever').addEventListener('click', () => { S.juh = false; S.dirty = true; });
+$('#pJuh').addEventListener('click', () => { S.juh = true; S.dirty = true; });
+$('#s235').addEventListener('click', () => { S.sklonOn = true; S.dirty = true; });
+$('#s0').addEventListener('click', () => { S.sklonOn = false; S.dirty = true; });
+const POHLADY = { sikmo: [90, 28], zhora: [90, 90], zboku: [90, 4] };
+function nastavPohladTlacidla(v) { document.querySelectorAll('#pohlady button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); }
+document.querySelectorAll('#pohlady button').forEach(b => b.addEventListener('click', () => {
+  const [az, el] = POHLADY[b.dataset.v];
+  let a = az * DEG; while (a - S.az > Math.PI) a -= TAU; while (S.az - a > Math.PI) a += TAU;   // najkratšou cestou
+  S.azT = a; S.elT = el * DEG; nastavPohladTlacidla(b.dataset.v); S.dirty = true;
+}));
+document.querySelectorAll('#detailMod button').forEach(b => b.addEventListener('click', () => {
+  S.mod = b.dataset.m; document.querySelectorAll('#detailMod button').forEach(x => x.classList.toggle('on', x === b)); S.dirty = true;
+}));
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && !/INPUT|BUTTON|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); S.hraj = !S.hraj; S.dirty = true; }
+});
+/* tlačidlá štyroch kľúčových dní */
+const klucBox = $('#kluc');
+TEXTY.kluceveDni.forEach(kd => {
+  const b = document.createElement('button'); b.dataset.n = kd.N;
+  b.addEventListener('click', e => { skocNaDen(kd.N); const r = b.getBoundingClientRect(); ukazBublinu('den:' + kd.N, r.left, r.bottom, true); });
+  klucBox.appendChild(b);
+});
+/* legenda objektov pod glóbusom */
+const LEGENDA = [
+  ['slnko', FARBY.slnko, 'dot'], ['zem', '#3d86d6', 'dot'], ['os', FARBY.os], ['poly', '#fff', 'dot'], ['rotacia', '#7fdc8f'],
+  ['rovnik', FARBY.rovnik], ['obratniky', FARBY.obratniky], ['polarneKruhy', FARBY.polarneKruhy], ['terminator', FARBY.terminator],
+  ['poludnik', FARBY.poludnik], ['rovnobezka', FARBY.rovnobezkaDen], ['tuSme', FARBY.tuSme, 'dot']
+];
+const legBox = $('#legenda');
+for (const [k, f, t] of LEGENDA) {
+  const b = document.createElement('button'); b.dataset.k = k;
+  b.innerHTML = `<i class="${t || ''}" style="background:${f}"></i><span></span>`;
+  b.addEventListener('click', () => { const r = b.getBoundingClientRect(); ukazBublinu(k, r.left, r.bottom, true); });
+  b.addEventListener('mouseenter', () => { if (!bubPin) { S.hl = k; S.dirty = true; } });
+  b.addEventListener('mouseleave', () => { if (!bubPin) { S.hl = null; S.dirty = true; } });
+  legBox.appendChild(b);
+}
+function popisLegendy() {
+  legBox.querySelectorAll('button').forEach(b => {
+    const inf = infoPre(b.dataset.k), kr = { tuSme: 'Tu sme', terminator: 'Terminátor', poly: 'Póly', rotacia: 'Otáčanie', polarneKruhy: 'Polárne kruhy', rovnobezka: 'Naša rovnobežka', os: 'Os', poludnik: 'Poludník poludnia' }[b.dataset.k];
+    setText(b.querySelector('span'), kr || inf.nazov);
+  });
+}
+
+/* ovládanie zatmení */
+document.querySelectorAll('#zatMod button').forEach(b => b.addEventListener('click', () => { Z.mod = b.dataset.z; Z.pol = -80; Z.dirty = true; }));
+$('#zatPlay').addEventListener('click', () => { Z.hraj = !Z.hraj; Z.dirty = true; });
+$('#zatPol').addEventListener('input', e => { Z.pol = +e.target.value; Z.hraj = false; Z.dirty = true; });
+$('#zatVzd').addEventListener('input', e => { Z.vzd = +e.target.value; Z.dirty = true; });
+$('#zatPoz').addEventListener('input', e => { Z.poz = +e.target.value; Z.dirty = true; });
+
+/* Synchronizácia ovládacích prvkov so stavom */
+function aktualizujOvladanie() {
+  const N = denInt(), v = rychlostDni();
+  setText($('#play'), S.hraj ? TEXTY.ui.pauza : TEXTY.ui.spustit);
+  const rt = v < 1 ? (() => { const h = v * 24, hh = h < 10 ? nf(h, 1) : nf(h, 0); return `${hh} ${pocetSlov(+h.toFixed(1), 'hodina', 'hodiny', 'hodín', 'hodiny')} ${TEXTY.ui.zaSekundu}`; })()
+    : (() => { const d = v < 10 ? +v.toFixed(1) : Math.round(v); return `${nf(d, d % 1 ? 1 : 0)} ${pocetSlov(d, 'deň', 'dni', 'dní', 'dňa')} ${TEXTY.ui.zaSekundu}`; })();
+  setText($('#rychLbl'), rt);
+  setText($('#strobo'), v > STROBO ? TEXTY.ui.strobo : '');
+  if (!tahaDen) elDen.value = N;
+  if (!tahaHod) elHod.value = Math.round(S.hod * 4) / 4;
+  setText($('#denLbl'), `${datum(N)} (${N}. deň) · ${obdobie(N)}`);
+  setText($('#hodLbl'), fmtCas(S.hod));
+  $('#pSever').classList.toggle('on', !S.juh); $('#pJuh').classList.toggle('on', S.juh);
+  $('#s235').classList.toggle('on', S.sklonOn); $('#s0').classList.toggle('on', !S.sklonOn);
+  klucBox.querySelectorAll('button').forEach(b => {
+    const kd = TEXTY.kluceveDni.find(x => x.N === +b.dataset.n);
+    setText(b, `${kd.kratko}<small>${S.juh ? kd.juh : kd.sever}</small>`, true);
+    b.classList.toggle('on', Math.abs(kd.N - N) < 1);
+  });
+  $('#sceneBanner').classList.toggle('show', !S.sklonOn);
+  setText($('#sceneDate b'), datum(N) + ' · ' + obdobie(N));
+  setText($('#sceneDate span'), fmtCas(S.hod) + ' miestneho slnečného času (' + (S.juh ? '48,7° j. š.' : 'Košice') + ')');
+  popisLegendy();
+}
+
+/* ===== Viditeľnosť plátien – mimo obrazovky nekreslíme (šetrí batériu) ===== */
+const viditelne = new Set();
+if ('IntersectionObserver' in window) {
+  const io = new IntersectionObserver(es => { es.forEach(e => e.isIntersecting ? viditelne.add(e.target) : viditelne.delete(e.target)); S.dirty = true; Z.dirty = true; }, { rootMargin: '100px' });
+  [cvScena, cvZem, cvPas, cvObloha, cvLuce, cvDraha, cvGVzd, cvZat].forEach(c => io.observe(c));
+} else [cvScena, cvZem, cvPas, cvObloha, cvLuce, cvDraha, cvGVzd, cvZat].forEach(c => viditelne.add(c));
+const vid = c => viditelne.has(c);
+
+/* ===== Hlavná slučka: časovanie podľa skutočného času ===== */
+let posledny = performance.now();
+function snimka(teraz) {
+  const dt = Math.min(0.1, (teraz - posledny) / 1000); posledny = teraz;
+  if (S.hraj) {
+    const v = rychlostDni();
+    if (v > STROBO) S.den += v * dt;                     // rýchlo: posúvame len dni
+    else { S.hod += v * 24 * dt; while (S.hod >= 24) { S.hod -= 24; S.den += 1; } }
+    while (S.den >= 366) S.den -= 365;
+    S.dirty = true;
+  }
+  /* plynulý prechod pohľadu */
+  const kk = Math.min(1, dt * 6);
+  if (Math.abs(S.azT - S.az) > 1e-4 || Math.abs(S.elT - S.el) > 1e-4) { S.az += (S.azT - S.az) * kk; S.el += (S.elT - S.el) * kk; S.dirty = true; }
+  if (S.dirty) {
+    S.dirty = false;
+    aktualizujOvladanie();
+    if (vid(cvScena)) kresliScenu();
+    if (vid(cvZem)) kresliDetail();
+    aktualizujPanel();
+    if (vid(cvPas)) kresliPas();
+    if (vid(cvObloha)) kresliOblohu();
+    if (vid(cvLuce)) kresliLuce();
+    if (vid(cvDraha) || vid(cvGVzd)) kresliOmyl();
+  }
+  /* zatmenie: Mesiac sa pomaly presúva cez spojnicu (cyklus asi 12 s) */
+  if (Z.hraj && vid(cvZat)) { Z.pol += dt * 16; if (Z.pol > 100) Z.pol = -100; Z.dirty = true; }
+  if (Z.dirty) { Z.dirty = false; aktualizujZatmenieUI(); if (vid(cvZat)) kresliZatmenie(); }
+  requestAnimationFrame(snimka);
+}
+
+/* ===== Kvíz ===== */
+function kviz() {
+  const box = $('#kvizBox'), K = TEXTY.kviz, n = K.otazky.length;
+  box.innerHTML = ''; $('#kvizVysl').textContent = '';
+  let skore = 0, hotovo = 0;
+  K.otazky.forEach((q, i) => {
+    const div = document.createElement('div'); div.className = 'otazka';
+    div.innerHTML = `<p class="q"><b>${i + 1}.</b> ${q.otazka}</p>`;
+    const opts = document.createElement('div'); opts.className = 'moznosti';
+    const fb = document.createElement('div'); fb.className = 'fb';
+    q.moznosti.forEach((m, j) => {
+      const b = document.createElement('button'); b.textContent = m;
+      b.addEventListener('click', () => {
+        if (div.dataset.hotovo) return;
+        div.dataset.hotovo = 1; hotovo++;
+        const ok = j === q.spravna; if (ok) skore++;
+        b.classList.add(ok ? 'ok' : 'zle'); opts.children[q.spravna].classList.add('ok');
+        [...opts.children].forEach(x => x.disabled = true);
+        fb.className = 'fb ' + (ok ? 'ok' : 'zle');
+        fb.innerHTML = `<b>${ok ? K.spravne : K.nespravne}</b> ${q.vysvetlenie}`;
+        if (hotovo === n) $('#kvizVysl').textContent = sablona(K.vysledok, { s: skore, n });
+      });
+      opts.appendChild(b);
+    });
+    div.appendChild(opts); div.appendChild(fb); box.appendChild(div);
+  });
+}
+$('#kvizZnova').addEventListener('click', kviz);
+
+/* ===== Štart ===== */
+function vyplnTexty() {
+  document.querySelectorAll('[data-t]').forEach(el => {
+    const v = el.dataset.t.split('.').reduce((o, k) => o && o[k], TEXTY);
+    if (typeof v === 'string') el.innerHTML = v;
+  });
+  $('#poznList').innerHTML = TEXTY.pozn.body.map(b => `<li>${b}</li>`).join('');
+}
+vyplnTexty();
+kviz();
+rozmery();
+if ('ResizeObserver' in window) {
+  let cakam = false;
+  new ResizeObserver(() => {
+    if (cakam) return; cakam = true;
+    requestAnimationFrame(() => { cakam = false; if (document.body.clientWidth !== poslednaSirka) { poslednaSirka = document.body.clientWidth; rozmery(); } });
+  }).observe(document.body);
+} else window.addEventListener('resize', rozmery);
+requestAnimationFrame(snimka);
+
+/* Kontrola výpočtov – v konzole prehliadača zadaj: testVypoctov() */
+window.testVypoctov = function () {
+  const riadky = [];
+  for (const [N, t] of [[80, '21. 3.'], [172, '21. 6.'], [266, '23. 9.'], [355, '21. 12.']]) {
+    const d = deklinacia(N);
+    for (const [m, fi] of [['Košice', LAT_KOSICE], ['Rovník', 0]]) {
+      riadky.push({ den: t, miesto: m, 'δ (°)': +d.toFixed(2), 'poludnie (°)': +poludnajsiaVyska(fi, d).toFixed(1), 'deň': fmtTrvanie(dlzkaDna(fi, d).hodiny) });
+    }
+  }
+  console.table(riadky); return riadky;
+};
+</script>
+</body>
+</html>
