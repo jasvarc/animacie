@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tráviaca sústava človeka</title>
+<link rel="icon" href="data:,">
+<style>
+:root{
+  --bg:#060912;--panel:rgba(13,18,32,.86);--line:rgba(140,160,215,.18);
+  --text:#e2e8f5;--muted:#8d98b3;--acc:#ffa94d;--gold:#ffcf6e;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;color:var(--text);background:var(--bg);
+  font:14px/1.5 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
+body{background:radial-gradient(ellipse at 45% 35%,#101a36 0%,#070b17 55%,#05070e 100%)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 12px 40px rgba(0,0,0,.5)}
+button{font:inherit;color:var(--text);background:rgba(255,255,255,.06);border:1px solid var(--line);
+  border-radius:9px;padding:5px 10px;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+button:hover{background:rgba(255,255,255,.12);border-color:rgba(160,180,230,.35)}
+button.on{background:rgba(255,169,77,.16);border-color:rgba(255,169,77,.55);color:#ffe0bd}
+input[type=range]{width:100%;accent-color:#ffa94d;margin:2px 0 0}
+
+#stage{position:fixed;top:0;bottom:0;left:300px;right:400px}
+#body{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#body.drag{cursor:grabbing}
+#body [data-info]{cursor:pointer}
+#zoomCtl{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:5px;align-items:center}
+#zoomCtl button{width:36px;height:36px;padding:0;font-size:18px;line-height:1;background:rgba(13,18,32,.86)}
+#zoomV{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;background:rgba(13,18,32,.75);border-radius:6px;padding:1px 5px}
+#stageHint{position:absolute;left:50%;top:12px;transform:translateX(-50%);padding:5px 14px;border-radius:999px;
+  background:rgba(13,18,32,.82);border:1px solid var(--line);font-size:13px;color:#ffe0bd;white-space:nowrap;pointer-events:none}
+#stageHint b{color:var(--acc)}
+.zoomBtn,.playBtn{width:100%;margin:0 0 10px}
+.playBtn{background:linear-gradient(135deg,rgba(255,169,77,.22),rgba(255,111,145,.18));border-color:rgba(255,169,77,.45)}
+
+#left{position:fixed;left:16px;top:16px;bottom:16px;width:272px;display:flex;flex-direction:column;gap:10px;
+  overflow-y:auto;scrollbar-width:thin;scrollbar-color:#2a3550 transparent}
+#left .card{padding:12px 14px}
+h1{margin:0;font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--acc)}
+.sub{color:var(--muted);font-size:12.5px;margin:2px 0 8px}
+.legend{list-style:none;margin:0;padding:0;font-size:12px;color:#c8d0e3;display:grid;grid-template-columns:1fr 1fr;gap:1px 8px}
+.legend li{display:flex;align-items:center;gap:6px}
+.legend svg{flex:none}
+#menuBtn{display:none;width:100%;margin-top:6px}
+.row{display:flex;gap:8px;align-items:center}
+#play{width:40px;flex:none}
+.sl{display:block;font-size:12.5px;color:var(--muted);margin-top:8px}
+.sl b{color:var(--text);font-variant-numeric:tabular-nums}
+.segm{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:4px}
+.segm button{font-size:11px;padding:3px 2px;line-height:1.15}
+.segm button .em{display:block;font-size:18px;line-height:1.2}
+#mealInfo{font-size:12px;color:#c8d0e3;margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.04)}
+#mealInfo b{color:#ffe0bd}
+.tipbox{margin:10px 0;padding:8px 11px;border-radius:10px;font-size:13px;color:#d9e0ee;border:1px solid}
+.tipbox.z{background:rgba(111,210,127,.08);border-color:rgba(111,210,127,.35)}
+.tipbox.q{background:rgba(255,207,110,.07);border-color:rgba(255,207,110,.32)}
+.tipbox b.h{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.tipbox.z b.h{color:#8fe39c}.tipbox.q b.h{color:var(--gold)}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:8px}
+.row3 button{font-size:12px;padding:5px 4px}
+#phases{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:1px}
+#phases li{display:grid;grid-template-columns:12px 1fr auto;align-items:center;gap:7px;padding:2px 6px;border-radius:7px;cursor:pointer;font-size:12.5px;color:#97a2bb}
+#phases li:hover{background:rgba(255,255,255,.06)}
+#phases .d{width:9px;height:9px;border-radius:50%;border:1.5px solid #56627f}
+#phases li.done{color:#cfd6e6}
+#phases li.done .d{background:#56627f}
+#phases li.cur{background:rgba(255,169,77,.13);color:#ffe0bd}
+#phases li.cur .d{border-color:var(--acc);background:var(--acc);box-shadow:0 0 6px var(--acc)}
+#phases .rt{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+#phaseTxt{font-size:12.5px;color:#d5dcec;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+#phaseTxt b{color:#ffe0bd}
+dl.read{display:grid;grid-template-columns:auto 1fr;gap:1px 10px;margin:8px 0 0;font-size:12.5px}
+dl.read dt{color:var(--muted)}dl.read dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+
+#inset h3{margin:0 0 2px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:650}
+#molSvg{display:block;width:100%;height:auto}
+#enzTxt{font-size:12px;color:#ffe0bd;text-align:center;min-height:36px;margin:2px 0 6px}
+.bar{display:grid;grid-template-columns:70px 1fr 34px;gap:6px;align-items:center;font-size:11.5px;color:#c8d0e3;margin:3px 0}
+.bt{position:relative;height:8px;border-radius:5px;background:rgba(255,255,255,.07);overflow:hidden}
+.bt i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;width:0}
+.bt .bd{opacity:.35}
+.bv{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.mini{font-size:11px;color:var(--muted)}
+
+#info{position:fixed;right:16px;top:16px;bottom:16px;width:370px;display:flex;flex-direction:column;overflow:hidden}
+#iHead{padding:14px 16px 4px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+#iKat{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.nav{display:flex;gap:5px}
+.nav button{width:32px;padding:3px 0}
+#iScroll{overflow-y:auto;padding:0 16px 16px;flex:1;scrollbar-width:thin;scrollbar-color:#2a3550 transparent}
+#iTitle{margin:0 0 6px;font-size:23px;line-height:1.2}
+.lead{font-size:15px;color:#f3f6ff;margin:0 0 10px}
+#iScroll p{font-size:13.5px;color:#c3cce0;margin:0 0 10px}
+dl.facts{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;margin:12px 0;padding:10px 12px;
+  border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03);font-size:13px}
+dl.facts dt{color:var(--muted)}dl.facts dd{margin:0;text-align:right}
+.subh{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px}
+.chip{display:inline-block;margin:3px 4px 0 0;padding:3px 9px;border-radius:999px;border:1px solid var(--line);
+  background:rgba(255,255,255,.05);font-size:12px;cursor:pointer;color:#d4dbec}
+.chip:hover{border-color:rgba(255,207,110,.5)}
+.chip.on{border-color:var(--gold);color:var(--gold);background:rgba(255,207,110,.1)}
+.note{font-size:11.5px;color:var(--muted);margin-top:14px;border-top:1px solid var(--line);padding-top:8px}
+
+#tip{position:fixed;pointer-events:none;padding:4px 9px;border-radius:7px;background:rgba(8,12,24,.92);
+  border:1px solid var(--line);font-size:12.5px;opacity:0;transition:opacity .12s;z-index:9;white-space:nowrap}
+
+/* SVG */
+.hit{fill:none;stroke:transparent;stroke-width:11;stroke-linecap:round}
+.sel{filter:drop-shadow(0 0 3px #ffd27a) drop-shadow(0 0 7px rgba(255,200,100,.7))}
+.lbl text{font-size:calc(13px * var(--z,1));fill:#c9d3ea;paint-order:stroke;stroke:#070b17;stroke-width:calc(3px * var(--z,1));cursor:pointer}
+.lbl text:hover{fill:#fff}
+.lbl polyline{stroke:rgba(190,205,240,.35);stroke-width:.8;fill:none;vector-effect:non-scaling-stroke}
+.lbl circle{fill:rgba(220,230,255,.7)}
+.lbl.sel{filter:none}.lbl.sel text{fill:var(--gold);font-weight:600}
+
+@media (max-width:980px){
+  #stage{left:0;right:0;top:60px;bottom:45vh}
+  #stageHint{font-size:11.5px;top:auto;bottom:8px}
+  #info{left:8px;right:8px;width:auto;top:auto;bottom:8px;height:calc(45vh - 14px)}
+  #left{left:8px;top:8px;bottom:auto;width:250px;max-height:calc(55vh - 12px);z-index:5}
+  #left .card{padding:9px 11px}
+  #menuBtn{display:block}
+  #left:not(.open) #ctlP,#left:not(.open) #inset,#left:not(.open) .legend,#left:not(.open) .sub{display:none}
+  #iTitle{font-size:19px}
+}
+</style>
+</head>
+<body>
+<div id="stage"><svg id="body" viewBox="-60 0 720 960" preserveAspectRatio="xMidYMid meet" aria-label="Model tráviacej sústavy človeka"></svg>
+  <div id="stageHint"></div>
+  <div id="zoomCtl"><button id="zIn" title="Priblížiť (+)">+</button><button id="zOut" title="Oddialiť (−)">−</button><button id="zReset" title="Pôvodný pohľad (0)">⟲</button><span id="zoomV">100 %</span></div>
+</div>
+
+<aside id="left">
+  <section class="card" id="titleP">
+    <h1>Tráviaca sústava</h1>
+    <div class="sub">Kliknite na orgán alebo popis · koliesko myši alebo dva prsty = zoom, ťahaním posun</div>
+    <ul class="legend">
+      <li><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="#ffd166"/></svg>Sacharidy</li>
+      <li><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="#ff6f91"/></svg>Bielkoviny</li>
+      <li><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="#fff4c8" stroke="#c9b27a"/></svg>Tuky</li>
+      <li><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="#6fd27f"/></svg>Vláknina</li>
+      <li><svg width="12" height="12"><circle cx="6" cy="6" r="4" fill="#5cc8ff"/></svg>Voda</li>
+      <li><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="#8b5a2b"/></svg>Stolica</li>
+      <li><svg width="12" height="12"><circle cx="6" cy="6" r="2.4" fill="#bdeeff"/></svg>Sliny</li>
+      <li><svg width="12" height="12"><circle cx="6" cy="6" r="2.4" fill="#ff9a5c"/></svg>Žalúdočná šťava</li>
+      <li><svg width="12" height="12"><circle cx="6" cy="6" r="2.4" fill="#8ee85f"/></svg>Žlč</li>
+      <li><svg width="12" height="12"><circle cx="6" cy="6" r="2.4" fill="#c79bff"/></svg>Pankreat. šťava</li>
+      <li><svg width="12" height="12"><line x1="1" y1="6" x2="11" y2="6" stroke="#8b7bff" stroke-width="3"/></svg>Krv do pečene</li>
+      <li><svg width="12" height="12"><line x1="1" y1="6" x2="11" y2="6" stroke="#f2e6a0" stroke-width="2" stroke-dasharray="2 2"/></svg>Lymfa (tuky)</li>
+    </ul>
+    <button id="menuBtn">Ovládanie ▾</button>
+  </section>
+
+  <section class="card" id="ctlP">
+    <div class="row">
+      <button id="play" title="Pauza / spustiť (medzerník)">❚❚</button>
+      <label class="sl" style="flex:1;margin:0">Rýchlosť animácie <b id="speedV">1,00×</b>
+        <input type="range" id="speed" min="0.25" max="3" step="0.05" value="1"></label>
+    </div>
+    <div class="sl">Jedlo</div>
+    <div class="segm" id="meals"></div>
+    <div id="mealInfo"></div>
+    <div class="row3">
+      <button id="lblBtn" class="on">Popisky</button>
+      <button id="followBtn" title="Kamera sleduje sústo">Sledovať</button>
+      <button id="autoBtn" class="on" title="Pri zmene fázy zobraziť popis orgánu">Auto-popis</button>
+    </div>
+    <label class="sl">Priebeh <b id="clockV">0 s</b>
+      <input type="range" id="scrub" min="0" max="100" step="0.01" value="0"></label>
+    <dl class="read">
+      <dt>Zrýchlenie teraz</dt><dd id="rAcc">–</dd>
+      <dt>Celá cesta jedla</dt><dd id="rTot">–</dd>
+    </dl>
+    <ol id="phases"></ol>
+    <div id="phaseTxt"></div>
+  </section>
+
+  <section class="card" id="inset">
+    <h3>Čo sa deje so živinami</h3>
+    <svg id="molSvg" viewBox="0 0 260 150"></svg>
+    <div id="enzTxt"></div>
+    <div id="bars"></div>
+    <div class="mini">Svetlá časť = rozložené na malé molekuly, plná = vstrebané do tela.</div>
+  </section>
+</aside>
+
+<aside id="info" class="card">
+  <div id="iHead"><span id="iKat"></span>
+    <div class="nav"><button id="prev" title="Predchádzajúci (←)">‹</button><button id="next" title="Ďalší (→)">›</button></div>
+  </div>
+  <div id="iScroll"></div>
+</aside>
+<div id="tip"></div>
+
+<script>
+(() => {
+'use strict';
+const NS = 'http://www.w3.org/2000/svg';
+const $ = id => document.getElementById(id);
+function E(tag, a, p) { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; }
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ss = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const hash = k => { const x = Math.sin(k * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const fmt = (x, d) => x.toFixed(d).replace('.', ',');
+const hex2 = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const mixC = (a, b, t) => `rgb(${Math.round(lerp(a[0], b[0], t))},${Math.round(lerp(a[1], b[1], t))},${Math.round(lerp(a[2], b[2], t))})`;
+
+/* =================== POPISY =================== */
+const INFO = {
+uvod:{t:"Ako funguje trávenie",k:"Prehľad",
+ lead:"Tráviaca sústava spracúva potravu. Rozdrobí ju, rozloží na drobné látky (živiny) a tie prejdú do krvi. Telo z nich získava energiu a materiál na rast a opravu.",
+ p:["Potrava putuje <b>tráviacou rúrou</b>: ústna dutina → hltan → pažerák → žalúdok → tenké črevo → hrubé črevo → konečník. Pomáhajú jej <b>tráviace žľazy</b>: slinné žľazy, pečeň a podžalúdková žľaza. Tie tvoria tráviace šťavy.",
+ "Trávenie je <b>mechanické</b>: zuby potravu rozdrvia a svaly ju miešajú a posúvajú. Trávenie je aj <b>chemické</b>: tráviace šťavy obsahujú <b>enzýmy</b>, ktoré rozkladajú živiny na menšie, jednoduchšie látky.",
+ "Rozložené živiny sa <b>vstrebávajú</b> hlavne v tenkom čreve do krvi. Čo telo nevyužije, odchádza von ako stolica.",
+ "V animácii sledujete cestu jedného sústa. Čas je zrýchlený, skutočný čas ukazujú hodiny vľavo. Vyskúšajte rôzne jedlá a porovnajte, ako dlho sa trávia."],
+ f:[["Dĺžka tráviacej rúry","asi 8 m"],["Cesta potravy telom","1 až 3 dni"],["Tráviace šťavy za deň","asi 7 litrov"]],
+ zaj:"Za život človek zje približne 30 ton potravy, čo je hmotnosť asi šiestich slonov.",
+ rel:["zdravaVyziva","enzymy","sacharidy","bielkoviny","tuky","choroby"]},
+ustnaDutina:{t:"Ústna dutina",k:"Tráviaca rúra · začiatok",phase:"zuvanie",
+ lead:"Tu sa trávenie začína. Potravu rozhryzieme, rozžujeme, ochutnáme a premiešame so slinami.",
+ p:["V ústnej dutine sú <b>zuby</b>, <b>jazyk</b> a ústia sem <b>slinné žľazy</b>. Zhora ju ohraničuje podnebie, zboku líca, spredu pery.",
+ "Zuby potravu rozdrvia (mechanické trávenie). Sliny ju zvlhčia a enzým v slinách začne rozkladať škrob (chemické trávenie). Vznikne mäkké, klzké <b>sústo</b>.",
+ "Jazyk sústo posunie dozadu do hltana a my ho prehltneme."],
+ f:[["Žuvanie jedného sústa","asi 10 až 30 sekúnd"],["Slín za deň","asi 1 až 1,5 litra"]],
+ zdr:"Jedz pomaly a dôkladne žuj. Dobre rozžuvané jedlo sa ľahšie trávi a skôr pocítiš, že si sýty.",
+ zaj:"Keď dlho žuješ chlieb, začne chutiť sladko. Enzým v slinách totiž mení škrob na cukor.",
+ rel:["zuby","jazyk","slinneZlazy","hltan"]},
+zuby:{t:"Zuby",k:"Ústna dutina",phase:"zuvanie",
+ lead:"Najtvrdšie časti tela. Potravu odhryznú a rozdrvia.",
+ p:["<b>Rezáky</b> odhryzávajú, <b>očné zuby (špiciaky)</b> trhajú, <b>črenové zuby</b> a <b>stoličky</b> drvia a melú potravu.",
+ "Dieťa má 20 <b>mliečnych zubov</b>. Asi od 6 rokov ich nahrádzajú <b>trvalé zuby</b>, ktorých má dospelý 32. Posledné stoličky sú zuby múdrosti.",
+ "Na zube rozlišujeme <b>korunku</b> (vidno ju v ústach), <b>krčok</b> a <b>koreň</b> (je v čeľusti). Korunku pokrýva <b>sklovina</b>, najtvrdšia látka v tele. Pod ňou je zubovina a v strede <b>dreň</b> s cievami a nervami."],
+ f:[["Mliečne zuby","20"],["Trvalé zuby","32"],["Najtvrdšia látka v tele","sklovina"]],
+ zdr:"<b>Zubný kaz</b> vzniká, keď baktérie v zubnom povlaku menia cukor na kyseliny, ktoré rozpúšťajú sklovinu. Čisti si zuby 2-krát denne aspoň 2 minúty, obmedz sladkosti a sladké nápoje a 2-krát ročne choď na preventívnu prehliadku k zubárovi.",
+ zaj:"Sklovina je síce najtvrdšia látka v tele, ale kyseliny ju rozpúšťajú. Poškodená sklovina už nedorastie.",
+ rel:["ustnaDutina","jazyk","choroby"]},
+jazyk:{t:"Jazyk",k:"Ústna dutina",phase:"zuvanie",
+ lead:"Pohyblivý sval, ktorý mieša sústo, posúva ho k zubom a potom do hltana.",
+ p:["Jazyk tvoria svaly, preto je veľmi pohyblivý. Pomáha pri žuvaní, prehĺtaní aj pri reči.",
+ "Na povrchu jazyka sú <b>chuťové poháriky</b>. Rozoznávajú chuť sladkú, slanú, kyslú, horkú a umami (chuť mäsa a vývarov).",
+ "Chuť nás upozorní, či je jedlo dobré. Horká alebo pokazená chuť nás môže varovať pred jedom."],
+ f:[["Základné chute","5"],["Chuťové poháriky","niekoľko tisíc"]],
+ zaj:"Veľkú časť toho, čo považujeme za chuť, v skutočnosti cítime nosom. Preto pri nádche jedlo „nechutí“.",
+ rel:["ustnaDutina","zuby","hltan"]},
+slinneZlazy:{t:"Slinné žľazy",k:"Tráviaca žľaza",phase:"zuvanie",
+ lead:"Tri páry žliaz, ktoré tvoria sliny. Sliny zvlhčujú potravu a začínajú trávenie škrobu.",
+ p:["Máme <b>príušné žľazy</b> (pred uchom, najväčšie), <b>podčeľustné</b> a <b>podjazykové</b> žľazy. Ich vývody ústia do ústnej dutiny.",
+ "Sliny sú hlavne voda. Obsahujú hlien, vďaka ktorému je sústo klzké, a <b>enzým amylázu</b>, ktorý rozkladá škrob. Majú aj látky, ktoré ničia baktérie.",
+ "Sliny sa začnú tvoriť, už keď jedlo vidíme alebo cítime jeho vôňu."],
+ f:[["Slín za deň","asi 1 až 1,5 litra"],["Enzým v slinách","amyláza (rozkladá škrob)"]],
+ zdr:"<b>Mumps</b> je vírusový zápal príušných žliaz, pri ktorom líca opuchnú. Chráni pred ním očkovanie.",
+ zaj:"Stačí si predstaviť, ako hryzieš do citróna, a sliny sa ti začnú zbiehať.",
+ rel:["ustnaDutina","sacharidy","enzymy"]},
+hltan:{t:"Hltan",k:"Tráviaca rúra",phase:"prehltanie",
+ lead:"Krátka svalová trubica za ústnou a nosovou dutinou. Kríži sa v ňom cesta potravy a vzduchu.",
+ p:["Vzduch ide z nosa cez hltan do hrtana a priedušnice. Potrava ide z úst cez hltan do pažeráka.",
+ "Pri prehĺtaní sa <b>mäkké podnebie</b> zdvihne a uzavrie cestu do nosa. <b>Hrtanová príklopka</b> zakryje vchod do hrtana. Dýchanie sa na chvíľu zastaví a sústo prejde do pažeráka.",
+ "Prehĺtanie začneme vôľou (jazykom), ale potom už prebieha samo. Je to <b>reflex</b>."],
+ f:[["Dĺžka","asi 12 cm"],["Prehltnutí za deň","asi 600"]],
+ zdr:"Počas jedla nerozprávaj a nesmej sa. Sústo by mohlo „zabehnúť“ do dýchacích ciest.",
+ zaj:"V stenách hltana sú mandle. Patria k obranyschopnosti tela a zachytávajú choroboplodné zárodky.",
+ rel:["priklopka","pazerak","jazyk"]},
+priklopka:{t:"Hrtanová príklopka",k:"Hltan",phase:"prehltanie",
+ lead:"Malá chrupavková „záklopka“, ktorá pri prehĺtaní zakryje vchod do hrtana.",
+ p:["Keď dýchame, príklopka smeruje nahor a vzduch voľne prúdi do priedušnice.",
+ "Keď prehĺtame, príklopka sa sklopí a sústo skĺzne popri nej do pažeráka, nie do dýchacích ciest. Sledujte to v animácii vo fáze Prehĺtanie."],
+ f:[["Je z","chrupavky"]],
+ zdr:"Ak jedlo zabehne, telo ho vypudí <b>kašľom</b>. Pri vážnom zadusení treba okamžite volať pomoc (112) a poskytnúť prvú pomoc.",
+ rel:["hltan","pazerak"]},
+pazerak:{t:"Pažerák",k:"Tráviaca rúra",phase:"pazerak",
+ lead:"Asi 25 cm dlhá svalová trubica, ktorá vedie sústo z hltana do žalúdka.",
+ p:["Pažerák prechádza hrudníkom za priedušnicou a cez bránicu do brušnej dutiny.",
+ "Nič netrávi, len posúva potravu. Svaly v jeho stene sa za sústom sťahujú a pred ním uvoľňujú. Tento vlnovitý pohyb sa volá <b>peristaltika</b>.",
+ "Na konci pažeráka je <b>zvierač</b>, ktorý pustí sústo do žalúdka a potom sa zavrie."],
+ f:[["Dĺžka","asi 25 cm"],["Cesta sústa","asi 5 až 10 sekúnd"]],
+ zdr:"Keď zvierač dobre netesní, kyselina zo žalúdka sa vracia do pažeráka a cítime <b>pálenie záhy</b>. Pomáha nejesť tesne pred spaním a neprejedať sa.",
+ zaj:"Vďaka peristaltike vieš prehĺtať aj dolu hlavou. Sústo posúvajú svaly, nie zemská príťažlivosť.",
+ rel:["hltan","zaludok","peristaltika","branica"]},
+branica:{t:"Bránica",k:"Okolie",
+ lead:"Plochý sval, ktorý oddeľuje hrudnú dutinu od brušnej. Je to najdôležitejší dýchací sval.",
+ p:["Nad bránicou sú pľúca a srdce, pod ňou pečeň, žalúdok a ostatné brušné orgány.",
+ "Pažerák prechádza bránicou cez otvor. Pri nádychu sa bránica sťahuje a klesá nadol."],
+ f:[["Druh svalu","priečne pruhovaný"]],
+ zaj:"Štikútka vzniká, keď sa bránica náhle a nechcene stiahne.",
+ rel:["pazerak","pecen","zaludok"]},
+zaludok:{t:"Žalúdok",k:"Tráviaca rúra",phase:"zaludok",
+ lead:"Vakovitý svalový orgán v ľavej hornej časti brucha. Potravu uskladní, premieša a začne tráviť bielkoviny.",
+ p:["Má vstup z pažeráka, klenbu, telo a výstup do dvanástnika, ktorý sa volá <b>vrátnik</b>. Vrátnik je svalový zvierač.",
+ "Žľazy v stene tvoria <b>žalúdočnú šťavu</b>. Obsahuje <b>kyselinu chlorovodíkovú</b>, ktorá zabíja baktérie z potravy, a enzým <b>pepsín</b>, ktorý začína rozkladať bielkoviny. Stenu žalúdka pred kyselinou chráni vrstva <b>hlienu</b>.",
+ "Silné svaly žalúdka potravu miešajú so šťavou, až vznikne kaša, takzvaná <b>trávenina</b>. Vrátnik ju po malých dávkach púšťa do dvanástnika.",
+ "Ako dlho jedlo zostane v žalúdku, závisí od jeho zloženia. Nápoje a ovocie odídu rýchlo, mäso pomalšie a tučné jedlá najpomalšie. Vyskúšajte to v animácii."],
+ f:[["Objem po jedle","asi 1 až 1,5 litra"],["Potrava zostane","asi 2 až 4 hodiny"],["Žalúdočnej šťavy za deň","asi 2 litre"]],
+ zdr:"Jedz pravidelne a v pokoji. Nepravidelné jedenie, stres, fajčenie a alkohol dráždia sliznicu, a tak môže vzniknúť zápal alebo <b>žalúdočný vred</b>. Vredy často spôsobuje aj baktéria Helicobacter.",
+ zaj:"Kyselina v žalúdku je taká silná, že by poškodila kožu. Výstelka žalúdka sa preto obnovuje každých pár dní.",
+ rel:["pazerak","dvanastnik","bielkoviny","enzymy","peristaltika"]},
+dvanastnik:{t:"Dvanástnik",k:"Tenké črevo · začiatok",phase:"dvanastnik",
+ lead:"Prvá, asi 25 cm dlhá časť tenkého čreva. Ústi doň žlč z pečene a šťava z podžalúdkovej žľazy.",
+ p:["Názov dostal podľa dĺžky, ktorá zodpovedá asi dvanástim šírkam prsta. Má tvar písmena C a obopína podžalúdkovú žľazu.",
+ "Sem prichádza kyslá trávenina zo žalúdka. Pridá sa k nej <b>žlč</b> (v animácii zelená) a <b>pankreatická šťava</b> (fialová).",
+ "Pankreatická šťava kyselinu neutralizuje a jej enzýmy rozkladajú všetky živiny: cukry, bielkoviny aj tuky. Žlč rozbije tuky na drobné kvapôčky, aby sa ľahšie trávili."],
+ f:[["Dĺžka","asi 25 cm"],["Ústi doň","žlč a pankreatická šťava"]],
+ rel:["zaludok","tenkeCrevo","zlcnik","pankreas"]},
+tenkeCrevo:{t:"Tenké črevo",k:"Tráviaca rúra",phase:"tenke",
+ lead:"Najdlhšia časť tráviacej rúry. Tu sa trávenie dokončí a živiny prejdú do krvi.",
+ p:["Má tri časti: <b>dvanástnik</b>, <b>lačník</b> a <b>bedrovník</b>. Je poskladané v slučkách a uložené v strede brucha.",
+ "Vnútri je sliznica s miliónmi drobných výbežkov, <b>klkov</b>. Vďaka nim má črevo obrovskú plochu na <b>vstrebávanie</b>.",
+ "Rozložené živiny prechádzajú cez steny klkov: cukry, aminokyseliny, vitamíny, minerálne látky a voda idú do <b>krvi</b> a s ňou najprv do pečene (fialové dráhy v animácii). Tuky idú najprv do <b>lymfy (miazgy)</b> (žltá prerušovaná dráha) a až potom do krvi.",
+ "Zvyšky, ktoré sa nestrávili, posunie peristaltika do hrubého čreva."],
+ f:[["Dĺžka","asi 4 až 6 m"],["Potrava tu zostane","asi 3 až 5 hodín"],["Plocha sliznice","asi 30 m²"]],
+ zaj:"Keby sme sliznicu tenkého čreva so všetkými klkmi rozprestreli, mala by plochu ako menší byt, asi 30 m².",
+ rel:["dvanastnik","klky","vratnicova","lymfa","hrubeCrevo"]},
+klky:{t:"Črevné klky",k:"Vstrebávanie",phase:"tenke",
+ lead:"Drobné prstovité výbežky sliznice tenkého čreva, cez ktoré sa vstrebávajú živiny.",
+ p:["Klk je vysoký asi 1 mm. Vo vnútri má sieť tenkých krvných vlásočníc (kapilár) a jednu lymfatickú cievu.",
+ "Povrch klku tvorí jedna vrstva buniek, ktoré prepúšťajú rozložené živiny do krvi a lymfy.",
+ "Klkov je veľmi veľa, preto majú spolu obrovskú plochu. Čím väčšia plocha, tým rýchlejšie sa živiny vstrebú."],
+ f:[["Výška klku","asi 1 mm"],["Vstrebávajú","živiny, vitamíny, vodu"]],
+ rel:["tenkeCrevo","vratnicova","lymfa"]},
+pecen:{t:"Pečeň",k:"Tráviaca žľaza · najväčšia",
+ lead:"Najväčšia žľaza v tele. Tvorí žlč a spracúva živiny, ktoré prišli z čriev.",
+ p:["Leží v pravej hornej časti brucha pod bránicou a váži asi 1,5 kg.",
+ "Tvorí <b>žlč</b>, ktorá pomáha tráviť tuky. Žlč sa zhromažďuje v žlčníku.",
+ "Krv zo žalúdka a čriev prichádza najprv do pečene (vrátnicovou žilou). Pečeň z nej <b>ukladá cukor</b> ako zásobu (glykogén), ukladá niektoré vitamíny a železo a <b>zneškodňuje jedovaté látky</b>, napríklad alkohol a lieky. Pritom vzniká aj teplo."],
+ f:[["Hmotnosť","asi 1,5 kg"],["Žlče za deň","asi 0,5 až 1 liter"]],
+ zdr:"Pečeň poškodzuje alkohol a veľmi tučná strava. <b>Žltačka</b> (infekčný zápal pečene) sa šíri cez špinavé ruky a jedlo. Chráni nás umývanie rúk a očkovanie.",
+ zaj:"Pečeň dokáže dorásť. Aj keď sa časť odstráni, zvyšok sa zväčší a funguje ďalej.",
+ rel:["zlcnik","vratnicova","tuky","dvanastnik","choroby"]},
+zlcnik:{t:"Žlčník",k:"Tráviaca žľaza",phase:"dvanastnik",
+ lead:"Malý vačok pod pečeňou, v ktorom sa zhromažďuje žlč.",
+ p:["Medzi jedlami sa žlč z pečene hromadí v žlčníku a zahusťuje sa.",
+ "Keď do dvanástnika príde jedlo, najmä tučné, žlčník sa stiahne a vytlačí žlč žlčovodom do dvanástnika. V animácii vidieť, ako sa zmenší.",
+ "Žlč neobsahuje enzýmy. Tuky však rozbije na drobné kvapôčky, podobne ako saponát na riad, a enzýmy ich potom ľahšie rozložia."],
+ f:[["Objem","asi 30 až 50 ml"],["Farba žlče","žltozelená"]],
+ zdr:"Pri tučnom jedle a prejedaní sa v žlčníku môžu vytvoriť <b>žlčníkové kamene</b>, ktoré spôsobujú silnú bolesť.",
+ rel:["pecen","dvanastnik","tuky"]},
+pankreas:{t:"Podžalúdková žľaza (pankreas)",k:"Tráviaca žľaza",phase:"dvanastnik",
+ lead:"Žľaza pod žalúdkom. Tvorí pankreatickú šťavu na trávenie a hormón inzulín.",
+ p:["Leží za žalúdkom a jej vývod ústi do dvanástnika.",
+ "<b>Pankreatická šťava</b> obsahuje enzýmy, ktoré rozkladajú cukry, bielkoviny aj tuky. Je to najdôležitejšia tráviaca šťava.",
+ "Niektoré bunky žľazy tvoria hormón <b>inzulín</b>, ktorý znižuje množstvo cukru v krvi. Keď sa inzulín netvorí alebo nepôsobí, vzniká <b>cukrovka</b>."],
+ f:[["Dĺžka","asi 15 cm"],["Pankreatickej šťavy za deň","asi 1,5 litra"],["Hormón","inzulín"]],
+ zdr:"Veľa sladkostí, nadváha a málo pohybu zvyšujú riziko cukrovky 2. typu.",
+ rel:["dvanastnik","enzymy","sacharidy"]},
+hrubeCrevo:{t:"Hrubé črevo",k:"Tráviaca rúra",phase:"hrube",
+ lead:"Posledná, asi 1,5 m dlhá časť čreva. Vstrebáva vodu a zo zvyškov vytvára stolicu.",
+ p:["Začína <b>slepým črevom</b> s <b>červovitým príveskom</b> v pravej dolnej časti brucha. Potom ide hore, naprieč a dole okolo tenkého čreva a končí <b>konečníkom</b>.",
+ "Hrubé črevo už netrávi. Vstrebáva však <b>vodu</b> a soli, preto zvyšky hustnú na stolicu.",
+ "Žijú v ňom užitočné <b>baktérie</b>. Rozkladajú vlákninu a tvoria niektoré vitamíny, napríklad vitamín K."],
+ f:[["Dĺžka","asi 1,5 m"],["Obsah tu zostane","asi 12 až 48 hodín"]],
+ zdr:"Proti <b>zápche</b> pomáha vláknina (zelenina, ovocie, celozrnné pečivo), dostatok vody a pohyb. Pri <b>hnačke</b> telo stráca veľa vody, preto treba veľa piť.",
+ rel:["slepeCrevo","apendix","mikrobiom","konecnik","vodaVlaknina"]},
+slepeCrevo:{t:"Slepé črevo",k:"Hrubé črevo",phase:"hrube",
+ lead:"Začiatok hrubého čreva v pravej dolnej časti brucha. Ústi doň tenké črevo.",
+ p:["Nadol slepo končí, odtiaľ má názov. Z jeho spodnej časti vychádza tenký <b>červovitý prívesok</b>.",
+ "To, čomu ľudia hovoria „zápal slepého čreva“, je v skutočnosti zápal červovitého prívesku."],
+ f:[["Dĺžka","asi 6 až 8 cm"]],
+ rel:["hrubeCrevo","apendix","tenkeCrevo"]},
+apendix:{t:"Červovitý prívesok",k:"Hrubé črevo",
+ lead:"Tenký, slepo končiaci výbežok slepého čreva.",
+ p:["Je dlhý asi ako prst. Má veľa buniek obranného systému a pravdepodobne v ňom prežívajú užitočné baktérie.",
+ "Keď sa upchá, môže sa zapáliť. Vtedy hovoríme o <b>zápale slepého čreva</b> (apendicitíde)."],
+ f:[["Dĺžka","asi 5 až 10 cm"]],
+ zdr:"Zápal sa prejaví bolesťou brucha, ktorá sa presúva doprava dole, nevoľnosťou a horúčkou. Treba ísť k lekárovi, lebo prívesok môže prasknúť. Zvyčajne sa odstráni operáciou.",
+ rel:["slepeCrevo","mikrobiom","choroby"]},
+konecnik:{t:"Konečník a ritný otvor",k:"Tráviaca rúra · koniec",phase:"konecnik",
+ lead:"Posledná časť tráviacej rúry. Hromadí sa v nej stolica, kým neodíde von.",
+ p:["Keď sa konečník naplní, cítime <b>nutkanie na stolicu</b>.",
+ "Ritný otvor uzatvárajú dva <b>zvierače</b>. Vnútorný pracuje sám, vonkajší ovládame vôľou, preto môžeme ísť na toaletu až vtedy, keď sa dá.",
+ "Pri vyprázdnení sa zvierače uvoľnia a stolica odíde von."],
+ f:[["Dĺžka","asi 12 až 15 cm"],["Stolica za deň","asi 100 až 200 g"]],
+ zdr:"Po použití toalety si vždy umy ruky mydlom. Tak zabrániš šíreniu baktérií a vírusov, ktoré spôsobujú črevné choroby.",
+ zaj:"Hnedú farbu dávajú stolici farbivá, ktoré vznikajú zo žlče.",
+ rel:["hrubeCrevo","vodaVlaknina"]},
+vratnicova:{t:"Vrátnicová žila",k:"Cievy",phase:"tenke",
+ lead:"Žila, ktorá privádza krv so vstrebanými živinami z čriev do pečene.",
+ p:["Krv z tenkého čreva, žalúdka a sleziny sa zbiera do vrátnicovej žily. Tá nevedie rovno do srdca, ale do <b>pečene</b>.",
+ "Pečeň tak ako prvá skontroluje všetko, čo sme zjedli. Uloží zásoby a zneškodní jedovaté látky. V animácii je to fialová dráha."],
+ f:[["Vedie z","čriev, žalúdka, sleziny"],["Vedie do","pečene"]],
+ rel:["pecen","tenkeCrevo","klky"]},
+lymfa:{t:"Lymfatické cievy",k:"Miazgové cievy",phase:"tenke",
+ lead:"Cesta, ktorou sa vstrebané tuky dostávajú do krvi.",
+ p:["Tuky sú pre krvné vlásočnice v klkoch príliš veľké. Preto idú najprv do <b>lymfatických ciev</b> s miazgou (lymfou).",
+ "Lymfatické cievy vedú popri chrbtici nahor a ústia do veľkej žily pri srdci. Tak sa tuky dostanú do krvi. V animácii je to žltá prerušovaná dráha."],
+ f:[["Tekutina","lymfa (miazga)"]],
+ rel:["tuky","klky","tenkeCrevo"]},
+peristaltika:{t:"Peristaltika",k:"Ako sa potrava posúva",phase:"pazerak",
+ lead:"Vlnovitý pohyb svalov tráviacej rúry, ktorý posúva potravu jedným smerom.",
+ p:["Za sústom sa svaly v stene sťahujú, pred ním sa uvoľňujú. Vlna postupuje ďalej a tlačí potravu pred sebou, podobne ako keď vytláčaš zubnú pastu z tuby.",
+ "Tieto pohyby robí hladká svalovina sama, nemôžeme ich ovládať vôľou.",
+ "V animácii sledujte zúženie pažeráka za sústom, vlny v žalúdku a pulzovanie čreva."],
+ f:[["Svalovina","hladká (pracuje sama)"]],
+ rel:["pazerak","zaludok","tenkeCrevo"]},
+enzymy:{t:"Tráviace enzýmy",k:"Chemické trávenie",
+ lead:"Látky v tráviacich šťavách, ktoré rozkladajú veľké molekuly živín na malé.",
+ p:["Každý enzým rozkladá len určitú živinu, podobne ako kľúč, ktorý pasuje len do jedného zámku.",
+ "<b>Amyláza</b> (v slinách a v pankreatickej šťave) rozkladá škrob na cukor. <b>Pepsín</b> (v žalúdku) a enzýmy z pankreasu rozkladajú bielkoviny na aminokyseliny. <b>Lipáza</b> (z pankreasu) rozkladá tuky.",
+ "Ako enzýmy rozkladajú živiny, vidno v ľavom paneli „Čo sa deje so živinami“."],
+ f:[["Škrob","amyláza"],["Bielkoviny","pepsín a ďalšie"],["Tuky","lipáza"]],
+ rel:["sacharidy","bielkoviny","tuky","pankreas","slinneZlazy"]},
+mikrobiom:{t:"Črevné baktérie",k:"Hrubé črevo",phase:"hrube",
+ lead:"V hrubom čreve žijú bilióny užitočných baktérií.",
+ p:["Rozkladajú vlákninu, ktorú sami stráviť nevieme, a tvoria vitamín K a niektoré vitamíny B.",
+ "Chránia nás pred škodlivými baktériami, lebo im nenechajú miesto. Pri ich práci vznikajú aj plyny.",
+ "Prospieva im vláknina a kyslomliečne výrobky (jogurt, kefír). Antibiotiká môžu časť užitočných baktérií zničiť. V animácii sú to tyrkysové tyčinky."],
+ f:[["Hmotnosť baktérií v čreve","asi 0,2 kg"]],
+ rel:["hrubeCrevo","vodaVlaknina","apendix"]},
+sacharidy:{t:"Sacharidy (cukry)",k:"Živiny",
+ lead:"Hlavný a najrýchlejší zdroj energie pre telo.",
+ p:["Patria sem <b>jednoduché cukry</b> (glukóza, ovocný cukor, sacharóza v cukre) a <b>škrob</b> v pečive, cestovinách, ryži a zemiakoch.",
+ "Trávenie škrobu začína v ústach (amyláza zo slín), pokračuje v dvanástniku a končí v tenkom čreve. Vznikne <b>glukóza</b>, ktorá prejde do krvi.",
+ "Nadbytočný cukor si telo uloží v pečeni a svaloch ako zásobu. Keď cukru zjeme priveľa, mení sa na tuk."],
+ f:[["Zdroje","pečivo, ryža, cestoviny, zemiaky, ovocie"],["Energia","asi 17 kJ v 1 g"]],
+ zdr:"Lepšie sú celozrnné potraviny a ovocie ako sladkosti a sladené nápoje. Tie kazia zuby a prispievajú k nadváhe.",
+ rel:["enzymy","slinneZlazy","vodaVlaknina","zdravaVyziva"]},
+bielkoviny:{t:"Bielkoviny",k:"Živiny",
+ lead:"Stavebné látky tela, z ktorých sú svaly, koža, vlasy aj enzýmy.",
+ p:["Bielkoviny sú dlhé reťazce menších látok, <b>aminokyselín</b>.",
+ "Ich trávenie začína v žalúdku (pepsín) a končí v tenkom čreve. Aminokyseliny prejdú do krvi a telo z nich skladá vlastné bielkoviny.",
+ "Najviac ich potrebujú deti a dospievajúci, ktorí rastú."],
+ f:[["Živočíšne zdroje","mäso, ryby, vajcia, mlieko, syr"],["Rastlinné zdroje","strukoviny, orechy"]],
+ rel:["enzymy","zaludok","zdravaVyziva"]},
+tuky:{t:"Tuky",k:"Živiny",
+ lead:"Najväčší zdroj energie a zásobná látka tela.",
+ p:["Tuky dávajú telu najviac energie. Chránia orgány, izolujú telo pred chladom a sú potrebné na vstrebanie vitamínov A, D, E a K.",
+ "Trávia sa hlavne v dvanástniku a tenkom čreve. Žlč ich rozbije na kvapôčky a enzým lipáza ich rozloží. Vstrebané tuky idú najprv do lymfy.",
+ "Tučné jedlo zostáva v žalúdku najdlhšie, preto po ňom dlho nemáme hlad."],
+ f:[["Zdroje","maslo, olej, orechy, mäso, syr"],["Energia","asi 37 kJ v 1 g (najviac)"]],
+ zdr:"Zdravšie sú rastlinné oleje, orechy a ryby. Vyprážané jedlá, hranolky a čipsy jedz len občas.",
+ rel:["zlcnik","lymfa","pankreas","zdravaVyziva"]},
+vodaVlaknina:{t:"Voda a vláknina",k:"Živiny",
+ lead:"Voda je súčasťou každej bunky. Vláknina sa nestrávi, ale pomáha črevám.",
+ p:["Telo dospelého tvorí asi zo 60 % voda. Vstrebáva sa hlavne v tenkom čreve, zvyšok v hrubom čreve.",
+ "<b>Vláknina</b> je súčasť rastlín (zelenina, ovocie, celozrnné pečivo, strukoviny). Nevieme ju stráviť, ale zväčšuje objem stolice, pomáha jej posúvať sa a živí užitočné baktérie."],
+ f:[["Vypiť denne","asi 1,5 až 2 litre"],["Najlepší nápoj","čistá voda"]],
+ zdr:"Pi priebežne počas dňa, viac pri športe a v teple. Málo vody a vlákniny vedie k zápche.",
+ rel:["hrubeCrevo","mikrobiom","zdravaVyziva"]},
+vitaminy:{t:"Vitamíny a minerálne látky",k:"Živiny",
+ lead:"Látky, ktoré telo potrebuje len v malom množstve, ale bez nich nedokáže správne fungovať.",
+ p:["<b>Vitamín C</b> (ovocie, zelenina) posilňuje obranyschopnosť. <b>Vitamín D</b> (ryby, slnko) potrebujú kosti. <b>Vitamín A</b> (mrkva) pomáha zraku.",
+ "Z <b>minerálnych látok</b> potrebujeme napríklad vápnik pre kosti a zuby (mlieko, syr) a železo pre krv (mäso, strukoviny).",
+ "Vstrebávajú sa v tenkom čreve. Niektoré vitamíny tvoria aj baktérie v hrubom čreve."],
+ f:[["Pri nedostatku","avitaminóza"]],
+ rel:["zdravaVyziva","tenkeCrevo","mikrobiom"]},
+zdravaVyziva:{t:"Zdravá výživa",k:"Zdravie",
+ lead:"Pestrá a pravidelná strava dodá telu všetky živiny, ktoré potrebuje.",
+ p:["Jedz <b>4 až 5-krát denne</b> v menších porciách a nevynechávaj raňajky.",
+ "Základom má byť zelenina, ovocie, celozrnné pečivo, ryža a zemiaky. K tomu mliečne výrobky, mäso, ryby, vajcia a strukoviny. Sladkosti, slané a tučné jedlá jedz len málo. Pomôcť môže <b>potravinová pyramída</b>: čo je dole, môžeš jesť často, čo je hore, len zriedka.",
+ "Dôležitý je aj <b>pitný režim</b> a pohyb.",
+ "Skúste v animácii porovnať napríklad šalát, hamburger a sladký nápoj. Uvidíte, ako sa líšia zložením aj časom trávenia."],
+ f:[["Jedál denne","4 až 5"],["Ovocie a zelenina","aspoň 5 porcií denne"]],
+ zdr:"Pred jedlom si umy ruky. Potraviny skladuj v chlade a nejedz pokazené jedlo.",
+ rel:["sacharidy","bielkoviny","tuky","vitaminy","vodaVlaknina","choroby"]},
+choroby:{t:"Choroby tráviacej sústavy",k:"Zdravie",
+ lead:"Najčastejšie problémy a ako im predchádzať.",
+ p:["<b>Zubný kaz</b>: spôsobujú ho baktérie a cukor. Pomáha čistenie zubov a málo sladkostí.",
+ "<b>Otrava jedlom</b> (napr. <b>salmonelóza</b>) vzniká po zjedení potravy s baktériami, často z nedovarených vajec alebo mäsa. Prejavuje sa hnačkou, vracaním a horúčkou.",
+ "<b>Žltačka</b> je infekčný zápal pečene. Šíri sa špinavými rukami a jedlom. Koža a oči zožltnú.",
+ "<b>Žalúdočný vred</b> súvisí so stresom, nepravidelným jedením a baktériou Helicobacter. <b>Zápal slepého čreva</b> treba rýchlo operovať.",
+ "<b>Zápcha</b> a <b>hnačka</b> súvisia s pitným režimom, vlákninou a hygienou."],
+ f:[["Najlepšia prevencia","umývanie rúk, zdravá strava"]],
+ zdr:"Pri silnej bolesti brucha, dlhotrvajúcej hnačke, vracaní alebo krvi v stolici treba ísť k lekárovi.",
+ rel:["zuby","zaludok","pecen","apendix","zdravaVyziva"]}
+};
+const GROUPS = [
+  ["Prehľad", ["uvod"]],
+  ["Tráviaca rúra", ["ustnaDutina", "zuby", "jazyk", "hltan", "priklopka", "pazerak", "zaludok", "dvanastnik", "tenkeCrevo", "hrubeCrevo", "slepeCrevo", "apendix", "konecnik"]],
+  ["Tráviace žľazy", ["slinneZlazy", "pecen", "zlcnik", "pankreas"]],
+  ["Cievy a okolie", ["vratnicova", "lymfa", "branica"]],
+  ["Ako trávenie funguje", ["peristaltika", "enzymy", "klky", "mikrobiom"]],
+  ["Živiny", ["sacharidy", "bielkoviny", "tuky", "vodaVlaknina", "vitaminy"]],
+  ["Zdravie", ["zdravaVyziva", "choroby"]]
+];
+const ORDER = GROUPS.flatMap(g => g[1]);
+
+/* =================== FÁZY A JEDLÁ =================== */
+const PH = [
+ {id:'prijem', n:'Príjem potravy', a:3, organ:'ustnaDutina', real:m => 5,
+  txt:'Sústo sa dostáva do úst. Už keď jedlo vidíme a cítime, začnú sa tvoriť sliny.',
+  enz:'Potrava vstupuje do úst. Zatiaľ sa nič nerozkladá.'},
+ {id:'zuvanie', n:'Žuvanie a sliny', a:9, organ:'slinneZlazy', real:m => m.chew,
+  txt:'Zuby sústo rozdrvia a jazyk ho mieša so <b>slinami</b> (svetlomodré bodky). Enzým amyláza v slinách začne rozkladať škrob.',
+  txtL:'Tekutinu nežujeme. V ústach sa len premieša so slinami a hneď ju prehltneme.',
+  enz:'<b>Amyláza zo slín</b> začína rozkladať škrob na cukor.'},
+ {id:'prehltanie', n:'Prehĺtanie', a:4, organ:'hltan', real:m => 1.5,
+  txt:'Jazyk posunie sústo do hltana. <b>Mäkké podnebie</b> zavrie cestu do nosa a <b>hrtanová príklopka</b> zakryje hrtan, aby jedlo nezabehlo.',
+  enz:'Amyláza v súste stále pracuje.'},
+ {id:'pazerak', n:'Pažerák', a:5, organ:'pazerak', real:m => 7,
+  txt:'Svaly pažeráka sa za sústom sťahujú a tlačia ho nadol. To je <b>peristaltika</b>. Na konci sa otvorí zvierač do žalúdka.',
+  enz:'Pažerák nič netrávi, len posúva potravu.'},
+ {id:'zaludok', n:'Žalúdok', a:20, organ:'zaludok', real:m => m.stomach,
+  txt:'Žalúdok potravu mieša so <b>žalúdočnou šťavou</b> (oranžové bodky). Kyselina zabíja baktérie a pepsín rozkladá bielkoviny. Vzniká kaša, <b>trávenina</b>, ktorú vrátnik púšťa ďalej.',
+  enz:'<b>Pepsín</b> a kyselina rozkladajú bielkoviny.'},
+ {id:'dvanastnik', n:'Dvanástnik', a:10, organ:'dvanastnik', real:m => 1800,
+  txt:'Žlčník vytlačí <b>žlč</b> (zelená) a podžalúdková žľaza <b>pankreatickú šťavu</b> (fialová). Žlč rozbije tuky na kvapôčky a enzýmy rozkladajú všetky živiny.',
+  enz:'<b>Žlč</b> rozbíja tuky. Enzýmy z <b>pankreasu</b> rozkladajú cukry, bielkoviny aj tuky.'},
+ {id:'tenke', n:'Tenké črevo', a:24, organ:'tenkeCrevo', real:m => m.small,
+  txt:'Trávenie sa dokončí a živiny sa cez <b>klky</b> vstrebávajú. Cukry, aminokyseliny a voda idú krvou do <b>pečene</b> (fialová), tuky do <b>lymfy</b> (žltá).',
+  enz:'Trávenie sa dokončuje a živiny sa <b>vstrebávajú do krvi</b>.'},
+ {id:'hrube', n:'Hrubé črevo', a:20, organ:'hrubeCrevo', real:m => m.colon,
+  txt:'Vstrebáva sa <b>voda</b>. Užitočné baktérie (tyrkysové tyčinky) rozkladajú vlákninu. Zvyšky hustnú na stolicu.',
+  enz:'<b>Baktérie</b> rozkladajú vlákninu, vstrebáva sa voda.'},
+ {id:'konecnik', n:'Konečník', a:8, organ:'konecnik', real:m => 7200,
+  txt:'Stolica sa hromadí v konečníku. Keď sa naplní, cítime nutkanie. Po uvoľnení zvieračov stolica odíde von.',
+  enz:'Nestrávené zvyšky odchádzajú ako stolica.'}
+];
+const PI = {}; PH.forEach((p, i) => PI[p.id] = i);
+const phName = i => meal.liquid && PH[i].id === 'zuvanie' ? 'V ústach' : PH[i].n;
+const phTxt = i => meal.liquid && PH[i].txtL ? PH[i].txtL : PH[i].txt;
+const H = 3600;
+const MEALS = {
+ obed:{n:'Obed', e:'🍛', d:'mäso, ryža, zelenina', c:{carb:15, prot:10, fat:7, fiber:8, water:10}, chew:25, stomach:3 * H, small:4 * H, colon:30 * H,
+  tip:'Pestré jedlo so všetkými živinami. V žalúdku zostane asi 3 hodiny.'},
+ chlieb:{n:'Chlieb s maslom', e:'🍞', d:'škrob a tuk', c:{carb:20, prot:5, fat:9, fiber:5, water:6}, chew:20, stomach:2 * H, small:3.5 * H, colon:30 * H,
+  tip:'Škrob z chleba sa začne tráviť už v ústach. Celozrnný chlieb má viac vlákniny ako biely.'},
+ cestoviny:{n:'Cestoviny so syrom', e:'🍝', d:'škrob, bielkoviny', c:{carb:20, prot:8, fat:7, fiber:3, water:8}, chew:20, stomach:3 * H, small:4 * H, colon:30 * H,
+  tip:'Veľa škrobu dá energiu na dlhší čas. Syr pridá bielkoviny a vápnik.'},
+ kasa:{n:'Ovsená kaša', e:'🥣', d:'škrob, vláknina', c:{carb:16, prot:5, fat:4, fiber:9, water:14}, chew:15, stomach:2.5 * H, small:4 * H, colon:26 * H,
+  tip:'Výborné raňajky. Ovsená vláknina zasýti a pomáha črevám.'},
+ ryba:{n:'Ryba so zemiakmi', e:'🐟', d:'bielkoviny, škrob', c:{carb:12, prot:13, fat:5, fiber:4, water:11}, chew:25, stomach:3 * H, small:4 * H, colon:30 * H,
+  tip:'Ryby sú zdrojom bielkovín, zdravých tukov a vitamínu D.'},
+ vajce:{n:'Vajíčko', e:'🥚', d:'bielkoviny, tuk', c:{carb:0, prot:12, fat:9, fiber:0, water:12}, chew:15, stomach:2.5 * H, small:3.5 * H, colon:30 * H,
+  tip:'Takmer bez cukrov, veľa bielkovín. Vajcia treba dobre uvariť (salmonelóza).'},
+ mlieko:{n:'Mlieko', e:'🥛', d:'tekutina, vápnik', liquid:true, c:{carb:6, prot:6, fat:5, fiber:0, water:24}, chew:2, stomach:1.5 * H, small:3 * H, colon:24 * H,
+  tip:'Tekutinu nežujeme. Mlieko je zdrojom vápnika pre kosti a zuby. V žalúdku sa zrazí.'},
+ jablko:{n:'Jablko', e:'🍎', d:'cukry, vláknina, voda', c:{carb:13, prot:1, fat:1, fiber:12, water:20}, chew:25, stomach:45 * 60, small:3 * H, colon:24 * H,
+  tip:'Ovocie odíde zo žalúdka rýchlo. Šupka je plná vlákniny a vitamínov.'},
+ banan:{n:'Banán', e:'🍌', d:'cukry, škrob', c:{carb:17, prot:1, fat:1, fiber:6, water:14}, chew:15, stomach:1 * H, small:3 * H, colon:26 * H,
+  tip:'Rýchla energia pred športom. Obsahuje draslík pre svaly.'},
+ salat:{n:'Zeleninový šalát', e:'🥗', d:'vláknina, voda, olej', c:{carb:5, prot:2, fat:4, fiber:14, water:20}, chew:30, stomach:1.5 * H, small:3 * H, colon:22 * H,
+  tip:'Málo energie, veľa vitamínov a vlákniny. Olej pomáha vstrebať vitamíny.'},
+ orechy:{n:'Orechy', e:'🥜', d:'tuky, bielkoviny', c:{carb:4, prot:9, fat:18, fiber:7, water:1}, chew:30, stomach:3.5 * H, small:4.5 * H, colon:30 * H,
+  tip:'Veľa zdravých tukov a energie. Stačí malá hrsť.'},
+ steak:{n:'Steak s hranolkami', e:'🥩', d:'bielkoviny, tuk', c:{carb:9, prot:16, fat:14, fiber:3, water:7}, chew:35, stomach:4.5 * H, small:5 * H, colon:36 * H,
+  tip:'Mäso a vyprážané jedlo zostávajú v žalúdku dlho a „ťažia“.'},
+ burger:{n:'Hamburger', e:'🍔', d:'tuk, bielkoviny, škrob', c:{carb:12, prot:12, fat:14, fiber:3, water:7}, chew:25, stomach:4 * H, small:5 * H, colon:36 * H,
+  tip:'Veľa tuku a soli, málo vlákniny. Rýchle občerstvenie jedz len občas.'},
+ cokolada:{n:'Čokoláda', e:'🍫', d:'cukor a tuk', c:{carb:15, prot:3, fat:13, fiber:2, water:1}, chew:15, stomach:2.5 * H, small:3.5 * H, colon:30 * H,
+  tip:'Veľa cukru a tuku, málo vlákniny. Cukor škodí zubom.'},
+ cola:{n:'Sladený nápoj', e:'🥤', d:'cukor a voda', liquid:true, c:{carb:14, prot:0, fat:0, fiber:0, water:30}, chew:2, stomach:30 * 60, small:2 * H, colon:20 * H,
+  tip:'Iba cukor a voda, žiadne iné živiny. Jedna plechovka má asi 8 až 9 kociek cukru. Pi radšej vodu.'}
+};
+const TYPES = {
+ carb:{c:'#ffd166', r:4.2}, prot:{c:'#ff6f91', r:4.2}, fat:{c:'#fff4c8', r:3.9, st:'#c9b27a'},
+ fiber:{c:'#6fd27f', r:4}, water:{c:'#5cc8ff', r:3.1}
+};
+const STOOL = hex2('#8b5a2b');
+// podiel rozloženia na konci každej fázy
+const DIG = {
+ carb:[0, .3, .3, .3, .35, .75, 1, 1, 1],
+ prot:[0, 0, 0, 0, .3, .7, 1, 1, 1],
+ fat:[0, .03, .03, .03, .1, .6, 1, 1, 1]
+};
+
+/* =================== GEOMETRIA =================== */
+const svg = $('body');
+const STEP = 2;
+function crs(P, n = 10) {
+  const o = [];
+  for (let i = 0; i < P.length - 1; i++) {
+    const p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(P.length - 1, i + 2)];
+    for (let k = 0; k < n; k++) {
+      const t = k / n, t2 = t * t, t3 = t2 * t;
+      o.push([0, 1].map(d => .5 * (2 * p1[d] + (-p0[d] + p2[d]) * t + (2 * p0[d] - 5 * p1[d] + 4 * p2[d] - p3[d]) * t2 + (-p0[d] + 3 * p1[d] - 3 * p2[d] + p3[d]) * t3)));
+    }
+  }
+  o.push(P[P.length - 1].slice());
+  return o;
+}
+function closedD(P, n = 8) {
+  const o = [], N = P.length;
+  for (let i = 0; i < N; i++) {
+    const p0 = P[(i - 1 + N) % N], p1 = P[i], p2 = P[(i + 1) % N], p3 = P[(i + 2) % N];
+    for (let k = 0; k < n; k++) {
+      const t = k / n, t2 = t * t, t3 = t2 * t;
+      o.push([0, 1].map(d => .5 * (2 * p1[d] + (-p0[d] + p2[d]) * t + (2 * p0[d] - 5 * p1[d] + 4 * p2[d] - p3[d]) * t2 + (-p0[d] + 3 * p1[d] - 3 * p2[d] + p3[d]) * t3)));
+    }
+  }
+  return 'M' + o.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('L') + 'Z';
+}
+function resample(pts, step) {
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const L = cum[cum.length - 1], n = Math.max(1, Math.round(L / step)), st = L / n, p = [];
+  let j = 0;
+  for (let k = 0; k <= n; k++) {
+    const s = k * st;
+    while (j < cum.length - 2 && cum[j + 1] < s) j++;
+    const seg = cum[j + 1] - cum[j] || 1, u = clamp((s - cum[j]) / seg, 0, 1);
+    p.push([pts[j][0] + (pts[j + 1][0] - pts[j][0]) * u, pts[j][1] + (pts[j + 1][1] - pts[j][1]) * u]);
+  }
+  const nn = p.map((_, i) => {
+    const a = p[Math.max(0, i - 2)], b = p[Math.min(p.length - 1, i + 2)];
+    const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
+    return [-dy / l, dx / l];
+  });
+  return { p, n: nn, st, L };
+}
+const polyD = P => 'M' + P.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('L');
+function smoothArr(a, k) {
+  return a.map((_, i) => { let s = 0, c = 0; for (let j = -k; j <= k; j++) { const v = a[i + j]; if (v != null) { s += v; c++; } } return s / c; });
+}
+const TUBES = {};
+function tube(id, P, wf, o = {}) {
+  const r = resample(crs(P), STEP), N = r.p.length;
+  let base = r.p.map((q, i) => wf(i * r.st, i / (N - 1), q, r.L));
+  if (o.smooth) base = smoothArr(base, o.smooth);
+  const T = Object.assign({ id, p: r.p, n: r.n, N, L: r.L, base, w: base.slice(), parts: [], lk: .6 }, o);
+  TUBES[id] = T; return T;
+}
+function nearestIdx(arr, x, y, a = 0, b = arr.length - 1) {
+  let bi = a, bd = 1e18;
+  for (let i = a; i <= b; i++) { const p = arr[i], d = (p[0] - x) ** 2 + (p[1] - y) ** 2; if (d < bd) { bd = d; bi = i; } }
+  return bi;
+}
+function tubePoly(T, a, b, k) {
+  let Ls = '';
+  const R = [];
+  for (let i = a; i <= b; i++) {
+    const p = T.p[i], n = T.n[i], h = T.w[i] * k / 2;
+    Ls += (i === a ? 'M' : 'L') + (p[0] + n[0] * h).toFixed(1) + ' ' + (p[1] + n[1] * h).toFixed(1);
+    R.push((p[0] - n[0] * h).toFixed(1) + ' ' + (p[1] - n[1] * h).toFixed(1));
+  }
+  return Ls + 'L' + R.reverse().join('L') + 'Z';
+}
+
+/* ---- trubice tráviacej rúry ---- */
+// hltan + pažerák
+const ESO = tube('eso', [[318,116],[324,140],[325,170],[322,200],[317,232],[314,262],[312,300],[311,345],[315,385],[328,416],[350,440]],
+  (s, u, p, L) => p[1] < 200 ? 24 : p[1] < 258 ? lerp(24, 13, (p[1] - 200) / 58) : s > L - 16 ? lerp(13, 8, (s - L + 16) / 16) : 13,
+  { smooth: 3, lk: .55, wall: '#d4737f', stroke: '#8e3a48', lum: '#5b1f2b' });
+// žalúdok
+const STOM = tube('stom', [[374,408],[391,432],[401,468],[401,508],[389,541],[363,559],[337,558],[318,551]],
+  (s, u) => u < .08 ? 78 * Math.sqrt(u / .08) : u < .45 ? lerp(78, 66, (u - .08) / .37) : u < .8 ? lerp(66, 30, (u - .45) / .35) : u < .94 ? lerp(30, 17, (u - .8) / .14) : lerp(17, 10, (u - .94) / .06),
+  { lk: .84, wall: '#e2808a', stroke: '#9a3f4c', lum: '#5e1e2c' });
+// dvanástnik + tenké črevo
+const SIP = [[318,551],[300,554],[286,566],[279,588],[283,608],[300,618],[328,617],[350,607],[363,592],[377,600],[390,624],[396,648],[392,668]];
+for (let k = 0; k < 7; k++) {
+  const y = 668 + 22 * k, left = k % 2 === 0, xa = left ? 392 : 240, xb = left ? 240 : 392;
+  for (let j = 1; j <= 6; j++) SIP.push([xa + (xb - xa) * j / 6, y + 3.2 * Math.sin(j * 1.9 + k * 1.3) * (j < 6 ? 1 : 0)]);
+  if (k < 6) SIP.push([left ? 229 : 403, y + 11]);
+}
+SIP.push([228, 800]);
+const SI = tube('si', SIP, (s, u, p, L) => s < 150 ? 14 : lerp(12, 10, (s - 150) / (L - 150)),
+  { smooth: 4, lk: .58, wall: '#eea383', stroke: '#a65a44', lum: '#6a2f24' });
+// hrubé črevo
+const COLP = [[203,832],[202,812],[201,780],[200,730],[200,670],[203,630],[216,610],[248,616],[290,640],[340,647],[382,632],[408,607],[420,598],[427,616],[427,690],[425,770],[418,806],[400,826],[372,833],[346,826],[324,834],[308,850],[302,872],[300,895],[300,912]];
+const COL = tube('col', COLP, (s, u, p, L) => {
+  let w;
+  if (s < 10) return 30 * Math.sqrt(s / 10);
+  if (s > L - 10) return 7;
+  if (p[1] > 845 && p[0] < 318) w = 25;
+  else if (p[1] > 784 && p[0] < 230) w = 30;
+  else if (p[0] < 226) w = 26;
+  else if (p[1] < 652 && p[0] < 416) w = 24;
+  else if (p[0] > 414 && p[1] < 800) w = 22;
+  else w = 18;
+  return w * (p[1] > 845 && p[0] < 318 ? 1 : 1 + .1 * Math.sin(s * 2 * Math.PI / 13));
+}, { smooth: 2, lk: .7, wall: '#c9926a', stroke: '#80522f', lum: '#4f2d1b' });
+// červovitý prívesok
+const APP = tube('app', [[206,828],[211,842],[220,852],[231,853],[238,846]], (s, u) => u > .85 ? 6 * Math.sqrt((1 - u) / .15) + .5 : 6, { lk: .45, wall: '#c9926a', stroke: '#80522f', lum: '#4f2d1b' });
+// podžalúdková žľaza
+const PANC = tube('panc', [[290,600],[306,596],[330,588],[360,580],[392,570],[420,560],[440,552]],
+  (s, u) => u < .07 ? 26 * Math.sqrt(u / .07) + 2 : u > .94 ? 11 * Math.sqrt((1 - u) / .06) + 1 : u < .3 ? 26 : lerp(26, 11, (u - .3) / .64), {});
+// ústna dutina (iba trasa sústa, nekreslí sa)
+const jEso = nearestIdx(ESO.p, 323, 194);
+const MOUTH = tube('mouth', [[170,171],[200,171],[226,170],[248,166],[272,165],[296,168],[312,178], ESO.p[jEso]], (s, u, p) => p[0] < 228 ? 10 : 14, { lk: 1 });
+
+ESO.parts = [{ a: 0, b: nearestIdx(ESO.p, 314, 258), info: 'hltan' }, { a: nearestIdx(ESO.p, 314, 258), b: ESO.N - 1, info: 'pazerak' }];
+STOM.parts = [{ a: 0, b: STOM.N - 1, info: 'zaludok' }];
+const iDJ = nearestIdx(SI.p, 363, 592);
+SI.parts = [{ a: 0, b: iDJ, info: 'dvanastnik' }, { a: iDJ, b: SI.N - 1, info: 'tenkeCrevo' }];
+const iCecTop = nearestIdx(COL.p, 201, 782), iRect = nearestIdx(COL.p, 312, 846);
+COL.parts = [{ a: 0, b: iCecTop, info: 'slepeCrevo' }, { a: iCecTop, b: iRect, info: 'hrubeCrevo' }, { a: iRect, b: COL.N - 1, info: 'konecnik' }];
+APP.parts = [{ a: 0, b: APP.N - 1, info: 'apendix' }];
+
+/* ---- trasa sústa ---- */
+const RT = [];
+function addTube(T, a, b) {
+  const lk = T.lk;
+  for (let i = a; i <= b; i++) RT.push({ x: T.p[i][0], y: T.p[i][1], nx: T.n[i][0], ny: T.n[i][1], hw: T.base[i] * lk * .5 * .8, T, ti: i });
+}
+function addLine(A, B, hwa, hwb) {
+  const d = Math.hypot(B[0] - A[0], B[1] - A[1]), n = Math.max(1, Math.round(d / STEP)), nx = -(B[1] - A[1]) / d, ny = (B[0] - A[0]) / d;
+  for (let k = 1; k < n; k++) { const u = k / n; RT.push({ x: lerp(A[0], B[0], u), y: lerp(A[1], B[1], u), nx, ny, hw: lerp(hwa, hwb, u), T: null }); }
+}
+const iStA = Math.round(.22 * (STOM.N - 1));
+const iCecIn = nearestIdx(COL.p, 203, 800);
+addTube(MOUTH, 0, MOUTH.N - 2);
+addTube(ESO, jEso, ESO.N - 1);
+addLine(ESO.p[ESO.N - 1], STOM.p[iStA], 3, STOM.base[iStA] * .3);
+addTube(STOM, iStA, STOM.N - 1);
+addTube(SI, 1, SI.N - 1);
+addLine(SI.p[SI.N - 1], COL.p[iCecIn], 3, 8);
+addTube(COL, iCecIn, COL.N - 1);
+addLine(COL.p[COL.N - 1], [300, 960], 3, 6);
+const RL = (RT.length - 1) * STEP;
+function rIdx(T, x, y) { let bi = 0, bd = 1e18; RT.forEach((r, i) => { if (T && r.T !== T) return; const d = (r.x - x) ** 2 + (r.y - y) ** 2; if (d < bd) { bd = d; bi = i; } }); return bi * STEP; }
+const lastOf = T => { let k = 0; RT.forEach((r, i) => { if (r.T === T) k = i; }); return k * STEP; };
+const firstOf = T => RT.findIndex(r => r.T === T) * STEP;
+const M = {
+  start: 0, mouthMid: rIdx(MOUTH, 262, 163), mouthBack: rIdx(MOUTH, 308, 174), esoStart: rIdx(ESO, 314, 262), esoEnd: lastOf(ESO),
+  stA: firstOf(STOM), pyl: lastOf(STOM), papilla: rIdx(SI, 281, 598), dj: rIdx(SI, 363, 592), ileumEnd: lastOf(SI),
+  ileoc: firstOf(COL), sig: rIdx(COL, 425, 772), rect: rIdx(COL, 302, 872), anus: lastOf(COL), out: RL
+};
+function rAt(s) {
+  const f = clamp(s / STEP, 0, RT.length - 1), i = Math.min(RT.length - 2, f | 0), k = f - i, a = RT[i], b = RT[i + 1];
+  return { x: lerp(a.x, b.x, k), y: lerp(a.y, b.y, k), nx: k < .5 ? a.nx : b.nx, ny: k < .5 ? a.ny : b.ny, hw: lerp(a.hw, b.hw, k), r: k < .5 ? a : b };
+}
+
+/* ---- cievy ---- */
+const sampleLine = (P, st) => resample(crs(P), st).p;
+const VP = sampleLine([[322,792],[326,750],[327,700],[324,660],[320,620],[316,588],[307,560],[298,530],[291,500]], 3);
+const SPLV = [[440,548],[400,562],[360,576],[318,587]];
+const LY = sampleLine([[352,792],[352,750],[350,700],[346,662],[334,634],[322,600],[312,560],[304,500],[300,440],[300,380],[301,330],[308,298],[326,286],[348,281]], 3);
+const iLyFront = nearestIdx(LY, 334, 634);
+const BILEP = sampleLine([[256,530],[264,514],[272,505],[284,514],[292,522],[294,550],[292,575],[287,597]], 2);
+const PANCD = sampleLine([[434,554],[410,563],[380,573],[350,582],[322,591],[300,597],[287,599]], 2);
+const SALP = [
+  sampleLine([[328,150],[300,156],[268,160]], 2),
+  sampleLine([[278,216],[266,208],[250,196],[244,186]], 2),
+  sampleLine([[262,203],[254,197],[247,190]], 2)
+];
+const HILUM = [291, 498];
+
+/* =================== KRESBA =================== */
+const defs = E('defs', {}, svg);
+defs.innerHTML = `
+<linearGradient id="gSkin" x1="0" y1="0" x2="0" y2="960" gradientUnits="userSpaceOnUse">
+  <stop offset="0" stop-color="#1e2c4c"/><stop offset=".6" stop-color="#18233e"/><stop offset=".9" stop-color="#131b31"/><stop offset="1" stop-color="#131b31" stop-opacity="0"/></linearGradient>
+<filter id="fOutline" x="-10%" y="-10%" width="120%" height="120%">
+  <feMorphology in="SourceAlpha" operator="dilate" radius="1.4" result="d"/>
+  <feComposite in="d" in2="SourceAlpha" operator="out" result="o"/>
+  <feFlood flood-color="#7d9cf0" flood-opacity=".55"/><feComposite in2="o" operator="in" result="line"/>
+  <feGaussianBlur in="line" stdDeviation="5" result="glow"/>
+  <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/><feMergeNode in="line"/></feMerge></filter>
+<filter id="fGlow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
+<linearGradient id="gLiver" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b0523a"/><stop offset="1" stop-color="#6a2618"/></linearGradient>
+<radialGradient id="gLung" cx=".5" cy=".4" r=".7"><stop offset="0" stop-color="#f3a3b6" stop-opacity=".16"/><stop offset="1" stop-color="#c46582" stop-opacity=".08"/></radialGradient>
+<radialGradient id="gGall" cx=".4" cy=".6" r=".7"><stop offset="0" stop-color="#7cc95f"/><stop offset="1" stop-color="#3d7a2c"/></radialGradient>`;
+
+// silueta: hlava z profilu (otočená doľava) a trup spredu
+const HEAD = [[300,26],[340,32],[368,56],[382,95],[378,138],[364,172],[348,200],[338,232],[334,262],[268,262],[270,240],[262,228],[246,222],[234,212],[230,200],[231,190],[227,184],[230,177],[227,168],[230,160],[226,151],[214,145],[208,138],[219,124],[226,104],[228,80],[240,52],[266,32]];
+const TL = [[272,250],[270,282],[236,294],[186,304],[146,320],[122,348],[112,392],[114,440],[126,480],[134,540],[140,600],[140,660],[136,720],[132,790],[138,860],[150,920],[158,975]];
+const torsoD = polyD(crs(TL, 8)) + 'L' + crs(TL.map(p => [600 - p[0], p[1]]).reverse(), 8).map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('L') + 'Z';
+const gSil = E('g', { filter: 'url(#fOutline)', opacity: .95, 'pointer-events': 'none' }, svg);
+E('path', { d: torsoD, fill: 'url(#gSkin)' }, gSil);
+E('path', { d: closedD(HEAD), fill: 'url(#gSkin)' }, gSil);
+// tvár a hlava – jemné detaily
+const gFace = E('g', { fill: 'none', stroke: '#a9bce8', 'stroke-opacity': .22, 'stroke-width': 1.4, 'stroke-linecap': 'round', 'pointer-events': 'none' }, svg);
+E('ellipse', { cx: 348, cy: 116, rx: 9, ry: 15 }, gFace);
+E('path', { d: 'M236 96 Q246 90 256 96 Q246 100 236 96Z' }, gFace);
+E('path', { d: 'M232 84 Q246 78 260 84' }, gFace);
+E('path', { d: 'M222 120 L300 112 Q318 114 320 124 L318 142 L236 150 Z', fill: 'rgba(240,170,180,.06)' }, gFace);
+// pľúca, srdce, priedušnica, rebrá – len kontext
+const gCtx = E('g', { 'pointer-events': 'none' }, svg);
+for (const d of ['M286 300 C250 296 186 306 166 352 C150 390 146 430 150 452 C196 418 246 398 288 406 C292 370 292 330 286 300Z',
+  'M314 300 C350 296 414 306 434 352 C450 390 454 430 450 452 C404 418 354 398 312 406 C308 370 308 330 314 300Z'])
+  E('path', { d, fill: 'url(#gLung)', stroke: '#f0a5b8', 'stroke-opacity': .18 }, gCtx);
+E('path', { d: 'M307 222 L300 262 L298 330 M298 330 C288 338 278 344 266 352 M298 330 C308 338 318 344 330 352', fill: 'none', stroke: '#9fb4d6', 'stroke-opacity': .25, 'stroke-width': 10, 'stroke-linecap': 'round' }, gCtx);
+E('path', { d: 'M330 356 C312 352 296 362 296 380 C298 398 318 408 338 404 C356 398 362 380 352 366 C346 358 338 356 330 356Z', fill: '#b8344a', opacity: .16 }, gCtx);
+const gRib = E('g', { stroke: '#a9bce8', 'stroke-opacity': .07, fill: 'none', 'stroke-width': 3, 'stroke-linecap': 'round' }, gCtx);
+for (let i = 0; i < 8; i++) {
+  const y = 316 + i * 20, xo = 138 + Math.abs(i - 3) * 3;
+  E('path', { d: `M294 ${y} C264 ${y - 10} ${xo + 8} ${y - 4} ${xo} ${y + 24}` }, gRib);
+  E('path', { d: `M306 ${y} C336 ${y - 10} ${600 - xo - 8} ${y - 4} ${600 - xo} ${y + 24}` }, gRib);
+}
+for (let y = 280; y < 860; y += 16) E('rect', { x: 295, y, width: 10, height: 12, rx: 3, fill: '#a9bce8', 'fill-opacity': .05, stroke: 'none' }, gRib);
+E('path', { d: 'M180 820 C190 780 240 770 270 800 L330 800 C360 770 410 780 420 820 C410 880 360 900 300 902 C240 900 190 880 180 820Z', 'stroke-width': 2 }, gRib);
+
+// hrudovod (za orgánmi)
+const gBack = E('g', {}, svg);
+const lyBackD = polyD(LY.slice(iLyFront));
+E('path', { d: lyBackD, fill: 'none', stroke: '#f2e6a0', 'stroke-opacity': .55, 'stroke-width': 2, 'stroke-dasharray': '3 3', 'data-info': 'lymfa' }, gBack);
+E('path', { d: lyBackD, class: 'hit', 'data-info': 'lymfa' }, gBack);
+
+// bránica
+E('path', { d: 'M120 460 C160 392 250 386 300 410 C350 386 440 392 480 460', fill: 'none', stroke: '#e7a0a8', 'stroke-opacity': .5, 'stroke-width': 3, 'stroke-dasharray': '7 4', 'data-info': 'branica' }, svg);
+E('path', { d: 'M120 460 C160 392 250 386 300 410 C350 386 440 392 480 460', class: 'hit', 'data-info': 'branica' }, svg);
+
+// pečeň
+const LIVER = [[140,458],[165,428],[210,408],[260,403],[300,409],[340,410],[372,416],[394,426],[388,440],[352,458],[318,478],[292,494],[268,512],[232,524],[188,522],[156,505],[140,484]];
+const gLiver = E('g', { 'data-info': 'pecen' }, svg);
+const liverD = closedD(LIVER);
+E('path', { d: liverD, fill: 'url(#gLiver)', opacity: .9, stroke: '#e08a6a', 'stroke-opacity': .6, 'stroke-width': 1.2 }, gLiver);
+E('path', { d: 'M302 410 C298 432 294 456 292 480', stroke: '#e08a6a', 'stroke-opacity': .35, fill: 'none' }, gLiver);
+const liverGlow = E('path', { d: liverD, fill: '#ffd27a', opacity: 0, filter: 'url(#fGlow)', 'pointer-events': 'none' }, svg);
+
+// podžalúdková žľaza
+const gPanc = E('g', { 'data-info': 'pankreas' }, svg);
+PANC.w = PANC.base;
+E('path', { d: tubePoly(PANC, 0, PANC.N - 1, 1), fill: '#e8c17c', stroke: '#a5813e', 'stroke-width': 1, opacity: .95 }, gPanc);
+for (let i = 4; i < PANC.N - 4; i += 5) {
+  const p = PANC.p[i], n = PANC.n[i], h = PANC.base[i] * .32 * (hash(i) - .5) * 2;
+  E('circle', { cx: (p[0] + n[0] * h).toFixed(1), cy: (p[1] + n[1] * h).toFixed(1), r: 2 + hash(i + 9) * 2, fill: '#f5d79c', opacity: .5 }, gPanc);
+}
+E('path', { d: polyD(PANCD), fill: 'none', stroke: '#b48cf0', 'stroke-width': 1.6, opacity: .9 }, gPanc);
+
+// žlčovody a žlčník
+const gBile = E('g', { 'data-info': 'zlcnik' }, svg);
+E('path', { d: polyD(BILEP.slice(nearestIdx(BILEP, 272, 505))) + ' M292 494 L292 522', fill: 'none', stroke: '#6fae4a', 'stroke-width': 2.6, 'stroke-linecap': 'round' }, gBile);
+E('path', { d: polyD(BILEP) + ' M292 494 L292 522', class: 'hit', 'data-info': 'zlcnik' }, gBile);
+const gGall = E('g', {}, gBile);
+E('path', { d: 'M273 503 C283 512 275 538 260 547 C246 554 238 538 246 522 C252 510 264 500 273 503Z', fill: 'url(#gGall)', stroke: '#2e6d24', 'stroke-width': 1 }, gGall);
+
+/* ---- trubice ---- */
+const gTubes = E('g', {}, svg);
+function buildTube(T, parent) {
+  const g = E('g', {}, parent);
+  const gw = E('g', {}, g), gl = E('g', {}, g);
+  for (const pt of T.parts) {
+    pt.wall = E('path', { fill: T.wall, stroke: T.stroke, 'stroke-width': 1.1, 'data-info': pt.info }, gw);
+    pt.lum = E('path', { fill: T.lum, opacity: .9, 'data-info': pt.info }, gl);
+  }
+  T.deco = E('path', { fill: 'none', 'pointer-events': 'none', stroke: T.decoC || 'none', 'stroke-width': 1, 'stroke-linecap': 'round' }, g);
+  T.g = g;
+}
+STOM.decoC = 'rgba(214,110,124,.55)'; COL.decoC = 'rgba(160,110,70,.7)';
+buildTube(APP, gTubes);
+buildTube(SI, gTubes);
+buildTube(COL, gTubes);
+buildTube(STOM, gTubes);
+buildTube(ESO, gTubes);
+const hausIdx = [];
+for (let i = 8; i < iRect; i++) if (Math.abs(((i * COL.L / (COL.N - 1)) / 13) % 1 - .75) < .5 / 13 * 2 && (hausIdx.length === 0 || i - hausIdx[hausIdx.length - 1] > 3)) hausIdx.push(i);
+
+// vrátnicový systém (navrchu)
+const gVess = E('g', { 'data-info': 'vratnicova' }, svg);
+const vpD = polyD(VP) + ' ' + polyD(SPLV);
+let tribD = '';
+for (const y of [679, 723, 767]) tribD += `M325 ${y} C305 ${y + 2} 285 ${y + 5} 262 ${y + 6} M326 ${y} C346 ${y + 2} 366 ${y + 5} 384 ${y + 6} `;
+E('path', { d: tribD, fill: 'none', stroke: '#8b7bff', 'stroke-opacity': .6, 'stroke-width': 1.4 }, gVess);
+E('path', { d: vpD, fill: 'none', stroke: '#8b7bff', 'stroke-opacity': .85, 'stroke-width': 4, 'stroke-linecap': 'round' }, gVess);
+E('path', { d: 'M291 498 C280 486 268 478 252 472 M291 498 C304 482 318 470 334 460 M291 498 C282 480 280 462 284 446', fill: 'none', stroke: '#8b7bff', 'stroke-opacity': .45, 'stroke-width': 2 }, gVess);
+E('path', { d: vpD, class: 'hit', 'data-info': 'vratnicova' }, gVess);
+// mliečne cievy (navrchu)
+const gLyF = E('g', { 'data-info': 'lymfa' }, svg);
+const lyFD = polyD(LY.slice(0, iLyFront + 1));
+E('path', { d: lyFD + ' M352 700 C362 702 372 706 384 712 M350 745 C340 748 326 752 300 756', fill: 'none', stroke: '#f2e6a0', 'stroke-opacity': .75, 'stroke-width': 2, 'stroke-dasharray': '3 3' }, gLyF);
+E('ellipse', { cx: 334, cy: 634, rx: 5, ry: 8, fill: '#f2e6a0', 'fill-opacity': .35, stroke: '#f2e6a0', 'stroke-opacity': .6 }, gLyF);
+E('path', { d: lyFD, class: 'hit', 'data-info': 'lymfa' }, gLyF);
+
+/* ---- hlava: ústna dutina ---- */
+const gHead = E('g', {}, svg);
+E('path', { d: 'M229 165 Q260 152 300 152 Q316 156 324 170 L324 204 Q314 214 302 214 L290 208 Q262 198 242 188 Q232 178 229 165Z', fill: '#3a1420', opacity: .9, 'data-info': 'ustnaDutina' }, gHead);
+const gTongue = E('g', { 'data-info': 'jazyk' }, gHead);
+E('path', { d: 'M242 182 Q252 172 274 169 Q298 168 310 180 Q316 194 309 210 Q296 216 282 210 Q258 202 246 194 Q240 188 242 182Z', fill: '#d9707f', stroke: '#8e3a48', 'stroke-width': 1 }, gTongue);
+E('path', { d: 'M252 182 Q276 176 300 184', fill: 'none', stroke: '#b65564', 'stroke-width': 1 }, gTongue);
+E('path', { d: 'M234 157 Q268 150 300 151', fill: 'none', stroke: '#f3d9cf', 'stroke-opacity': .8, 'stroke-width': 3, 'stroke-linecap': 'round', 'data-info': 'ustnaDutina' }, gHead);
+const gPal = E('g', { 'data-info': 'ustnaDutina' }, gHead);
+E('path', { d: 'M299 150 Q312 154 319 168 Q321 176 315 176 Q308 166 298 156Z', fill: '#e88b98', stroke: '#9a3f4c', 'stroke-width': .8 }, gPal);
+const gTeethU = E('g', { 'data-info': 'zuby' }, gHead), gJaw = E('g', {}, gHead), gTeethL = E('g', { 'data-info': 'zuby' }, gJaw);
+[[231,157,4.5,9,-12],[238,156,5,8,-4],[246,155,6,8,0],[254,154,7,8,0],[263,154,7,8,0]].forEach(([x, y, w, h, r]) => {
+  E('rect', { x, y, width: w, height: h, rx: 1.6, fill: '#f4efe4', stroke: '#b9b0a0', 'stroke-width': .6, transform: `rotate(${r} ${x} ${y})` }, gTeethU);
+  E('rect', { x, y: 336 - y - h + 6, width: w, height: h, rx: 1.6, fill: '#f4efe4', stroke: '#b9b0a0', 'stroke-width': .6, transform: `rotate(${-r} ${x} ${336 - y + 6})` }, gTeethL);
+});
+E('path', { d: 'M226 169 L236 169', stroke: '#1a0a10', 'stroke-width': 2, 'stroke-linecap': 'round' }, gHead);
+const gEpi = E('g', { 'data-info': 'priklopka' }, gHead);
+E('path', { d: 'M302 217 Q305 200 314 190 Q317 191 316 194 Q310 204 308 218Z', fill: '#f0c0c8', stroke: '#b07080', 'stroke-width': .7 }, gEpi);
+const gGl = E('g', { 'data-info': 'slinneZlazy' }, gHead);
+for (const P of SALP) E('path', { d: polyD(P), fill: 'none', stroke: '#e7b86d', 'stroke-width': 1.4, 'stroke-opacity': .85 }, gGl);
+for (const [cx, cy, rx, ry, r] of [[334,152,11,17,-10],[280,220,10,6.5,10],[262,204,8,3.4,-12]]) {
+  E('ellipse', { cx, cy, rx, ry, transform: `rotate(${r} ${cx} ${cy})`, fill: '#e7b86d', stroke: '#a77d38', 'stroke-width': .8, opacity: .95 }, gGl);
+  for (let k = 0; k < 4; k++) E('circle', { cx: cx + (hash(cx + k) - .5) * rx, cy: cy + (hash(cy + k * 3) - .5) * ry, r: Math.min(rx, ry) * .28, fill: '#f6d699', opacity: .55 }, gGl);
+}
+
+/* ---- dynamické vrstvy ---- */
+const gBact = E('g', { 'pointer-events': 'none' }, svg);
+const gSec = E('g', { 'pointer-events': 'none' }, svg);
+const gPart = E('g', { 'pointer-events': 'none' }, svg);
+const gLbl = E('g', {}, svg);
+
+/* ---- popisky ---- */
+const LBL = [
+ ['ustnaDutina','Ústna dutina',266,160,170,128],
+ ['zuby','Zuby',244,160,170,158],
+ ['jazyk','Jazyk',272,184,170,200],
+ ['slinneZlazy','Slinné žľazy',336,146,420,140],
+ ['hltan','Hltan',323,170,420,176],
+ ['priklopka','Hrtanová príklopka',311,198,420,210],
+ ['pazerak','Pažerák',312,330,500,322],
+ ['branica','Bránica',448,422,500,396],
+ ['zaludok','Žalúdok',414,480,500,470],
+ ['pankreas','Podžalúdková žľaza',420,560,500,548],
+ ['lymfa','Mliečne cievy',352,770,500,642],
+ ['tenkeCrevo','Tenké črevo',392,712,500,700],
+ ['hrubeCrevo','Hrubé črevo',427,740,500,762],
+ ['konecnik','Konečník',302,875,500,880],
+ ['pecen','Pečeň',200,462,100,440],
+ ['zlcnik','Žlčník',252,538,100,522],
+ ['vratnicova','Vrátnicová žila',300,532,100,560],
+ ['dvanastnik','Dvanástnik',279,592,100,598],
+ ['hrubeCrevo','Hrubé črevo',200,700,100,690],
+ ['slepeCrevo','Slepé črevo',198,816,100,800],
+ ['apendix','Červovitý prívesok',232,852,100,846]
+];
+const lblEls = [];
+for (const [id, txt, ax, ay, tx, ty] of LBL) {
+  const left = tx < ax, g = E('g', { class: 'lbl', 'data-info': id }, gLbl);
+  E('polyline', { points: `${ax},${ay} ${left ? tx + 6 : tx - 6},${ty - 4}` }, g);
+  E('circle', { cx: ax, cy: ay, r: 1.8 }, g);
+  E('text', { x: tx, y: ty, 'text-anchor': left ? 'end' : 'start' }, g).textContent = txt;
+  lblEls.push(g);
+}
+
+/* =================== ČASOVÁ OS =================== */
+let meal = MEALS.obed, TOTAL = 0, KF = [];
+function buildTimes() {
+  let a = 0, r = 0;
+  for (const p of PH) { p.t0 = a; a += p.a; p.t1 = a; p.r0 = r; r += p.real(meal); p.r1 = r; }
+  TOTAL = a;
+  const m = M, sl = m.pyl - m.stA;
+  const K = [
+    ['prijem', 0, m.start + 4, 5, 5, .35],
+    ['prijem', 1, m.mouthMid, 6, 6, .45],
+    ['zuvanie', .15, m.mouthMid, 11, 11, .85],
+    ['zuvanie', .75, m.mouthMid, 11, 11, .85],
+    ['zuvanie', 1, m.mouthBack - 6, 4, 4, .35],
+    ['prehltanie', .15, m.mouthBack - 6, 4, 4, .35],
+    ['prehltanie', .85, m.esoStart + 6, 4, 4, .3],
+    ['pazerak', 0, m.esoStart + 6, 4, 4, .3],
+    ['pazerak', 1, m.esoEnd - 2, 4, 4, .3],
+    ['zaludok', .15, m.stA + .4 * sl, .36 * sl, .3 * sl, .85],
+    ['zaludok', .65, m.stA + .4 * sl, .36 * sl, .3 * sl, .85],
+    ['zaludok', 1, m.pyl - .15 * sl, .3 * sl, .15 * sl + 26, .7],
+    ['dvanastnik', 1, m.papilla + 8, 22, 40, .6],
+    ['tenke', .2, m.dj + 50, 60, 60, .6],
+    ['tenke', .85, m.ileumEnd - 60, 70, 50, .6],
+    ['tenke', 1, m.ileumEnd - 25, 50, 45, .55],
+    ['hrube', .12, m.ileoc + 25, 30, 30, .6],
+    ['hrube', .9, m.sig - 10, 24, 20, .5],
+    ['hrube', 1, m.sig, 22, 18, .45],
+    ['konecnik', .35, m.rect, 12, 12, .5],
+    ['konecnik', .68, m.rect, 12, 12, .5],
+    ['konecnik', 1, m.out + 40, 12, 12, .4]
+  ];
+  KF = K.map(k => ({ t: PH[PI[k[0]]].t0 + k[1] * PH[PI[k[0]]].a, c: k[2], b: k[3], f: k[4], lat: k[5] }));
+}
+function phaseAt(t) {
+  for (let i = 0; i < PH.length; i++) if (t < PH[i].t1) return { i, q: clamp((t - PH[i].t0) / PH[i].a, 0, 1) };
+  return { i: PH.length - 1, q: 1 };
+}
+const WOB = { zuvanie: [3, .15, 8], zaludok: [7, .12, 1.8], dvanastnik: [3, .1, 2.6], tenke: [3, .1, 2.6], hrube: [1.5, .06, 1.2] };
+function foodAt(t) {
+  let j = 0;
+  while (j < KF.length - 2 && KF[j + 1].t <= t) j++;
+  const A = KF[j], B = KF[j + 1], e = ss(0, 1, (t - A.t) / (B.t - A.t));
+  const ph = phaseAt(t), w = WOB[PH[ph.i].id], env = ss(0, .08, ph.q) * (1 - ss(.92, 1, ph.q));
+  return { c: lerp(A.c, B.c, e), b: lerp(A.b, B.b, e), f: lerp(A.f, B.f, e), lat: lerp(A.lat, B.lat, e),
+    wS: w ? w[0] * env : 0, wL: w ? w[1] * env : 0, wF: w ? w[2] : 0, i: ph.i, q: ph.q };
+}
+function digOf(type, t) {
+  const tab = DIG[type]; if (!tab) return 0;
+  const { i, q } = phaseAt(t);
+  return lerp(i ? tab[i - 1] : 0, tab[i], q);
+}
+function chewF(t) {
+  const { i, q } = phaseAt(t), id = PH[i].id;
+  if (id === 'prijem') return 1.35;
+  if (id === 'zuvanie') return lerp(1.35, 1, ss(0, .9, q));
+  if (id === 'prehltanie' || id === 'pazerak') return 1;
+  if (id === 'zaludok') return lerp(1, .92, q);
+  if (id === 'dvanastnik') return .92;
+  if (id === 'tenke') return .92;
+  return 1;
+}
+function realAt(t) { const { i, q } = phaseAt(t); return lerp(PH[i].r0, PH[i].r1, q); }
+
+/* =================== ČASTICE =================== */
+let P = [];
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function buildParticles() {
+  gPart.textContent = '';
+  const rng = mulberry(7 + Object.keys(MEALS).indexOf(Object.keys(MEALS).find(k => MEALS[k] === meal)) * 101);
+  const list = [];
+  for (const type of ['carb', 'prot', 'fat', 'fiber', 'water']) for (let k = 0; k < meal.c[type]; k++) list.push({ type, k });
+  for (let i = list.length - 1; i > 0; i--) { const j = rng() * (i + 1) | 0; [list[i], list[j]] = [list[j], list[i]]; }
+  const N = list.length;
+  list.forEach((p, i) => {
+    p.r = -1 + 2 * (i + .5) / N;
+    p.lat = rng() * 2 - 1; p.ph = rng() * 6.283; p.sz = .85 + rng() * .3;
+    p.absPh = null;
+    const R = (a, b) => a + rng() * (b - a);
+    if (p.type === 'carb' && p.k > 0) { p.absPh = 'tenke'; p.a = R(.05, .8); }
+    if (p.type === 'prot' && p.k > 0) { p.absPh = 'tenke'; p.a = R(.1, .85); }
+    if (p.type === 'fat' && p.k > 0) { p.absPh = 'tenke'; p.a = R(.2, .9); }
+    if (p.type === 'water') { const x = rng(); if (x < .7) { p.absPh = 'tenke'; p.a = R(0, .9); } else if (x < .95) { p.absPh = 'hrube'; p.a = R(.1, .9); } }
+    p.liver = [HILUM[0] - 20 - rng() * 110, HILUM[1] - 22 - rng() * 60];
+    const ty = TYPES[p.type];
+    p.el = E('circle', { r: 3, fill: ty.c, stroke: ty.st || 'rgba(0,0,0,.35)', 'stroke-width': ty.st ? .9 : .6 }, gPart);
+  });
+  P = list;
+  for (const p of P) { p.tAbs = p.absPh ? PH[PI[p.absPh]].t0 + p.a * PH[PI[p.absPh]].a : null; p.fl = null; }
+}
+function partPos(p, t, F) {
+  F = F || foodAt(t);
+  const s = clamp(F.c + (p.r < 0 ? p.r * F.b : p.r * F.f) + F.wS * Math.sin(t * F.wF + p.ph), 0, RL);
+  const R = rAt(s), lat = clamp(p.lat * F.lat + F.wL * Math.sin(t * F.wF * 1.3 + p.ph * 1.7), -1, 1);
+  return { x: R.x + R.nx * R.hw * lat, y: R.y + R.ny * R.hw * lat, s, R, lat };
+}
+function flight(p) {
+  if (p.fl) return p.fl;
+  const st = partPos(p, p.tAbs), a = [st.x, st.y];
+  let pts;
+  if (p.absPh === 'hrube') {
+    const sg = st.lat >= 0 ? 1 : -1;
+    pts = [a, [a[0] + st.R.nx * sg * 22, a[1] + st.R.ny * sg * 22]];
+  } else if (p.type === 'fat') {
+    const k = nearestIdx(LY, a[0], a[1], 0, iLyFront);
+    pts = [a].concat(LY.slice(k));
+  } else {
+    const k = nearestIdx(VP, a[0], a[1]);
+    pts = [a].concat(VP.slice(k), [p.liver]);
+  }
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const L = cum[cum.length - 1];
+  p.fl = { pts, cum, L, dur: p.absPh === 'hrube' ? 1.4 : Math.max(1.5, L / 120), liver: p.type !== 'fat' && p.absPh !== 'hrube' };
+  return p.fl;
+}
+function along(fl, u) {
+  const s = u * fl.L; let j = 1;
+  while (j < fl.cum.length - 1 && fl.cum[j] < s) j++;
+  const a = fl.pts[j - 1], b = fl.pts[j], k = (s - fl.cum[j - 1]) / ((fl.cum[j] - fl.cum[j - 1]) || 1);
+  return [lerp(a[0], b[0], k), lerp(a[1], b[1], k)];
+}
+
+/* ---- sekréty (deterministické prúdy) ---- */
+const STREAMS = [];
+function stream(path, col, from, to, rate, dur, r) {
+  const g = E('g', {}, gSec), n = Math.ceil(rate * dur) + 2, els = [];
+  for (let i = 0; i < n; i++) els.push(E('circle', { r, fill: col, opacity: 0 }, g));
+  const pts = path, cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  STREAMS.push({ fl: { pts, cum, L: cum[cum.length - 1] }, from, to, rate, dur, els });
+}
+for (const sp of SALP) stream(sp, '#bdeeff', ['prijem', .5], ['zuvanie', .95], 2.6, 1.2, 1.5);
+stream(BILEP, '#8ee85f', ['zaludok', .72], ['tenke', .3], 3.2, 2.2, 1.9);
+stream(PANCD, '#c79bff', ['zaludok', .72], ['tenke', .3], 3.2, 2.6, 1.9);
+const gastric = { els: [] };
+{ const g = E('g', {}, gSec); for (let i = 0; i < 16; i++) gastric.els.push(E('circle', { r: 1.6, fill: '#ff9a5c', opacity: 0 }, g)); }
+const tOf = ([id, q]) => PH[PI[id]].t0 + q * PH[PI[id]].a;
+function renderStreams(t) {
+  for (const S of STREAMS) {
+    const t0 = tOf(S.from), t1 = tOf(S.to);
+    let n = 0;
+    if (t > t0 && t < t1 + S.dur) {
+      const kMax = Math.floor((Math.min(t, t1) - t0) * S.rate), kMin = Math.max(0, Math.ceil((t - S.dur - t0) * S.rate));
+      for (let k = kMin; k <= kMax && n < S.els.length; k++) {
+        const u = (t - (t0 + k / S.rate)) / S.dur; if (u < 0 || u > 1) continue;
+        const [x, y] = along(S.fl, u), el = S.els[n++];
+        el.setAttribute('cx', x.toFixed(1)); el.setAttribute('cy', y.toFixed(1));
+        el.setAttribute('opacity', (ss(0, .1, u) * (1 - ss(.85, 1, u))).toFixed(2));
+      }
+    }
+    for (; n < S.els.length; n++) S.els[n].setAttribute('opacity', 0);
+  }
+  // žalúdočná šťava zo steny
+  const t0 = tOf(['zaludok', .05]), t1 = tOf(['zaludok', .92]), rate = 9, dur = 1.3;
+  let n = 0;
+  if (t > t0 && t < t1 + dur) {
+    const kMax = Math.floor((Math.min(t, t1) - t0) * rate), kMin = Math.max(0, Math.ceil((t - dur - t0) * rate));
+    for (let k = kMin; k <= kMax && n < gastric.els.length; k++) {
+      const u = (t - (t0 + k / rate)) / dur; if (u < 0 || u > 1) continue;
+      const i = Math.round((.12 + .78 * hash(k)) * (STOM.N - 1)), sg = hash(k + 77) < .5 ? -1 : 1;
+      const p = STOM.p[i], nn = STOM.n[i], h = STOM.w[i] * .5 * lerp(.8, .35, u) * sg;
+      const el = gastric.els[n++];
+      el.setAttribute('cx', (p[0] + nn[0] * h).toFixed(1)); el.setAttribute('cy', (p[1] + nn[1] * h).toFixed(1));
+      el.setAttribute('opacity', (ss(0, .15, u) * (1 - ss(.7, 1, u))).toFixed(2));
+    }
+  }
+  for (; n < gastric.els.length; n++) gastric.els[n].setAttribute('opacity', 0);
+}
+
+/* ---- baktérie v hrubom čreve ---- */
+const BACT = [];
+for (let k = 0; k < 46; k++) {
+  const i = Math.round(lerp(14, iRect + 6, hash(k * 3.1))), lat = (hash(k * 7.7) - .5) * 1.4;
+  BACT.push({ i, lat, ph: hash(k) * 6.28, el: E('line', { stroke: '#5ee0c0', 'stroke-width': 1.4, 'stroke-linecap': 'round', opacity: .75 }, gBact) });
+}
+
+/* =================== SIMULÁCIA SNÍMKY =================== */
+let t = 0, playing = true, speed = 1, last = performance.now(), curPhase = -1;
+const FI = {};
+function tubeMods(t, F) {
+  const ph = PH[F.i].id;
+  // pažerák a hltan
+  {
+    const T = ESO, fi = FI.eso, swallowing = ph === 'prehltanie' || ph === 'pazerak';
+    const open = ss(M.esoEnd - 34, M.esoEnd - 10, F.c) * (1 - ss(M.esoEnd + 10, M.esoEnd + 30, F.c));
+    for (let i = 0; i < T.N; i++) {
+      let m = 1;
+      if (fi) {
+        const cm = (fi.a + fi.b) / 2, hs = (fi.b - fi.a) / 2 + 3;
+        m *= 1 + .45 * Math.exp(-(((i - cm) / hs) ** 2));
+        if (swallowing && fi.a > jEso - 6) m *= 1 - .55 * Math.exp(-(((i - (fi.a - 6)) / 3.5) ** 2));
+      }
+      T.w[i] = T.base[i] * m + 7 * open * ss(T.N - 12, T.N - 4, i);
+    }
+  }
+  // žalúdok
+  {
+    const T = STOM, fi = FI.stom, full = fi ? clamp(fi.n / P.length * 1.4, 0, 1) : 0;
+    const pyl = (ph === 'zaludok' && F.q > .66) || (ph === 'dvanastnik' && F.q < .75) ? .5 + .5 * Math.sin(t * 3.4) : 0;
+    for (let i = 0; i < T.N; i++) {
+      const u = i / (T.N - 1);
+      let m = 1 + .1 * full;
+      if (full > .02) for (let k = 0; k < 3; k++) {
+        const phi = ((t / 3.2 + k / 3) % 1 + 1) % 1, uw = .32 + .64 * phi;
+        m *= 1 - .26 * full * Math.sin(Math.PI * phi) * Math.exp(-(((u - uw) / .045) ** 2));
+      }
+      T.w[i] = T.base[i] * m + 7 * pyl * ss(.92, .98, u);
+    }
+  }
+  // tenké črevo
+  {
+    const T = SI, fi = FI.si;
+    for (let i = 0; i < T.N; i++) {
+      let m = 1 - .04 * Math.sin(i * .2 - t * 1.2);
+      if (fi) {
+        const env = ss(fi.a - 12, fi.a, i) * (1 - ss(fi.b, fi.b + 12, i));
+        if (env > 0) {
+          const iw = fi.a - 8 + ((t * .45) % 1) * (fi.b - fi.a + 16);
+          m *= 1 + .14 * env - .17 * env * Math.sin(i * .55) * Math.sin(t * 4.5);
+          m *= 1 - .3 * env * Math.exp(-(((i - iw) / 4) ** 2));
+        }
+      }
+      T.w[i] = T.base[i] * m;
+    }
+  }
+  // hrubé črevo
+  {
+    const T = COL, fi = FI.col;
+    const anus = ph === 'konecnik' ? ss(.66, .74, F.q) * (1 - ss(.95, 1, F.q)) : 0;
+    for (let i = 0; i < T.N; i++) {
+      let m = 1 - .05 * Math.sin(i * .25 - t * .7);
+      if (fi) m *= 1 + .1 * ss(fi.a - 12, fi.a, i) * (1 - ss(fi.b, fi.b + 12, i));
+      T.w[i] = T.base[i] * m + 9 * anus * ss(T.N - 14, T.N - 6, i);
+    }
+  }
+  APP.w = APP.base;
+}
+function drawTubes() {
+  for (const T of [ESO, STOM, SI, COL, APP]) for (const pt of T.parts) {
+    pt.wall.setAttribute('d', tubePoly(T, pt.a, pt.b, 1));
+    pt.lum.setAttribute('d', tubePoly(T, pt.a, pt.b, T.lk));
+  }
+  // riasy žalúdka
+  let d = '';
+  for (const off of [-.22, 0, .22]) {
+    for (let i = Math.round(.16 * STOM.N); i < Math.round(.86 * STOM.N); i++) {
+      const p = STOM.p[i], n = STOM.n[i], h = STOM.w[i] * (off + .035 * Math.sin(i * .9 + off * 9));
+      d += (i === Math.round(.16 * STOM.N) ? 'M' : 'L') + (p[0] + n[0] * h).toFixed(1) + ' ' + (p[1] + n[1] * h).toFixed(1);
+    }
+  }
+  STOM.deco.setAttribute('d', d);
+  // haustrá
+  d = '';
+  for (const i of hausIdx) {
+    const p = COL.p[i], n = COL.n[i], h = COL.w[i] * COL.lk * .5;
+    d += `M${(p[0] + n[0] * h).toFixed(1)} ${(p[1] + n[1] * h).toFixed(1)}L${(p[0] - n[0] * h).toFixed(1)} ${(p[1] - n[1] * h).toFixed(1)}`;
+  }
+  COL.deco.setAttribute('d', d);
+}
+function render() {
+  const F = foodAt(t), ph = PH[F.i].id;
+  // častice
+  for (const k in FI) delete FI[k];
+  const cf = chewF(t), brown = ph === 'hrube' ? ss(0, 1, F.q) * .85 : ph === 'konecnik' ? 1 : 0;
+  let cx = 0, cy = 0, cn = 0, livN = 0;
+  for (const p of P) {
+    const ty = TYPES[p.type];
+    if (p.tAbs != null && t >= p.tAbs) {
+      const fl = flight(p), u = (t - p.tAbs) / fl.dur;
+      if (u >= 1) { p.el.setAttribute('opacity', 0); continue; }
+      const [x, y] = along(fl, u);
+      p.el.setAttribute('cx', x.toFixed(1)); p.el.setAttribute('cy', y.toFixed(1));
+      p.el.setAttribute('r', (ty.r * .62).toFixed(2));
+      p.el.setAttribute('fill', ty.c);
+      p.el.setAttribute('opacity', (1 - ss(.78, 1, u)).toFixed(2));
+      if (fl.liver && u > .75) livN++;
+      continue;
+    }
+    const q = partPos(p, t, F);
+    const op = 1 - ss(M.anus - 4, M.anus + 26, q.s);
+    p.el.setAttribute('cx', q.x.toFixed(1)); p.el.setAttribute('cy', q.y.toFixed(1));
+    p.el.setAttribute('r', (ty.r * p.sz * cf * (1 - .35 * digOf(p.type, t))).toFixed(2));
+    p.el.setAttribute('fill', brown > 0 ? mixC(hex2(ty.c), STOOL, brown) : ty.c);
+    p.el.setAttribute('opacity', op.toFixed(2));
+    if (op > .3) { cx += q.x; cy += q.y; cn++; }
+    const T = q.R.r.T;
+    if (T) { const ti = q.R.r.ti, f = FI[T.id] || (FI[T.id] = { a: 1e9, b: -1e9, n: 0 }); f.a = Math.min(f.a, ti); f.b = Math.max(f.b, ti); f.n++; }
+  }
+  tubeMods(t, F);
+  drawTubes();
+  // hlava
+  const jaw = ph === 'zuvanie' && !meal.liquid ? 3.4 * (.5 - .5 * Math.cos(2 * Math.PI * 1.6 * (t - PH[1].t0))) * (1 - ss(.85, 1, F.q)) : 0;
+  gJaw.setAttribute('transform', `translate(0 ${jaw.toFixed(2)})`);
+  const sw = ph === 'prehltanie' ? ss(0, .2, F.q) * (1 - ss(.8, 1, F.q)) : 0;
+  gTongue.setAttribute('transform', `translate(${(2.5 * sw).toFixed(2)} ${(jaw * .6 - 3 * sw).toFixed(2)})`);
+  gPal.setAttribute('transform', `rotate(${(-38 * sw).toFixed(1)} 299 151)`);
+  gEpi.setAttribute('transform', `rotate(${(78 * sw).toFixed(1)} 305 217)`);
+  // žlčník a pečeň
+  const gb = tOf(['zaludok', .72]), ge = tOf(['tenke', .3]);
+  const gc = ss(gb, gb + 2, t) * (1 - ss(ge - 2, ge + 1, t));
+  gGall.setAttribute('transform', `translate(262 506) scale(${(1 - .22 * gc).toFixed(3)}) translate(-262 -506)`);
+  liverGlow.setAttribute('opacity', Math.min(.45, livN * .07).toFixed(2));
+  renderStreams(t);
+  // baktérie
+  const act = ph === 'hrube' ? 1 : .4;
+  for (const b of BACT) {
+    const p = COL.p[b.i], n = COL.n[b.i], h = COL.w[b.i] * COL.lk * .5 * (b.lat + .12 * Math.sin(t * 2 * act + b.ph));
+    const x = p[0] + n[0] * h, y = p[1] + n[1] * h, a = b.ph + t * .8 * act, dx = 2.2 * Math.cos(a), dy = 2.2 * Math.sin(a);
+    b.el.setAttribute('x1', (x - dx).toFixed(1)); b.el.setAttribute('y1', (y - dy).toFixed(1));
+    b.el.setAttribute('x2', (x + dx).toFixed(1)); b.el.setAttribute('y2', (y + dy).toFixed(1));
+  }
+  renderUI(F, ph);
+  return cn ? [cx / cn, cy / cn] : null;
+}
+
+/* =================== MOLEKULY A PRUHY =================== */
+const mol = $('molSvg');
+const MOL = { rows: [] };
+{
+  const lbl = (y, s) => { E('text', { x: 4, y, fill: '#8d98b3', 'font-size': 10.5 }, mol).textContent = s; };
+  E('text', { x: 256, y: 11, fill: '#8d98b3', 'font-size': 9.5, 'text-anchor': 'end' }, mol).textContent = '↑ vstrebané';
+  const mk = (y, kind, colors, name) => {
+    lbl(y - 15, name);
+    const row = { y, kind, beads: [], bonds: [], th: [], ath: [] };
+    const perm = [3, 0, 5, 1, 6, 2, 4], perm2 = [5, 1, 7, 3, 0, 6, 2, 4];
+    for (let j = 0; j < 7; j++) { row.bonds.push(E('line', { stroke: '#9aa6c2', 'stroke-width': 1.6 }, mol)); row.th.push((perm[j] + .6) / 7.6); }
+    for (let j = 0; j < 8; j++) {
+      const c = colors[j % colors.length];
+      row.beads.push(kind === 'hex' ? E('path', { d: 'M-6 0L-3 -5.2L3 -5.2L6 0L3 5.2L-3 5.2Z', fill: c, stroke: 'rgba(0,0,0,.35)', 'stroke-width': .6 }, mol)
+        : E('circle', { r: 5.6, fill: c, stroke: 'rgba(0,0,0,.35)', 'stroke-width': .6 }, mol));
+      row.ath.push((perm2[j] + .5) / 8);
+    }
+    MOL.rows.push(row);
+  };
+  mk(36, 'hex', ['#ffd166'], 'Škrob → cukor (glukóza)');
+  mk(82, 'circ', ['#ff6f91', '#ff9fb6', '#e85d84', '#ffb3c6'], 'Bielkovina → aminokyseliny');
+  lbl(113, 'Tuk → menšie časti (mastné kyseliny)');
+  MOL.fat = { gly: E('rect', { x: -4, y: -15, width: 8, height: 30, rx: 3, fill: '#f6e7a6', stroke: '#b9a160', 'stroke-width': .7 }, mol), tails: [] };
+  for (let k = 0; k < 3; k++) {
+    let pts = '';
+    for (let j = 0; j <= 14; j++) pts += `${j * 7},${(j % 2 ? -2.6 : 2.6)} `;
+    MOL.fat.tails.push(E('polyline', { points: pts, fill: 'none', stroke: '#fff4c8', 'stroke-width': 2.2, 'stroke-linejoin': 'round' }, mol));
+  }
+}
+const barDefs = [['carb', 'Sacharidy', '#ffd166'], ['prot', 'Bielkoviny', '#ff6f91'], ['fat', 'Tuky', '#fff4c8'], ['water', 'Voda', '#5cc8ff']];
+const BAR = {};
+for (const [k, n, c] of barDefs) {
+  const d = document.createElement('div'); d.className = 'bar';
+  d.innerHTML = `<span>${n}</span><div class="bt"><i class="bd" style="background:${c}"></i><i class="ba" style="background:${c}"></i></div><span class="bv"></span>`;
+  $('bars').appendChild(d);
+  BAR[k] = { d: d.querySelector('.bd'), a: d.querySelector('.ba'), v: d.querySelector('.bv') };
+}
+function absFrac(type) {
+  let n = 0, a = 0;
+  for (const p of P) if (p.type === type) { n++; if (p.tAbs != null && t >= p.tAbs) a++; }
+  return n ? a / n : 0;
+}
+function renderMol() {
+  const vals = [['carb', MOL.rows[0]], ['prot', MOL.rows[1]]];
+  for (const [type, row] of vals) {
+    const dig = digOf(type, t), ab = absFrac(type);
+    const gaps = row.th.map(th => 9 * ss(th - .02, th + .08, dig));
+    const tot = gaps.reduce((a, b) => a + b, 0);
+    const xs = []; let acc = 0;
+    for (let j = 0; j < 8; j++) { xs.push(42 + j * 23 + acc - tot / 2 + 22); if (j < 7) acc += gaps[j]; }
+    const ys = [], ops = [];
+    for (let j = 0; j < 8; j++) {
+      const r = ss(row.ath[j] - .07, row.ath[j] + .07, ab);
+      ys.push(row.y - 24 * r); ops.push(1 - r);
+      row.beads[j].setAttribute('transform', `translate(${xs[j].toFixed(1)} ${ys[j].toFixed(1)})`);
+      row.beads[j].setAttribute('opacity', (ops[j] * (meal.c[type] ? 1 : .2)).toFixed(2));
+    }
+    for (let j = 0; j < 7; j++) {
+      const b = row.bonds[j], br = ss(row.th[j] - .02, row.th[j] + .04, dig);
+      b.setAttribute('x1', (xs[j] + 5.5).toFixed(1)); b.setAttribute('y1', ys[j].toFixed(1));
+      b.setAttribute('x2', (xs[j + 1] - 5.5).toFixed(1)); b.setAttribute('y2', ys[j + 1].toFixed(1));
+      b.setAttribute('opacity', ((1 - br) * Math.min(ops[j], ops[j + 1])).toFixed(2));
+    }
+  }
+  const dig = digOf('fat', t), ab = absFrac('fat'), y0 = 132, F = MOL.fat;
+  const rm = ss(.7, .9, ab), opm = 1 - rm;
+  F.gly.setAttribute('transform', `translate(70 ${(y0 - 22 * rm).toFixed(1)})`); F.gly.setAttribute('opacity', opm.toFixed(2));
+  [[-10, .25, .3], [0, 2, .8], [10, .5, .55]].forEach(([dy, th, ath], k) => {
+    const brk = ss(th, th + .15, dig), r = k === 1 ? rm : ss(ath - .1, ath + .1, ab);
+    F.tails[k].setAttribute('transform', `translate(${(74 + 34 * brk).toFixed(1)} ${(y0 + dy * (1 + .5 * brk) - 22 * r).toFixed(1)})`);
+    F.tails[k].setAttribute('opacity', (1 - r).toFixed(2));
+  });
+  for (const [k] of barDefs) {
+    const dg = k === 'water' ? 0 : digOf(k, t), ab2 = absFrac(k), B = BAR[k];
+    B.d.style.width = (dg * 100).toFixed(1) + '%'; B.a.style.width = (ab2 * 100).toFixed(1) + '%';
+    B.v.textContent = meal.c[k] ? Math.round((k === 'water' ? ab2 : dg) * 100) + ' %' : '–';
+    B.d.parentNode.style.opacity = meal.c[k] ? 1 : .3;
+  }
+}
+
+/* =================== UI =================== */
+function dur(sec) {
+  if (sec < 90) return '~' + Math.round(sec) + ' s';
+  if (sec < 3600) return '~' + Math.round(sec / 60) + ' min';
+  const h = sec / 3600; return '~' + (h >= 10 ? Math.round(h) : fmt(h, Math.abs(h - Math.round(h)) < .05 ? 0 : 1)) + ' h';
+}
+function clock(sec) {
+  sec = Math.floor(sec); const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return h ? `${h} h ${String(m).padStart(2, '0')} min` : m ? `${m} min ${String(s).padStart(2, '0')} s` : `${s} s`;
+}
+function buildPhaseList() {
+  const ol = $('phases'); ol.innerHTML = '';
+  PH.forEach((p, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="d"></span><span>${phName(i)}</span><span class="rt">${dur(p.r1 - p.r0)}</span>`;
+    li.onclick = () => { seek(p.t0 + .01); select(p.organ); };
+    ol.appendChild(li); p.li = li;
+  });
+  $('scrub').max = TOTAL.toFixed(2);
+  $('rTot').textContent = dur(PH[PH.length - 1].r1).replace('~', '~ ');
+  curPhase = -1;
+}
+let scrubbing = false, autoInfo = true, follow = false;
+function renderUI(F, ph) {
+  if (F.i !== curPhase) {
+    const changed = curPhase !== -1;
+    curPhase = F.i;
+    PH.forEach((p, i) => { p.li.classList.toggle('cur', i === F.i); p.li.classList.toggle('done', i < F.i); });
+    $('phaseTxt').innerHTML = `<b>${F.i + 1}. ${phName(F.i)}.</b> ` + phTxt(F.i);
+    $('enzTxt').innerHTML = PH[F.i].enz;
+    if (changed && autoInfo && playing) select(PH[F.i].organ, true);
+  }
+  const done = t >= TOTAL;
+  $('stageHint').innerHTML = done ? 'Hotovo. Celá cesta trvala <b>' + clock(PH[PH.length - 1].r1) + '</b>' :
+    `<b>${phName(F.i)}</b> · od prvého sústa ${clock(realAt(t))}`;
+  $('clockV').textContent = clock(realAt(t));
+  if (!scrubbing) $('scrub').value = Math.min(t, TOTAL).toFixed(2);
+  const acc = (PH[F.i].r1 - PH[F.i].r0) / PH[F.i].a;
+  $('rAcc').textContent = acc < 1.05 ? 'spomalené ' + fmt(1 / acc, 1) + '×' : '1 s ≈ ' + dur(acc).replace('~', '');
+  renderMol();
+}
+function seek(v) { t = clamp(v, 0, TOTAL); }
+function setPlay(v) { playing = v; $('play').textContent = v ? '❚❚' : '▶'; }
+$('play').onclick = () => { if (t >= TOTAL) t = 0; setPlay(!playing); };
+$('speed').oninput = e => { speed = +e.target.value; $('speedV').textContent = fmt(speed, 2) + '×'; };
+$('scrub').addEventListener('input', e => { scrubbing = true; seek(+e.target.value); });
+$('scrub').addEventListener('change', () => { scrubbing = false; });
+$('lblBtn').onclick = () => { const on = $('lblBtn').classList.toggle('on'); gLbl.style.display = on ? '' : 'none'; };
+$('autoBtn').onclick = () => { autoInfo = $('autoBtn').classList.toggle('on'); };
+$('followBtn').onclick = () => { follow = $('followBtn').classList.toggle('on'); if (!follow) animateTo(Object.assign({}, VB0)); };
+$('menuBtn').onclick = () => { const o = $('left').classList.toggle('open'); $('menuBtn').textContent = o ? 'Ovládanie ▴' : 'Ovládanie ▾'; };
+const mealBox = $('meals');
+for (const k in MEALS) {
+  const b = document.createElement('button'); b.dataset.k = k;
+  b.innerHTML = `<span class="em">${MEALS[k].e}</span>${MEALS[k].n}`; b.title = MEALS[k].d;
+  b.onclick = () => setMeal(k);
+  mealBox.appendChild(b);
+}
+function setMeal(k) {
+  meal = MEALS[k];
+  mealBox.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.k === k));
+  const m = meal, cs = [['carb', 'sacharidy'], ['prot', 'bielkoviny'], ['fat', 'tuky'], ['fiber', 'vláknina'], ['water', 'voda']].filter(([q]) => m.c[q] > 0)
+    .sort((x, y) => m.c[y[0]] - m.c[x[0]]).map(([q, n]) => `<span style="color:${TYPES[q].c}">●</span> ${n}`).join(' ');
+  $('mealInfo').innerHTML = `<b>${m.e} ${m.n}</b> · ${cs}<br>${m.tip}`;
+  buildTimes(); buildParticles(); buildPhaseList(); t = 0; setPlay(true);
+}
+
+/* =================== INFO PANEL =================== */
+let sel = null;
+function select(id, quiet) {
+  if (!INFO[id]) return;
+  sel = id;
+  const it = INFO[id];
+  $('iKat').textContent = it.k;
+  let h = `<h2 id="iTitle">${it.t}</h2><p class="lead">${it.lead}</p>`;
+  h += it.p.map(x => `<p>${x}</p>`).join('');
+  if (it.f && it.f.length) h += '<dl class="facts">' + it.f.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('') + '</dl>';
+  if (it.zdr) h += `<div class="tipbox z"><b class="h">💚 Zdravie</b>${it.zdr}</div>`;
+  if (it.zaj) h += `<div class="tipbox q"><b class="h">💡 Vieš, že…?</b>${it.zaj}</div>`;
+  if (it.rel && it.rel.length) h += '<div class="subh">Súvisí s</div>' + it.rel.map(r => `<span class="chip" data-go="${r}">${INFO[r].t}</span>`).join('');
+  h += '<div class="subh">Všetky objekty</div>';
+  for (const [g, ids] of GROUPS) h += `<div style="margin:6px 0 2px;font-size:12px;color:var(--muted)">${g}</div>` + ids.map(r => `<span class="chip${r === id ? ' on' : ''}" data-go="${r}">${INFO[r].t}</span>`).join('');
+  h += '<div class="note">Zjednodušený model pre učivo biológie 7. ročníka ZŠ. Rozmery, poloha a časy sú len orientačné, skutočné časy trávenia sa u ľudí líšia. Hlava je zobrazená z profilu v reze, trup spredu. Ovládanie: medzerník = pauza, šípky ← → = prechádzanie popisov, + / − / 0 = zoom.</div>';
+  const sc = $('iScroll'); sc.innerHTML = h; sc.scrollTop = 0;
+  const lead = sc.querySelector('.lead');
+  if (targetsOf(id).length) {
+    const zb = document.createElement('button'); zb.className = 'zoomBtn'; zb.textContent = '🔍 Priblížiť v modeli';
+    zb.onclick = () => { setFollow(false); zoomTo(id); }; lead.after(zb);
+  }
+  if (it.phase && !quiet) {
+    const pb = document.createElement('button'); pb.className = 'playBtn';
+    pb.textContent = '▶ Prehrať fázu: ' + phName(PI[it.phase]);
+    pb.onclick = () => { seek(PH[PI[it.phase]].t0 + .01); setPlay(true); };
+    lead.after(pb);
+  }
+  const hl = new Set([id].concat(it.hl || []));
+  svg.querySelectorAll('[data-info]').forEach(e => {
+    if (e.classList.contains('hit') || e.classList.contains('lbl')) return;
+    e.classList.toggle('sel', hl.has(e.dataset.info));
+  });
+  lblEls.forEach(g => g.classList.toggle('sel', hl.has(g.dataset.info)));
+}
+$('iScroll').addEventListener('click', e => { const c = e.target.closest('[data-go]'); if (c) select(c.dataset.go); });
+const step = d => { const i = ORDER.indexOf(sel); select(ORDER[(i + d + ORDER.length) % ORDER.length]); };
+$('prev').onclick = () => step(-1); $('next').onclick = () => step(1);
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space') { e.preventDefault(); $('play').click(); }
+  else if (e.key === 'ArrowRight') step(1);
+  else if (e.key === 'ArrowLeft') step(-1);
+});
+const tip = $('tip');
+function infoTarget(e) { const tt = e.target.closest && e.target.closest('[data-info]'); return tt && tt.closest('#body') ? tt : null; }
+document.addEventListener('pointermove', e => {
+  const tt = infoTarget(e);
+  if (tt && e.pointerType === 'mouse' && !svg.classList.contains('drag')) {
+    tip.textContent = INFO[tt.dataset.info].t; tip.style.opacity = 1;
+    tip.style.left = Math.min(innerWidth - tip.offsetWidth - 8, e.clientX + 14) + 'px'; tip.style.top = (e.clientY + 16) + 'px';
+  } else tip.style.opacity = 0;
+});
+document.addEventListener('click', e => { const tt = infoTarget(e); if (tt) select(tt.dataset.info); });
+
+/* =================== ZOOM A POSUN =================== */
+const VB0 = { x: -60, y: 0, w: 720, h: 960 }, ZMAX = 8;
+let vb = Object.assign({}, VB0), anim = null, dragged = false;
+function clampVB(v) {
+  v.w = clamp(v.w, VB0.w / ZMAX, VB0.w); v.h = v.w * VB0.h / VB0.w;
+  const sx = v.w * .2, sy = v.h * .2;
+  v.x = clamp(v.x, VB0.x - sx, VB0.x + VB0.w - v.w + sx);
+  v.y = clamp(v.y, VB0.y - sy, VB0.y + VB0.h - v.h + sy);
+  return v;
+}
+function applyVB() {
+  svg.setAttribute('viewBox', `${vb.x.toFixed(2)} ${vb.y.toFixed(2)} ${vb.w.toFixed(2)} ${vb.h.toFixed(2)}`);
+  const z = VB0.w / vb.w;
+  svg.style.setProperty('--z', (1 / Math.sqrt(z)).toFixed(3));
+  $('zoomV').textContent = Math.round(z * 100) + ' %';
+}
+function setFollow(v) { follow = v; $('followBtn').classList.toggle('on', v); }
+function toSvg(cx, cy) { const m = svg.getScreenCTM().inverse(); return { x: m.a * cx + m.c * cy + m.e, y: m.b * cx + m.d * cy + m.f }; }
+function zoomAt(factor, cx, cy) {
+  anim = null; setFollow(false);
+  const p = toSvg(cx, cy), nw = clamp(vb.w / factor, VB0.w / ZMAX, VB0.w), k = nw / vb.w;
+  vb = clampVB({ x: p.x - (p.x - vb.x) * k, y: p.y - (p.y - vb.y) * k, w: nw });
+  applyVB();
+}
+function animateTo(tg) { anim = { from: Object.assign({}, vb), to: clampVB(tg), t0: performance.now() }; }
+function stepZoom(now) {
+  if (!anim) return;
+  const u = Math.min(1, (now - anim.t0) / 450), e = u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+  for (const k of ['x', 'y', 'w', 'h']) vb[k] = anim.from[k] + (anim.to[k] - anim.from[k]) * e;
+  applyVB(); if (u >= 1) anim = null;
+}
+function zoomCenter(factor) {
+  setFollow(false);
+  const r = svg.getBoundingClientRect(), p = toSvg(r.left + r.width / 2, r.top + r.height / 2);
+  const nw = clamp(vb.w / factor, VB0.w / ZMAX, VB0.w), nh = nw * VB0.h / VB0.w;
+  animateTo({ x: p.x - nw / 2, y: p.y - nh / 2, w: nw });
+}
+function targetsOf(id) { return [...svg.querySelectorAll(`[data-info="${id}"]`)].filter(e => !e.classList.contains('lbl') && !e.classList.contains('hit')); }
+function fitW(bw, bh) {
+  const r = svg.getBoundingClientRect(), aspect = r.width / r.height, vbAspect = VB0.w / VB0.h;
+  let w = aspect >= vbAspect ? Math.max(bh * vbAspect, bw * vbAspect / aspect) : Math.max(bw, bh * aspect);
+  return Math.max(w, VB0.w / ZMAX);
+}
+function zoomTo(id) {
+  const els = targetsOf(id); if (!els.length) return;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const e of els) {
+    const r = e.getBoundingClientRect(); if (!r.width && !r.height) continue;
+    const a = toSvg(r.left, r.top), b = toSvg(r.right, r.bottom);
+    x0 = Math.min(x0, a.x); y0 = Math.min(y0, a.y); x1 = Math.max(x1, b.x); y1 = Math.max(y1, b.y);
+  }
+  if (x0 > x1) return;
+  const w = fitW((x1 - x0) * 1.35, (y1 - y0) * 1.35), h = w * VB0.h / VB0.w;
+  animateTo({ x: (x0 + x1) / 2 - w / 2, y: (y0 + y1) / 2 - h / 2, w });
+}
+const FOLLOWW = { prijem: 170, zuvanie: 170, prehltanie: 190, pazerak: 280, zaludok: 260, dvanastnik: 240, tenke: 340, hrube: 420, konecnik: 300 };
+function followCam(c, dt) {
+  if (!follow || !c || anim) return;
+  const ph = PH[phaseAt(t).i].id, bw = FOLLOWW[ph], w = fitW(bw, bw * 1.1), h = w * VB0.h / VB0.w;
+  const tg = clampVB({ x: c[0] - w / 2, y: c[1] - h / 2, w }), k = 1 - Math.exp(-dt * 2.2);
+  for (const key of ['x', 'y', 'w', 'h']) vb[key] += (tg[key] - vb[key]) * k;
+  applyVB();
+}
+svg.addEventListener('wheel', e => { e.preventDefault(); const d = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY; zoomAt(Math.exp(-d * .0018), e.clientX, e.clientY); }, { passive: false });
+const ptrs = new Map(); let pinch = null, downAt = null;
+svg.addEventListener('pointerdown', e => {
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size === 1) { dragged = false; downAt = { x: e.clientX, y: e.clientY }; }
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = Math.hypot(a.x - b.x, a.y - b.y); dragged = true; }
+});
+window.addEventListener('pointermove', e => {
+  const old = ptrs.get(e.pointerId); if (!old) return;
+  const cur = { x: e.clientX, y: e.clientY };
+  if (ptrs.size === 1) {
+    if (!dragged && Math.hypot(cur.x - downAt.x, cur.y - downAt.y) > 5) { dragged = true; svg.classList.add('drag'); setFollow(false); }
+    if (dragged) { anim = null; const sc = svg.getScreenCTM().a; vb.x -= (cur.x - old.x) / sc; vb.y -= (cur.y - old.y) / sc; clampVB(vb); applyVB(); }
+  }
+  ptrs.set(e.pointerId, cur);
+  if (ptrs.size === 2 && pinch) { const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y); zoomAt(d / pinch, (a.x + b.x) / 2, (a.y + b.y) / 2); pinch = d; }
+});
+const endPtr = e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (!ptrs.size) svg.classList.remove('drag'); };
+window.addEventListener('pointerup', endPtr); window.addEventListener('pointercancel', endPtr);
+svg.addEventListener('click', e => { if (dragged) { e.stopPropagation(); dragged = false; } }, true);
+svg.addEventListener('dblclick', e => {
+  e.preventDefault(); setFollow(false);
+  const p = toSvg(e.clientX, e.clientY), nw = clamp(vb.w / 2, VB0.w / ZMAX, VB0.w), nh = nw * VB0.h / VB0.w;
+  animateTo({ x: p.x - nw / 2, y: p.y - nh / 2, w: nw });
+});
+$('zIn').onclick = () => zoomCenter(1.6);
+$('zOut').onclick = () => zoomCenter(1 / 1.6);
+$('zReset').onclick = () => { setFollow(false); animateTo(Object.assign({}, VB0)); };
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === '+' || e.key === '=') zoomCenter(1.6);
+  else if (e.key === '-') zoomCenter(1 / 1.6);
+  else if (e.key === '0') { setFollow(false); animateTo(Object.assign({}, VB0)); }
+});
+
+/* =================== SLUČKA =================== */
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (playing && !scrubbing) {
+    t += dt * speed;
+    if (t > TOTAL + 3) { t = 0; }
+  }
+  stepZoom(now);
+  const c = render();
+  followCam(c, dt);
+  requestAnimationFrame(frame);
+}
+applyVB();
+setMeal('obed');
+select('uvod');
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
