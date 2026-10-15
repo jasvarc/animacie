@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Krvný obeh človeka</title>
+<link rel="icon" href="data:,">
+<style>
+:root{
+  --bg:#060912;--panel:rgba(13,18,32,.86);--line:rgba(140,160,215,.18);
+  --text:#e2e8f5;--muted:#8d98b3;--red:#ff3b52;--blue:#4c84ff;--gold:#ffcf6e;--green:#c8f25a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;color:var(--text);background:var(--bg);
+  font:14px/1.5 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
+body{background:radial-gradient(ellipse at 45% 35%,#101a36 0%,#070b17 55%,#05070e 100%)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 12px 40px rgba(0,0,0,.5)}
+button{font:inherit;color:var(--text);background:rgba(255,255,255,.06);border:1px solid var(--line);
+  border-radius:9px;padding:5px 10px;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+button:hover{background:rgba(255,255,255,.12);border-color:rgba(160,180,230,.35)}
+button.on{background:rgba(255,90,110,.16);border-color:rgba(255,110,130,.55);color:#ffd2d8}
+input[type=range]{width:100%;accent-color:#ff5a6e;margin:2px 0 0}
+
+#stage{position:fixed;top:0;bottom:0;left:300px;right:400px}
+#body{width:100%;height:100%;display:block}
+#body{touch-action:none;cursor:grab}#body.drag{cursor:grabbing}
+#body [data-info],#inset [data-info]{cursor:pointer}
+#zoomCtl{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:5px;align-items:center}
+#zoomCtl button{width:36px;height:36px;padding:0;font-size:18px;line-height:1;background:rgba(13,18,32,.86);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#zoomV{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;background:rgba(13,18,32,.75);border-radius:6px;padding:1px 5px}
+.zoomBtn{width:100%;margin:0 0 10px}
+
+#left{position:fixed;left:16px;top:16px;bottom:16px;width:272px;display:flex;flex-direction:column;gap:10px;
+  overflow-y:auto;scrollbar-width:thin;scrollbar-color:#2a3550 transparent}
+#left .card{padding:12px 14px}
+h1{margin:0;font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#ff7d8e}
+.sub{color:var(--muted);font-size:12.5px;margin:2px 0 8px}
+.legend{list-style:none;margin:0;padding:0;font-size:12.5px;color:#c8d0e3}
+.legend li{display:flex;align-items:center;gap:8px;margin:3px 0}
+.legend svg{flex:none}
+#menuBtn{display:none;width:100%;margin-top:6px}
+
+.row{display:flex;gap:8px;align-items:center}
+#play{width:40px;flex:none}
+.sl{display:block;font-size:12.5px;color:var(--muted);margin-top:8px}
+.sl b{color:var(--text);font-variant-numeric:tabular-nums}
+.segm{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:10px}
+.segm button{font-size:12.5px;padding:5px 6px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px}
+.row2 button{font-size:12.5px}
+#followTxt{font-size:12.5px;margin-top:8px;min-height:0;color:#dfe6ff}
+#followTxt:empty{display:none}
+#followTxt .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+dl.read{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:10px 0 0;font-size:12.5px}
+dl.read dt{color:var(--muted)}dl.read dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+
+#inset h3{margin:0 0 2px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:650}
+#heartSvg{display:block;width:100%;height:auto;max-height:210px}
+#ecgSvg{display:block;width:100%;height:auto;margin-top:2px}
+#phase{font-size:13px;text-align:center;color:#ffd9de;min-height:20px;margin-top:4px}
+.mini{font-size:11.5px;color:var(--muted);text-align:center}
+
+#info{position:fixed;right:16px;top:16px;bottom:16px;width:370px;display:flex;flex-direction:column;overflow:hidden}
+#iHead{padding:14px 16px 4px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+#iKat{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.nav{display:flex;gap:5px}
+.nav button{width:32px;padding:3px 0}
+#iScroll{overflow-y:auto;padding:0 16px 16px;flex:1;scrollbar-width:thin;scrollbar-color:#2a3550 transparent}
+#iTitle{margin:0 0 6px;font-size:23px;line-height:1.2}
+.lead{font-size:15px;color:#f3f6ff;margin:0 0 10px}
+#iScroll p{font-size:13.5px;color:#c3cce0;margin:0 0 10px}
+dl.facts{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;margin:12px 0;padding:10px 12px;
+  border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03);font-size:13px}
+dl.facts dt{color:var(--muted)}dl.facts dd{margin:0;text-align:right}
+.hlBtn{width:100%;margin:2px 0 10px;background:linear-gradient(135deg,rgba(255,80,100,.25),rgba(80,120,255,.25));border-color:rgba(200,160,255,.4)}
+.subh{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px}
+.chip{display:inline-block;margin:3px 4px 0 0;padding:3px 9px;border-radius:999px;border:1px solid var(--line);
+  background:rgba(255,255,255,.05);font-size:12px;cursor:pointer;color:#d4dbec}
+.chip:hover{border-color:rgba(255,207,110,.5)}
+.chip.on{border-color:var(--gold);color:var(--gold);background:rgba(255,207,110,.1)}
+.note{font-size:11.5px;color:var(--muted);margin-top:14px;border-top:1px solid var(--line);padding-top:8px}
+
+#tip{position:fixed;pointer-events:none;padding:4px 9px;border-radius:7px;background:rgba(8,12,24,.92);
+  border:1px solid var(--line);font-size:12.5px;opacity:0;transition:opacity .12s;z-index:9;white-space:nowrap}
+
+/* SVG */
+.vessel{fill:none;stroke-linecap:round;stroke-linejoin:round;transition:opacity .3s}
+.hit{fill:none;stroke:transparent;stroke-width:11;stroke-linecap:round}
+.dim{opacity:.1}
+.sel{filter:drop-shadow(0 0 3px #ffd27a) drop-shadow(0 0 7px rgba(255,200,100,.7))}
+.organ{transition:opacity .3s}
+.lbl text{font-size:calc(13px * var(--z,1));fill:#c9d3ea;paint-order:stroke;stroke:#070b17;stroke-width:calc(3px * var(--z,1));cursor:pointer}
+.lbl text:hover{fill:#fff}
+.lbl line,.lbl polyline{stroke:rgba(190,205,240,.35);stroke-width:.8;fill:none;vector-effect:non-scaling-stroke}
+.lbl circle{fill:rgba(220,230,255,.7)}
+.lbl.sel{filter:none}.lbl.sel text{fill:var(--gold);font-weight:600}
+
+@media (max-width:980px){
+  #stage{left:0;right:0;top:60px;bottom:45vh}
+  #info{left:8px;right:8px;width:auto;top:auto;bottom:8px;height:calc(45vh - 14px)}
+  #left{left:8px;top:8px;bottom:auto;width:236px;max-height:calc(55vh - 12px)}
+  #left .card{padding:9px 11px}
+  #menuBtn{display:block}
+  #left:not(.open) #ctlP,#left:not(.open) #inset,#left:not(.open) .legend,#left:not(.open) .sub{display:none}
+  #iTitle{font-size:19px}
+}
+</style>
+</head>
+<body>
+<div id="stage"><svg id="body" viewBox="-40 0 680 1000" preserveAspectRatio="xMidYMid meet" aria-label="Model krvného obehu človeka"></svg>
+  <div id="zoomCtl"><button id="zIn" title="Priblížiť (+)">+</button><button id="zOut" title="Oddialiť (−)">−</button><button id="zReset" title="Pôvodný pohľad (0)">⟲</button><span id="zoomV">100 %</span></div>
+</div>
+
+<aside id="left">
+  <section class="card" id="titleP">
+    <h1>Krvný obeh človeka</h1>
+    <div class="sub">Kliknite na orgán, cievu alebo popis · koliesko myši alebo dva prsty = zoom, ťahaním posun, dvojklik = priblížiť</div>
+    <ul class="legend">
+      <li><svg width="14" height="14"><circle cx="7" cy="7" r="4" fill="#ff3b52"/></svg>Okysličená krv</li>
+      <li><svg width="14" height="14"><circle cx="7" cy="7" r="4" fill="#4c84ff"/></svg>Odkysličená krv</li>
+      <li><svg width="14" height="14"><circle cx="7" cy="7" r="4" fill="#4c84ff" stroke="#c8f25a" stroke-width="1.6"/></svg>Krv z čriev (živiny, toxíny)</li>
+      <li><svg width="14" height="14"><circle cx="7" cy="7" r="5" fill="none" stroke="#bff3ff" stroke-width="1.4"/></svg>Výmena plynov v pľúcach</li>
+      <li><svg width="14" height="14"><circle cx="7" cy="7" r="5" fill="none" stroke="#c8f25a" stroke-width="1.4"/></svg>Pečeň odstraňuje toxíny</li>
+      <li><svg width="14" height="14"><circle cx="7" cy="7" r="4" fill="#4c84ff" stroke="#ffd84a" stroke-width="1.6"/></svg>Krv s močovinou a odpadmi</li>
+      <li><svg width="14" height="14"><circle cx="7" cy="7" r="5" fill="none" stroke="#ffd84a" stroke-width="1.4"/></svg>Obličky odfiltrujú odpad</li>
+      <li><svg width="14" height="14"><circle cx="7" cy="7" r="2.6" fill="#ffe27a"/></svg>Moč (močovody → mechúr)</li>
+    </ul>
+    <button id="menuBtn">Ovládanie ▾</button>
+  </section>
+
+  <section class="card" id="ctlP">
+    <div class="row">
+      <button id="play" title="Pauza / spustiť (medzerník)">❚❚</button>
+      <label class="sl" style="flex:1;margin:0">Rýchlosť animácie <b id="speedV">1,00×</b>
+        <input type="range" id="speed" min="0.1" max="2" step="0.05" value="1"></label>
+    </div>
+    <label class="sl">Tep srdca <b id="bpmV">72</b> úderov/min
+      <input type="range" id="bpm" min="40" max="180" step="1" value="72"></label>
+    <label class="sl">Dýchanie <b id="brV">15</b> dychov/min
+      <input type="range" id="br" min="6" max="30" step="1" value="15"></label>
+    <div class="segm" id="modes">
+      <button data-m="all" class="on">Celý obeh</button>
+      <button data-m="pulm">Malý obeh</button>
+      <button data-m="sys">Veľký obeh</button>
+      <button data-m="port">Cez pečeň</button>
+      <button data-m="ren">Obličky</button>
+      <button data-m="clean">Čistenie krvi</button>
+    </div>
+    <div class="row2">
+      <button id="lblBtn" class="on">Popisky</button>
+      <button id="followBtn">Sleduj krvinku</button>
+    </div>
+    <div id="followTxt"></div>
+    <dl class="read">
+      <dt>Srdcový výdaj</dt><dd id="rCO">5,0 l/min</dd>
+      <dt>Jeden úder</dt><dd id="rBeat">0,83 s</dd>
+      <dt>Dych</dt><dd id="rBreath">nádych</dd>
+    </dl>
+  </section>
+
+  <section class="card" id="inset">
+    <h3>Detail srdca</h3>
+    <svg id="heartSvg" viewBox="-16 -30 132 146"></svg>
+    <svg id="ecgSvg" viewBox="0 0 240 54"></svg>
+    <div id="phase"></div>
+    <div class="mini">EKG · chlopne · sťahy predsiení a komôr</div>
+  </section>
+</aside>
+
+<aside id="info" class="card">
+  <div id="iHead"><span id="iKat"></span>
+    <div class="nav"><button id="prev" title="Predchádzajúci (←)">‹</button><button id="next" title="Ďalší (→)">›</button></div>
+  </div>
+  <div id="iScroll"></div>
+</aside>
+<div id="tip"></div>
+
+<script>
+(() => {
+'use strict';
+const NS = 'http://www.w3.org/2000/svg';
+const $ = id => document.getElementById(id);
+function E(tag, a, p) { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; }
+const f = p => p[0].toFixed(1) + ' ' + p[1].toFixed(1);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const ss = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const RED = [255, 59, 82], BLUE = [76, 132, 255], PURP = [150, 100, 235];
+const rgb = c => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
+const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+const sameC = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+
+/* =================== POPISY =================== */
+const INFO = {
+uvod:{t:"Ako funguje krvný obeh",k:"Prehľad",mode:"all",
+ lead:"Srdce je dvojité čerpadlo: pravá polovica posiela krv do pľúc, ľavá do celého tela. Oba okruhy sú zapojené za sebou, takže každá kvapka krvi prejde striedavo malým aj veľkým obehom.",
+ p:["Odkysličená krv (modrá) sa vracia dutými žilami do pravej predsiene, prechádza do pravej komory a tá ju pľúcnicou vytlačí do pľúc. V pľúcnych kapilárach krv odovzdá oxid uhličitý, naviaže kyslík a ako okysličená (červená) sa pľúcnymi žilami vracia do ľavej predsiene.",
+ "Z ľavej predsiene tečie krv do ľavej komory, najsilnejšej časti srdca, ktorá ju vypudí do aorty. Tepny ju rozvedú do všetkých orgánov. V kapilárach odovzdá kyslík a živiny a prevezme odpadové látky. Žily ju potom vracajú späť do srdca.",
+ "Krv z čriev, žalúdka a sleziny nejde priamo do srdca. Najprv ju vrátnicová žila privedie do pečene, ktorá z nej vychytá živiny a zneškodní škodlivé látky.",
+ "Farby sú dohodnuté: červená znamená okysličenú krv, modrá odkysličenú. Skutočná odkysličená krv je tmavočervená, nie modrá."],
+ f:[["Objem krvi dospelého","~5 litrov"],["Srdcový výdaj v pokoji","~5 l/min"],["Jeden úplný obeh","~1 minúta"],["Dĺžka všetkých ciev","~100 000 km"],["Červených krviniek","~25 biliónov"]],
+ rel:["malyObeh","velkyObeh","portalnyObeh","srdce","krv"]},
+malyObeh:{t:"Malý (pľúcny) krvný obeh",k:"Okruh",mode:"pulm",
+ lead:"Krátky okruh srdce → pľúca → srdce, v ktorom sa krv okysličí.",
+ p:["Začína v pravej komore. Pľúcnicou a pľúcnymi tepnami tečie odkysličená krv do pľúc. Sú to jediné tepny v tele, ktoré vedú odkysličenú krv.",
+ "V pľúcnych kapilárach sa krv zbaví CO₂ a nasýti kyslíkom. Pľúcne žily, jediné žily s okysličenou krvou, ju privedú do ľavej predsiene.",
+ "Je to nízkotlakový systém. Tlak je asi päťkrát nižší ako vo veľkom obehu, aby sa jemné pľúcne kapiláry nepoškodili a v pľúcach nevznikol opuch."],
+ f:[["Začiatok","pravá komora"],["Koniec","ľavá predsieň"],["Tlak v pľúcnici","~25/10 mmHg"],["Čas prechodu","~4–6 s"]],
+ rel:["pravaKomora","plucnica","pluca","plucneZily","lavaPredsien"]},
+velkyObeh:{t:"Veľký (telový) krvný obeh",k:"Okruh",mode:"sys",
+ lead:"Rozvádza okysličenú krv do všetkých orgánov a vracia odkysličenú späť do srdca.",
+ p:["Začína v ľavej komore. Aorta sa vetví na tepny pre hlavu (krčnice), ruky (podkľúčkové tepny), brušné orgány a nohy. Tepny sa ďalej delia na tepničky a nakoniec na kapiláry.",
+ "V kapilárach prebieha výmena: tkanivá dostanú kyslík, glukózu a ďalšie živiny a odovzdajú CO₂ a odpadové látky.",
+ "Krv sa zbiera do žíl. Horná dutá žila privádza krv z hlavy a rúk, dolná dutá žila z trupu a nôh. Obe ústia do pravej predsiene.",
+ "Rozdelenie srdcového výdaja v pokoji: mozog ~15 %, obličky ~20 %, tráviaci trakt a pečeň ~25 %, svaly ~20 %. Zvyšok pripadá na kožu, srdce a ostatné tkanivá."],
+ f:[["Začiatok","ľavá komora"],["Koniec","pravá predsieň"],["Tlak v aorte","~120/80 mmHg"],["Tlak v dutých žilách","~2–8 mmHg"]],
+ rel:["lavaKomora","aorta","tepny","kapilary","zily","hornaDuta","dolnaDuta"]},
+portalnyObeh:{t:"Vrátnicový obeh (cez pečeň)",k:"Okruh",mode:"port",
+ lead:"Zvláštna obchádzka: krv z tráviaceho traktu ide najprv do pečene a až potom do srdca.",
+ p:["Krv z čriev, žalúdka, sleziny a podžalúdkovej žľazy sa zbiera do vrátnicovej žily. Tá neústi do srdca, ale v pečeni sa znova rozvetví na sieť kapilár, takzvané sínusoidy.",
+ "Pečeň tak ako prvá skontroluje všetko, čo sa vstrebalo z potravy. Uloží živiny, zneškodní jedy, lieky a alkohol a zachytí baktérie. Až potom krv pokračuje pečeňovými žilami do dolnej dutej žily.",
+ "V animácii majú krvinky prichádzajúce z čriev žltozelený lem (vstrebané látky a toxíny). V pečeni lem zmizne, krv je vyčistená."],
+ f:[["Prítok krvi do pečene","~1,5 l/min"],["Z toho vrátnicou","~75 %"],["Z toho pečeňovou tepnou","~25 %"]],
+ rel:["creva","vratnicova","pecen","pecenoveZily","zaludok"]},
+krv:{t:"Krv",k:"Tkanivo",
+ lead:"Tekuté tkanivo, ktoré roznáša kyslík, živiny, hormóny a teplo a odnáša odpadové látky.",
+ p:["Tvorí ju plazma (~55 %) a krvinky (~45 %). Červené krvinky (erytrocyty) s hemoglobínom prenášajú kyslík, biele krvinky bojujú s infekciou a krvné doštičky zastavujú krvácanie.",
+ "Okysličená krv je jasnočervená, odkysličená tmavočervená. Modrá farba žíl, ktorú vidno cez kožu, je len optický klam.",
+ "Červené krvinky vznikajú v kostnej dreni a žijú asi 120 dní. Staré krvinky rozkladá slezina a pečeň."],
+ f:[["Objem","~5 l (7–8 % hmotnosti)"],["Erytrocytov v 1 mm³","~5 miliónov"],["Novovzniknutých za sekundu","~2 milióny"],["pH","7,35–7,45"]],
+ rel:["uvod","kapilary","zaludok"]},
+srdce:{t:"Srdce",k:"Orgán · čerpadlo",hl:["pravaPredsien","pravaKomora","lavaPredsien","lavaKomora","vencovite"],
+ lead:"Dutý svalový orgán veľkosti zovretej päste, uložený v hrudníku medzi pľúcami, mierne vľavo od stredu.",
+ p:["Má štyri dutiny, dve predsiene a dve komory. Pravá polovica čerpá odkysličenú krv do pľúc, ľavá okysličenú krv do tela. Delí ich pevná priehradka, takže sa krv oboch polovíc nemieša.",
+ "Každý úder má dve fázy: systolu (sťah a vypudenie krvi) a diastolu (uvoľnenie a plnenie). Rytmus udáva sínusový uzol v pravej predsieni, prirodzený kardiostimulátor. Jeho elektrické impulzy zachytáva EKG v detaile srdca vľavo.",
+ "Štyri chlopne fungujú ako jednosmerné ventily. Ich zatváranie počuť ako srdcové ozvy „lub – dub“.",
+ "Samotný srdcový sval zásobujú krvou vencovité (koronárne) tepny. Ich upchatie spôsobuje infarkt."],
+ f:[["Hmotnosť","~250–350 g"],["Pokojová frekvencia","60–80 úderov/min"],["Úderov za deň","~100 000"],["Vývrhový objem","~70 ml na úder"],["Úderov za život","~2,5–3 miliardy"]],
+ rel:["pravaPredsien","pravaKomora","lavaPredsien","lavaKomora","chlopne","vencovite"]},
+pravaPredsien:{t:"Pravá predsieň",k:"Srdce · pravá polovica",
+ lead:"Zberná dutina pre odkysličenú krv z celého tela.",
+ p:["Ústi do nej horná dutá žila (krv z hlavy a rúk), dolná dutá žila (krv z trupu a nôh) a koronárny splav (krv zo samotného srdca). Steny má tenké, krv posúva len o kúsok ďalej do pravej komory.",
+ "V jej stene leží sínusový uzol, ktorý spúšťa každý úder srdca.",
+ "Na konci diastoly sa predsieň stiahne (systola predsiení) a dotlačí do komory posledných asi 20 % krvi."],
+ f:[["Tlak","~2–6 mmHg"],["Chlopňa na výstupe","trojcípa"]],
+ rel:["hornaDuta","dolnaDuta","pravaKomora","chlopne"]},
+pravaKomora:{t:"Pravá komora",k:"Srdce · pravá polovica",
+ lead:"Čerpá odkysličenú krv do pľúc, teda do malého krvného obehu.",
+ p:["Pri sťahu sa trojcípa chlopňa zatvorí, aby krv necúvla do predsiene, a pľúcnicová chlopňa sa otvorí. Krv tak môže ísť jedine do pľúcnice.",
+ "Pľúca kladú prúdeniu malý odpor, preto má pravá komora asi trikrát tenšiu stenu ako ľavá a vytvára oveľa nižší tlak."],
+ f:[["Hrúbka steny","~3–5 mm"],["Systolický tlak","~25 mmHg"],["Objem za úder","~70 ml"]],
+ rel:["pravaPredsien","plucnica","malyObeh","chlopne"]},
+lavaPredsien:{t:"Ľavá predsieň",k:"Srdce · ľavá polovica",
+ lead:"Prijíma okysličenú krv z pľúc.",
+ p:["Ústia do nej štyri pľúcne žily, dve z pravého a dve z ľavého pľúcneho krídla. Leží najviac vzadu zo všetkých dutín srdca, pri pohľade spredu je takmer skrytá.",
+ "Cez dvojcípu (mitrálnu) chlopňu púšťa krv do ľavej komory."],
+ f:[["Tlak","~8–10 mmHg"],["Chlopňa na výstupe","dvojcípa (mitrálna)"]],
+ rel:["plucneZily","lavaKomora","chlopne"]},
+lavaKomora:{t:"Ľavá komora",k:"Srdce · ľavá polovica",
+ lead:"Najsilnejšia časť srdca. Vytláča okysličenú krv do celého tela.",
+ p:["Musí prekonať odpor miliónov ciev celého tela, preto má najhrubšiu svalovinu. Pri sťahu sa zatvorí mitrálna chlopňa a otvorí aortálna, krv vystrelí do aorty.",
+ "Tlak, ktorý vytvára, meriame na ramene ako horný (systolický) krvný tlak."],
+ f:[["Hrúbka steny","~10–15 mm"],["Systolický tlak","~120 mmHg"],["Ejekčná frakcia","~55–70 %"]],
+ rel:["lavaPredsien","aorta","velkyObeh","chlopne"]},
+chlopne:{t:"Srdcové chlopne",k:"Srdce",
+ lead:"Štyri jednosmerné ventily, vďaka ktorým tečie krv len jedným smerom.",
+ p:["Cípové chlopne, trojcípa vpravo a dvojcípa (mitrálna) vľavo, oddeľujú predsiene od komôr. Pri sťahu komôr sa zabuchnú a vznikne prvá ozva „lub“.",
+ "Polmesiačikovité chlopne, pľúcnicová a aortálna, sú na výstupe z komôr. Zatvoria sa na konci systoly, keď tlak v komorách klesne, a vznikne druhá ozva „dub“.",
+ "V detaile srdca vľavo dole vidno, ako sa chlopne striedavo otvárajú a zatvárajú."],
+ f:[["Počet","4"],["Otvorení za život","~3 miliardy"]],
+ rel:["srdce","pravaKomora","lavaKomora"]},
+vencovite:{t:"Vencovité (koronárne) tepny",k:"Srdce · tepny",
+ lead:"Vlastné krvné zásobenie srdcového svalu.",
+ p:["Odstupujú hneď na začiatku aorty a ako veniec obopínajú srdce. Srdce nedokáže brať kyslík z krvi, ktorá preteká jeho dutinami. Potrebuje vlastné cievy.",
+ "Zúženie týchto tepien (ateroskleróza) spôsobuje bolesť na hrudi, takzvanú angínu pektoris. Úplné upchatie vedie k infarktu myokardu."],
+ f:[["Podiel srdcového výdaja","~5 %"],["Hlavné vetvy","ľavá a pravá koronárna tepna"]],
+ rel:["srdce","aorta"]},
+pluca:{t:"Pľúca",k:"Orgán · výmena plynov",hl:["plucnica","plucneZily","priedusnica"],
+ lead:"Párový orgán, v ktorom krv prijíma kyslík a odovzdáva oxid uhličitý.",
+ p:["Vzduch prúdi priedušnicou a stále sa vetviacimi prieduškami až do drobných pľúcnych mechúrikov, alveol. Každú alveolu obopína sieť kapilár, ktorú od vzduchu delí membrána hrubá len asi 0,5 µm.",
+ "Kyslík prechádza difúziou z alveol do krvi a viaže sa na hemoglobín v červených krvinkách. Oxid uhličitý ide opačným smerom a vydýchneme ho. Krvinka prejde pľúcnou kapilárou asi za 0,75 sekundy, a to stačí.",
+ "Pravé pľúco má tri laloky, ľavé len dva, pretože časť miesta zaberá srdce. Pľúca nemajú vlastné svaly. Nádych zabezpečuje hlavne bránica.",
+ "Pľúca majú dvojité krvné zásobenie: pľúcne tepny privádzajú krv na okysličenie, malé prieduškové tepny vyživujú samotné pľúcne tkanivo."],
+ f:[["Počet alveol","~300–500 miliónov"],["Plocha na výmenu plynov","~70 m²"],["Dychová frekvencia","12–20/min"],["Dychový objem","~0,5 l"],["Vitálna kapacita","~3–5 l"]],
+ rel:["malyObeh","priedusnica","branica","plucnica","plucneZily"]},
+priedusnica:{t:"Priedušnica a priedušky",k:"Dýchacie cesty",
+ lead:"Trubice, ktoré vedú vzduch do pľúc.",
+ p:["Priedušnica je asi 11 cm dlhá trubica vystužená chrupkovými polkruhmi. Za hrudnou kosťou sa delí na dve hlavné priedušky, ktoré sa ďalej vetvia asi 23-krát až po alveoly. Vzniká takzvaný prieduškový strom.",
+ "Sliznicu pokrývajú riasinky, ktoré vynášajú hlien s prachom a mikróbmi smerom von."],
+ f:[["Dĺžka priedušnice","~11 cm"],["Priemer","~2 cm"]],
+ rel:["pluca","branica"]},
+branica:{t:"Bránica",k:"Sval",
+ lead:"Hlavný dýchací sval, ktorý oddeľuje hrudnú a brušnú dutinu.",
+ p:["Pri nádychu sa kupolovitá bránica stiahne a splošti. Hrudník sa zväčší, tlak v pľúcach klesne a vzduch prúdi dnu. Pri pokojnom výdychu sa uvoľní a vráti sa hore.",
+ "Prechádzajú cez ňu aorta, dolná dutá žila a pažerák. V animácii sa pohybuje v rytme dychu, ktorý môžete meniť posuvníkom."],
+ f:[["Podiel na pokojnom nádychu","~70 %"]],
+ rel:["pluca","priedusnica"]},
+pecen:{t:"Pečeň",k:"Orgán · čistenie krvi",hl:["vratnicova","pecenovaTepna","pecenoveZily","zlcnik"],
+ lead:"Najväčšia žľaza a chemické laboratórium tela, ktoré nepretržite čistí krv.",
+ p:["Leží v pravej hornej časti brucha pod bránicou. Každú minútu ňou pretečie asi 1,5 litra krvi, štvrtina srdcového výdaja. Krv prichádza dvoma cestami: vrátnicovou žilou (krv z čriev bohatá na živiny) a pečeňovou tepnou (okysličená krv).",
+ "Pečeňové bunky (hepatocyty) sú usporiadané do lalôčikov. Krv nimi pomaly preteká cez sínusoidy a bunky ju prečesávajú: odbúravajú alkohol a lieky a menia jedovatý amoniak na močovinu, ktorú potom vylúčia obličky. Kupfferove bunky pohlcujú baktérie a zostarnuté krvinky.",
+ "Pečeň ďalej tvorí žlč na trávenie tukov, ukladá glukózu ako glykogén, ukladá vitamíny A, D, B12 a železo a vyrába bielkoviny krvnej plazmy, napríklad albumín a faktory zrážania krvi.",
+ "Dokáže sa pozoruhodne regenerovať. Dorastie aj po odstránení väčšej časti."],
+ f:[["Hmotnosť","~1,5 kg"],["Prietok krvi","~1,5 l/min"],["Počet funkcií","viac ako 500"],["Lalôčikov","~50–100 tisíc"]],
+ rel:["portalnyObeh","vratnicova","pecenovaTepna","pecenoveZily","zlcnik","oblicky"]},
+vratnicova:{t:"Vrátnicová žila",k:"Žila · vrátnicový obeh",
+ lead:"Privádza do pečene krv z tráviaceho traktu a sleziny.",
+ p:["Vzniká za podžalúdkovou žľazou spojením hornej mezenterickej žily (z čriev) a slezinovej žily. Je dlhá asi 8 cm.",
+ "Vedie odkysličenú krv bohatú na vstrebané živiny, ako sú cukry a aminokyseliny, ale aj na látky, ktoré treba zneškodniť.",
+ "Pri chorobách pečene, napríklad pri cirhóze, sa tlak vo vrátnici zvýši. Vzniká portálna hypertenzia."],
+ f:[["Dĺžka","~8 cm"],["Podiel na prítoku do pečene","~75 %"]],
+ rel:["portalnyObeh","pecen","creva","zaludok"]},
+pecenovaTepna:{t:"Pečeňová tepna",k:"Tepna",
+ lead:"Privádza do pečene okysličenú krv.",
+ p:["Odstupuje z brušnej aorty cez kmeň zvaný truncus coeliacus. Hoci prináša len štvrtinu krvi pečene, dodáva asi polovicu jej kyslíka."],
+ f:[["Podiel prítoku","~25 %"],["Podiel kyslíka","~50 %"]],
+ rel:["pecen","aorta"]},
+pecenoveZily:{t:"Pečeňové žily",k:"Žily",
+ lead:"Odvádzajú vyčistenú krv z pečene do dolnej dutej žily.",
+ p:["Zvyčajne sú tri, pravá, stredná a ľavá. Ústia do dolnej dutej žily tesne pod bránicou, len pár centimetrov pred srdcom."],
+ f:[["Počet","3 hlavné"]],
+ rel:["pecen","dolnaDuta"]},
+zlcnik:{t:"Žlčník",k:"Orgán",
+ lead:"Malý vak pod pečeňou, zásobník žlče.",
+ p:["Pečeň tvorí denne asi 0,5–1 l žlče. Žlčník ju zahusťuje a po jedle ju vypustí do dvanástnika, kde pomáha tráviť tuky.",
+ "Žlčou pečeň vylučuje aj niektoré odpadové látky, napríklad bilirubín z rozpadnutých červených krviniek."],
+ f:[["Objem","~30–50 ml"]],
+ rel:["pecen"]},
+oblicky:{t:"Obličky",k:"Orgán · filtrácia krvi",mode:"ren",hl:["mocovody"],
+ lead:"Druhý hlavný čistiaci orgán. Z krvi odfiltrujú odpadové látky a vylúčia ich močom.",
+ p:["Dve obličky veľkosti päste ležia vzadu po stranách chrbtice. Hoci vážia spolu len ~300 g, dostávajú až ~20 % srdcového výdaja.",
+ "V asi milióne nefrónov v každej obličke sa z krvi denne prefiltruje ~180 litrov primárneho moču. Väčšina vody a užitočných látok sa vstrebe späť. Odíde len ~1,5 l moču s močovinou (tú vyrobila pečeň), soľami a zvyškami liekov.",
+ "Obličky regulujú aj krvný tlak, objem a pH krvi a hormónom erytropoetínom riadia tvorbu červených krviniek.",
+ "Filtrácia prebieha v klbôčku (glomerule), čo je spleť kapilár, z ktorej sa pod tlakom pretláča tekutina do Bowmanovho puzdra. Krvinky a bielkoviny sú príliš veľké, ostávajú v krvi. V kanálikoch nefrónu sa potom späť vstrebe voda, glukóza a soli, a naopak sa do moču aktívne vylúčia ďalšie odpady a lieky.",
+ "S pečeňou spolupracujú: pečeň jedovatý amoniak a ďalšie látky chemicky zneškodní a premení na rozpustné (napríklad močovinu), obličky ich vylúčia. V animácii nesú krvinky s močovinou žltý lem. V obličkách ho stratia a do močovodov odkvapne kvapka moču.",
+ "Pri zlyhaní obličiek sa odpady v krvi hromadia. Krv potom treba čistiť umelo prístrojom, dialýzou."],
+ f:[["Hmotnosť","~150 g každá"],["Prietok krvi","~1,1 l/min (~20 % výdaja)"],["Prefiltrovaná krv","všetka ~60× denne"],["Primárny moč","~180 l/deň"],["Definitívny moč","~1,5 l/deň"],["Nefrónov","~1 milión v každej"]],
+ rel:["cistenie","mocovody","pecen","dolnaDuta","aorta"]},
+mocovody:{t:"Močovody a močový mechúr",k:"Vylučovanie",
+ lead:"Odvádzajú moč z obličiek a zhromažďujú ho.",
+ p:["Z obličkovej panvičky vychádza močovod, 25–30 cm dlhá svalová trubica. Peristaltickými vlnami posúva moč po kvapkách do močového mechúra.",
+ "Mechúr je pružný svalový vak v malej panve. Keď sa naplní asi na 300–400 ml, nervy vyšlú signál a pocítime nutkanie na močenie. V animácii sa mechúr postupne plní a potom vyprázdni."],
+ f:[["Dĺžka močovodu","~25–30 cm"],["Kapacita mechúra","~400–600 ml"],["Moču za deň","~1,5 l"]],
+ rel:["oblicky","cistenie"]},
+cistenie:{t:"Čistenie krvi: pečeň a obličky",k:"Okruh",mode:"clean",
+ lead:"Pečeň a obličky spolupracujú ako dvojstupňová čistiareň krvi.",
+ p:["1. stupeň, pečeň: krv z čriev prichádza vrátnicovou žilou. Pečeň vychytá toxíny, lieky a alkohol a jedovatý amoniak premení na menej škodlivú močovinu. Tú vypustí späť do krvi (v animácii zelený lem krvinky zmení na žltý).",
+ "2. stupeň, obličky: krv sa dostane obličkovými tepnami do obličiek. Tie odfiltrujú močovinu, nadbytočné soli, vodu a odpady zo svalov (kreatinín) a vylúčia ich do moču (žltý lem zmizne, moč steká do mechúra).",
+ "Niektoré látky pečeň vylučuje aj žlčou do čreva a stolicou. Pľúca zas z krvi odstraňujú oxid uhličitý, aj to je istý druh čistenia."],
+ f:[["Pečeň","~1,5 l krvi/min"],["Obličky","~1,1 l krvi/min"],["Spolu","~50 % srdcového výdaja"]],
+ rel:["pecen","oblicky","portalnyObeh","mocovody"]},
+creva:{t:"Črevá",k:"Orgán · vstrebávanie",hl:["vratnicova"],
+ lead:"Tu sa živiny z potravy vstrebávajú do krvi.",
+ p:["Tenké črevo je dlhé ~5–7 m a jeho vnútorný povrch zväčšujú klky na desiatky m². V každom klku je sieť kapilár, do ktorej sa vstrebávajú cukry a aminokyseliny. Tuky idú väčšinou lymfou.",
+ "Všetka krv z čriev odteká vrátnicovou žilou do pečene, nie priamo do srdca.",
+ "Krvou ich zásobujú mezenterické tepny z brušnej aorty. Po jedle sa prietok krvi v nich výrazne zvýši."],
+ f:[["Dĺžka tenkého čreva","~6 m"],["Dĺžka hrubého čreva","~1,5 m"],["Prietok po jedle","až 1,5–2× vyšší"]],
+ rel:["portalnyObeh","vratnicova","pecen"]},
+zaludok:{t:"Žalúdok a slezina",k:"Orgány",
+ lead:"Orgány v ľavej hornej časti brucha. Aj ich krv odteká do pečene.",
+ p:["Žalúdok trávi potravu kyselinou a enzýmami.",
+ "Slezina je cintorín červených krviniek. Po ~120 dňoch ich života zachytáva staré krvinky a rozkladá ich. Uvoľnené železo a bilirubín posiela slezinovou žilou do pečene. Zároveň je súčasťou imunitného systému."],
+ f:[["Životnosť červenej krvinky","~120 dní"],["Hmotnosť sleziny","~150 g"]],
+ rel:["vratnicova","pecen","krv"]},
+mozog:{t:"Mozog",k:"Orgán",
+ lead:"Najnáročnejší odberateľ kyslíka v tele.",
+ p:["Tvorí len ~2 % hmotnosti tela, no spotrebuje ~20 % kyslíka a dostáva ~15 % srdcového výdaja. Bez prívodu krvi človek stratí vedomie za 5–10 sekúnd a po niekoľkých minútach nastane trvalé poškodenie.",
+ "Krvno-mozgová bariéra, tvorená tesne spojenými bunkami stien mozgových kapilár, bráni prieniku mnohých látok z krvi do mozgu."],
+ f:[["Hmotnosť","~1,4 kg"],["Prietok krvi","~750 ml/min"]],
+ rel:["krcnice","hrdelne"]},
+aorta:{t:"Aorta (srdcovnica)",k:"Tepna",
+ lead:"Najväčšia tepna tela a kmeň celého veľkého obehu.",
+ p:["Vychádza z ľavej komory a stúpa nahor (vzostupná časť). Potom sa oblúkom stáča doľava a dozadu (oblúk aorty) a zostupuje pozdĺž chrbtice cez hrudník a bránicu do brucha. Vo výške pupka sa delí na dve bedrové tepny pre nohy.",
+ "Z oblúka odstupujú tepny pre hlavu a ruky, z brušnej časti tepny pre pečeň, žalúdok, slezinu, črevá a obličky.",
+ "Jej stena je pružná. Pri systole sa roztiahne a v diastole sa vráti, čím prerušované vystrekovanie krvi zo srdca mení na plynulejší tok. Tlakovú vlnu cítime ako pulz. V animácii vidno, ako sa vlna šíri tepnami."],
+ f:[["Priemer","~2,5–3 cm"],["Dĺžka","~30–40 cm"],["Tlak","~120/80 mmHg"],["Rýchlosť krvi pri systole","až ~1 m/s"]],
+ rel:["lavaKomora","velkyObeh","krcnice","tepny","vencovite"]},
+hornaDuta:{t:"Horná dutá žila",k:"Žila",
+ lead:"Privádza odkysličenú krv z hlavy, krku, rúk a hornej časti hrudníka.",
+ p:["Vzniká spojením pravej a ľavej ramenohlavovej žily a po asi 7 cm ústi do pravej predsiene. Nemá chlopne."],
+ f:[["Dĺžka","~7 cm"],["Priemer","~2 cm"]],
+ rel:["pravaPredsien","hrdelne","zily"]},
+dolnaDuta:{t:"Dolná dutá žila",k:"Žila",
+ lead:"Najväčšia žila tela. Vracia krv z nôh, panvy a brucha.",
+ p:["Vzniká spojením bedrových žíl, stúpa vpravo od aorty, prijíma obličkové a pečeňové žily, prechádza bránicou a ústi do pravej predsiene.",
+ "Krvi pomáha k srdcu svalová pumpa nôh, chlopne v žilách dolných končatín a podtlak v hrudníku pri nádychu."],
+ f:[["Priemer","~2,5–3 cm"],["Tlak","~2–8 mmHg"]],
+ rel:["pravaPredsien","pecenoveZily","oblicky","zily"]},
+plucnica:{t:"Pľúcnica a pľúcne tepny",k:"Tepny · malý obeh",
+ lead:"Vedú odkysličenú krv z pravej komory do pľúc.",
+ p:["Pľúcnica (truncus pulmonalis) je asi 5 cm dlhý kmeň, ktorý sa pod oblúkom aorty delí na pravú a ľavú pľúcnu tepnu. Tie sa v pľúcach vetvia spolu s prieduškami.",
+ "Sú to jediné tepny, ktoré vedú odkysličenú krv, preto sú modré. Tepna je definovaná smerom toku (od srdca), nie obsahom kyslíka."],
+ f:[["Dĺžka kmeňa","~5 cm"],["Tlak","~25/10 mmHg"]],
+ rel:["pravaKomora","pluca","malyObeh"]},
+plucneZily:{t:"Pľúcne žily",k:"Žily · malý obeh",
+ lead:"Privádzajú okysličenú krv z pľúc do ľavej predsiene.",
+ p:["Zvyčajne sú štyri, dve z každého pľúcneho krídla. Sú to jediné žily, ktoré vedú okysličenú krv."],
+ f:[["Počet","4"]],
+ rel:["pluca","lavaPredsien","malyObeh"]},
+krcnice:{t:"Krčnice",k:"Tepny",
+ lead:"Tepny, ktoré zásobujú krvou hlavu a mozog.",
+ p:["Pravá krčnica odstupuje z ramenohlavového kmeňa, ľavá priamo z oblúka aorty. Na krku sa delia na vnútornú (mozog, oko) a vonkajšiu (tvár, krk) krčnicu. Ich pulz nahmatáme po stranách krku.",
+ "Mozog dostáva krv aj zozadu cez vertebrálne tepny. Spolu s krčnicami tvoria na spodine mozgu Willisov okruh, ktorý mozog chráni pri upchatí jednej z ciev."],
+ f:[["Prietok do mozgu","~750 ml/min"]],
+ rel:["mozog","aorta","hrdelne"]},
+hrdelne:{t:"Hrdelné žily",k:"Žily",
+ lead:"Odvádzajú krv z hlavy a mozgu.",
+ p:["Vnútorná hrdelná žila zbiera krv z mozgu a vedie ju popri krčnici. Spolu s podkľúčkovou žilou vytvára ramenohlavovú žilu, ktorá ústi do hornej dutej žily."],
+ f:[["Ústi do","hornej dutej žily"]],
+ rel:["mozog","hornaDuta","krcnice"]},
+tepny:{t:"Tepny (artérie)",k:"Cievy",
+ lead:"Cievy, ktoré vedú krv od srdca.",
+ p:["Majú hrubú, pružnú a svalovú stenu, pretože odolávajú vysokému tlaku. Prúd krvi v nich pulzuje. V animácii krvinky v tepnách zrýchlia pri každom sťahu komôr a vlna sa šíri od srdca ďalej.",
+ "Veľké tepny končatín: podkľúčková, podpazušná a ramenná tepna v ruke (na nej meriame tlak), stehenná a podkolenná tepna v nohe."],
+ f:[["Tlak","~120/80 mmHg"],["Pulz na zápästí","vretenná tepna"]],
+ rel:["aorta","kapilary","zily"]},
+zily:{t:"Žily (vény)",k:"Cievy",
+ lead:"Cievy, ktoré vedú krv k srdcu.",
+ p:["Majú tenšiu stenu a väčší priesvit ako tepny. Obsahujú až ~70 % celkového objemu krvi, sú teda zásobárňou krvi. Tlak v nich je nízky.",
+ "V končatinách majú chlopne, ktoré bránia spätnému toku. Krv k srdcu tlačia sťahy okolitých svalov, preto pri dlhom státí opúchajú nohy."],
+ f:[["Podiel objemu krvi","~70 %"]],
+ rel:["hornaDuta","dolnaDuta","kapilary","tepny"]},
+kapilary:{t:"Kapiláry (vlásočnice)",k:"Cievy",
+ lead:"Najmenšie cievy. V nich sa vymieňajú látky medzi krvou a tkanivami.",
+ p:["Stenu kapiláry tvorí jediná vrstva buniek. Kapiláry sú také úzke (5–10 µm), že nimi červené krvinky prechádzajú po jednej a často sa pritom musia zdeformovať.",
+ "Krv v nich tečie veľmi pomaly, aby bol čas na výmenu kyslíka, živín, CO₂ a odpadov. V animácii preto krvinky v kapilárach spomalia a zmenia farbu.",
+ "Celková plocha kapilár je obrovská, stovky m². Väčšina buniek je od najbližšej kapiláry vzdialená len zlomok milimetra."],
+ f:[["Priemer","5–10 µm"],["Rýchlosť krvi","~0,3–1 mm/s"],["Počet","~10 miliárd"]],
+ rel:["tepny","zily","pluca"]}
+};
+const GROUPS = [
+ ["Obehy", ["uvod","malyObeh","velkyObeh","portalnyObeh","cistenie","krv"]],
+ ["Srdce", ["srdce","pravaPredsien","pravaKomora","lavaPredsien","lavaKomora","chlopne","vencovite"]],
+ ["Orgány", ["pluca","priedusnica","branica","pecen","zlcnik","oblicky","mocovody","creva","zaludok","mozog"]],
+ ["Cievy", ["aorta","hornaDuta","dolnaDuta","plucnica","plucneZily","krcnice","hrdelne","vratnicova","pecenovaTepna","pecenoveZily","tepny","zily","kapilary"]]
+];
+const ORDER = GROUPS.flatMap(g => g[1]);
+
+/* =================== GEOMETRIA =================== */
+function cr(pts) {
+  const out = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+    out.push([p1, [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6], [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6], p2]);
+  }
+  return out;
+}
+const dOf = cs => 'M' + f(cs[0][0]) + cs.map(c => 'C' + f(c[1]) + ' ' + f(c[2]) + ' ' + f(c[3])).join('');
+function sampleUniform(cs, step) {
+  const P = [];
+  for (const c of cs) for (let i = P.length ? 1 : 0; i <= 18; i++) {
+    const t = i / 18, u = 1 - t, a = u * u * u, b = 3 * u * u * t, d = 3 * u * t * t, e = t * t * t;
+    P.push([a * c[0][0] + b * c[1][0] + d * c[2][0] + e * c[3][0], a * c[0][1] + b * c[1][1] + d * c[2][1] + e * c[3][1]]);
+  }
+  const cum = [0];
+  for (let i = 1; i < P.length; i++) cum.push(cum[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+  const L = cum[cum.length - 1], N = Math.max(2, Math.ceil(L / step) + 1);
+  const X = new Float32Array(N), Y = new Float32Array(N);
+  let j = 0;
+  for (let i = 0; i < N; i++) {
+    const s = L * i / (N - 1);
+    while (j < P.length - 2 && cum[j + 1] < s) j++;
+    const seg = cum[j + 1] - cum[j] || 1, k = (s - cum[j]) / seg;
+    X[i] = P[j][0] + (P[j + 1][0] - P[j][0]) * k; Y[i] = P[j][1] + (P[j + 1][1] - P[j][1]) * k;
+  }
+  return { L, N, X, Y };
+}
+function wiggle(pts, amp, wl) {
+  let total = 0;
+  for (let i = 0; i < pts.length - 1; i++) total += Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
+  const out = []; let acc = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], L = Math.hypot(x1 - x0, y1 - y0);
+    const nx = -(y1 - y0) / L, ny = (x1 - x0) / L, n = Math.max(1, Math.round(L / 4));
+    for (let j = 0; j < n; j++) {
+      const t = j / n, s = acc + L * t;
+      const o = amp * Math.sin(s / wl * 2 * Math.PI) * Math.min(1, s / 8, (total - s) / 8);
+      out.push([x0 + (x1 - x0) * t + nx * o, y0 + (y1 - y0) * t + ny * o]);
+    }
+    acc += L;
+  }
+  out.push(pts[pts.length - 1]);
+  return out;
+}
+const Mx = pts => pts.map(([x, y]) => [600 - x, y]);
+const HX = 262, HY = 300;
+const H = (x, y) => [HX + x, HY + y];
+
+/* =================== DEFINÍCIA CIEV =================== */
+const SD = [];
+function S(id, pts, o) { SD.push(Object.assign({ id, pts, w: 3, circ: 'sys', L: 'f', draw: 1 }, o)); }
+const lungCap = { t: 'C', c: RED, c0: BLUE, w: 1.4, circ: 'pulm', info: 'pluca', name: 'Pľúcne kapiláry – krv sa okysličuje', ev: 'o2', wig: 2.4 };
+const sysCap = { t: 'C', c: BLUE, c0: RED, w: 1.4, wig: 2, ev: 'waste' };
+const livCap = { t: 'C', c: BLUE, c0: PURP, w: 1.5, circ: 'sys port', info: 'pecen', name: 'Pečeňové sínusoidy – čistenie krvi', ev: 'liver', next: { hepV: 1 }, wig: 2.2 };
+const portV = { t: 'V', c: BLUE, circ: 'sys port' };
+
+// srdce (vnútorné dráhy)
+S('hRA', [H(22, 30), H(22, 46), H(34, 60)], { t: 'HA', c: BLUE, circ: 'sys pulm', info: 'pravaPredsien', name: 'Pravá predsieň', next: { hRV: 1 }, draw: 0 });
+S('hRV', [H(34, 60), H(40, 80), H(52, 94), H(52, 72), H(55, 48), H(58, 28), H(60, 14)], { t: 'HV', c: BLUE, circ: 'pulm', info: 'pravaKomora', name: 'Pravá komora → pľúcnica', next: { pTrunk: 1 }, draw: 0 });
+S('hLA', [H(80, 28), H(76, 36), H(70, 46)], { t: 'HA', c: RED, circ: 'pulm sys', info: 'lavaPredsien', name: 'Ľavá predsieň', next: { hLV: 1 }, draw: 0 });
+S('hLV', [H(70, 46), H(74, 70), H(64, 92), H(58, 72), H(54, 50), H(50, 32), H(48, 16)], { t: 'HV', c: RED, info: 'lavaKomora', name: 'Ľavá komora → aorta', next: { aAsc: 1 }, draw: 0 });
+// malý obeh
+S('pTrunk', [H(60, 14), [324, 300], [324, 290]], { t: 'P', w: 7, c: BLUE, circ: 'pulm', info: 'plucnica', name: 'Pľúcnica', next: { pR: .55, pL: .45 } });
+S('pR', [[324, 290], [305, 286], [282, 290], [262, 298]], { t: 'P', w: 5, c: BLUE, circ: 'pulm', info: 'plucnica', name: 'Pravá pľúcna tepna', next: { capRa: 1, capRb: 1, capRc: 1 } });
+S('pL', [[324, 290], [342, 288], [358, 296]], { t: 'P', w: 5, c: BLUE, circ: 'pulm', info: 'plucnica', name: 'Ľavá pľúcna tepna', next: { capLa: 1, capLb: 1 } });
+S('capRa', [[262, 298], [248, 268], [240, 246], [254, 244], [262, 270], [272, 310], [270, 332]], Object.assign({ next: { pvR: 1 } }, lungCap));
+S('capRb', [[262, 298], [238, 300], [226, 330], [242, 342], [258, 326], [270, 332]], Object.assign({ next: { pvR: 1 } }, lungCap));
+S('capRc', [[262, 298], [242, 338], [230, 380], [252, 394], [268, 368], [270, 332]], Object.assign({ next: { pvR: 1 } }, lungCap));
+S('capLa', [[358, 296], [354, 266], [362, 244], [374, 262], [372, 300], [352, 330]], Object.assign({ next: { pvL: 1 } }, lungCap));
+S('capLb', [[358, 296], [380, 312], [386, 360], [374, 394], [356, 372], [352, 330]], Object.assign({ next: { pvL: 1 } }, lungCap));
+S('pvR', [[270, 332], [292, 337], [318, 335], [342, 328]], { t: 'V', w: 5, c: RED, circ: 'pulm', L: 'b', info: 'plucneZily', name: 'Pravé pľúcne žily', next: { hLA: 1 } });
+S('pvL', [[352, 330], [347, 329], [342, 328]], { t: 'V', w: 5, c: RED, circ: 'pulm', info: 'plucneZily', name: 'Ľavé pľúcne žily', next: { hLA: 1 } });
+// aorta
+S('aAsc', [H(48, 16), [307, 298], [306, 282], [308, 268]], { t: 'A', w: 8, c: RED, info: 'aorta', name: 'Vzostupná aorta', next: { carotidR: .12, subclR: .09, aArch1: .79 } });
+S('aArch1', [[308, 268], [314, 258], [322, 255]], { t: 'A', w: 8, c: RED, info: 'aorta', name: 'Oblúk aorty', next: { carotidL: .13, aArch2: .87 } });
+S('aArch2', [[322, 255], [332, 260]], { t: 'A', w: 8, c: RED, info: 'aorta', name: 'Oblúk aorty', next: { subclL: .1, aDesc1: .9 } });
+S('aDesc1', [[332, 260], [340, 274], [341, 300], [337, 340], [328, 380], [316, 412]], { t: 'A', w: 7, c: RED, L: 'b', info: 'aorta', name: 'Hrudná (zostupná) aorta', next: { hepArt: .1, splArt: .1, aDesc2: .8 } });
+S('aDesc2', [[316, 412], [315, 430], [314, 445]], { t: 'A', w: 6.5, c: RED, L: 'b', info: 'aorta', name: 'Brušná aorta', next: { sma: .25, aDesc3: .75 } });
+S('aDesc3', [[314, 445], [313, 465], [313, 480]], { t: 'A', w: 6.5, c: RED, L: 'b', info: 'aorta', name: 'Brušná aorta', next: { renR: .2, renL: .2, aDesc4: .6 } });
+S('aDesc4', [[313, 480], [312, 525], [310, 566]], { t: 'A', w: 6, c: RED, L: 'b', info: 'aorta', name: 'Brušná aorta', next: { iliacR: .5, iliacL: .5 } });
+// hlava
+S('carotidR', [[308, 268], [298, 250], [291, 225], [288, 190], [288, 150]], { t: 'A', w: 3.5, c: RED, info: 'krcnice', name: 'Pravá krčnica', next: { brainR: 1 } });
+S('carotidL', [[322, 255], [316, 232], [313, 205], [312, 180], [312, 150]], { t: 'A', w: 3.5, c: RED, info: 'krcnice', name: 'Ľavá krčnica', next: { brainL: 1 } });
+const brain = [[288, 150], [282, 128], [268, 104], [268, 74], [288, 52], [296, 80], [290, 112], [279, 156]];
+S('brainR', brain, Object.assign({}, sysCap, { info: 'mozog', name: 'Kapiláry mozgu – odovzdávajú kyslík', next: { jugR: 1 } }));
+S('brainL', Mx(brain), Object.assign({}, sysCap, { info: 'mozog', name: 'Kapiláry mozgu – odovzdávajú kyslík', next: { jugL: 1 } }));
+S('jugR', [[279, 156], [278, 200], [283, 240], [292, 258]], { t: 'V', w: 4, c: BLUE, info: 'hrdelne', name: 'Pravá hrdelná žila', next: { svc: 1 } });
+S('jugL', [[321, 156], [322, 200], [316, 238], [302, 252], [292, 258]], { t: 'V', w: 4, c: BLUE, info: 'hrdelne', name: 'Ľavá hrdelná žila', next: { svc: 1 } });
+S('svc', [[292, 258], [290, 295], H(22, 30)], { t: 'V', w: 8, c: BLUE, info: 'hornaDuta', name: 'Horná dutá žila', next: { hRA: 1 } });
+// ruky
+const armArt = [[196, 268], [182, 320], [170, 380], [162, 430], [152, 500], [144, 560]];
+const hand = [[144, 560], [140, 590], [132, 618], [142, 628], [146, 600], [134, 562]];
+const armVein = [[134, 562], [142, 500], [151, 430], [159, 380], [171, 320], [186, 272]];
+S('subclR', [[308, 268], [280, 256], [240, 250], [210, 256], [196, 268]], { t: 'A', w: 3.5, c: RED, info: 'tepny', name: 'Pravá podkľúčková tepna', next: { armArtR: 1 } });
+S('armArtR', armArt, { t: 'A', w: 2.8, c: RED, info: 'tepny', name: 'Tepny pravej ruky', next: { handR: 1 } });
+S('handR', hand, Object.assign({}, sysCap, { info: 'kapilary', name: 'Kapiláry ruky – výmena látok', next: { armVeinR: 1 } }));
+S('armVeinR', armVein, { t: 'V', w: 3.2, c: BLUE, info: 'zily', name: 'Žily pravej ruky', next: { subclVR: 1 } });
+S('subclVR', [[186, 272], [210, 264], [240, 260], [270, 262], [292, 258]], { t: 'V', w: 3.8, c: BLUE, info: 'zily', name: 'Pravá podkľúčková žila', next: { svc: 1 } });
+S('subclL', [[332, 260], [360, 252], [390, 250], [404, 268]], { t: 'A', w: 3.5, c: RED, info: 'tepny', name: 'Ľavá podkľúčková tepna', next: { armArtL: 1 } });
+S('armArtL', Mx(armArt), { t: 'A', w: 2.8, c: RED, info: 'tepny', name: 'Tepny ľavej ruky', next: { handL: 1 } });
+S('handL', Mx(hand), Object.assign({}, sysCap, { info: 'kapilary', name: 'Kapiláry ruky – výmena látok', next: { armVeinL: 1 } }));
+S('armVeinL', Mx(armVein), { t: 'V', w: 3.2, c: BLUE, info: 'zily', name: 'Žily ľavej ruky', next: { subclVL: 1 } });
+S('subclVL', [[414, 272], [390, 264], [360, 260], [330, 256], [306, 254], [292, 258]], { t: 'V', w: 3.8, c: BLUE, info: 'zily', name: 'Ľavá ramenohlavová žila', next: { svc: 1 } });
+// nohy
+const legArt = [[258, 660], [252, 720], [250, 780], [248, 860], [254, 928]];
+const foot = [[254, 928], [250, 952], [234, 966], [248, 972], [262, 960], [264, 928]];
+const legVein = [[264, 928], [260, 860], [260, 780], [262, 720], [268, 660]];
+S('iliacR', [[310, 566], [290, 585], [272, 610], [258, 660]], { t: 'A', w: 4, c: RED, info: 'tepny', name: 'Pravá bedrová tepna', next: { legArtR: 1 } });
+S('legArtR', legArt, { t: 'A', w: 3.4, c: RED, info: 'tepny', name: 'Stehenná a podkolenná tepna', next: { footR: 1 } });
+S('footR', foot, Object.assign({}, sysCap, { info: 'kapilary', name: 'Kapiláry chodidla – výmena látok', next: { legVeinR: 1 } }));
+S('legVeinR', legVein, { t: 'V', w: 4, c: BLUE, info: 'zily', name: 'Žily pravej nohy', next: { iliacVR: 1 } });
+S('iliacVR', [[268, 660], [280, 612], [290, 582], [292, 568]], { t: 'V', w: 4.5, c: BLUE, info: 'zily', name: 'Pravá bedrová žila', next: { ivcLow: 1 } });
+S('iliacL', [[310, 566], [322, 585], [334, 610], [342, 660]], { t: 'A', w: 4, c: RED, info: 'tepny', name: 'Ľavá bedrová tepna', next: { legArtL: 1 } });
+S('legArtL', Mx(legArt), { t: 'A', w: 3.4, c: RED, info: 'tepny', name: 'Stehenná a podkolenná tepna', next: { footL: 1 } });
+S('footL', Mx(foot), Object.assign({}, sysCap, { info: 'kapilary', name: 'Kapiláry chodidla – výmena látok', next: { legVeinL: 1 } }));
+S('legVeinL', Mx(legVein), { t: 'V', w: 4, c: BLUE, info: 'zily', name: 'Žily ľavej nohy', next: { iliacVL: 1 } });
+S('iliacVL', [[332, 660], [318, 612], [300, 582], [292, 568]], { t: 'V', w: 4.5, c: BLUE, info: 'zily', name: 'Ľavá bedrová žila', next: { ivcLow: 1 } });
+// dolná dutá žila
+S('ivcLow', [[292, 568], [292, 530], [292, 494]], { t: 'V', w: 9, c: BLUE, L: 'b', info: 'dolnaDuta', name: 'Dolná dutá žila', next: { ivcMid: 1 } });
+S('ivcMid', [[292, 494], [292, 456], [292, 418]], { t: 'V', w: 9, c: BLUE, L: 'b', info: 'dolnaDuta', name: 'Dolná dutá žila (za pečeňou)', next: { ivcUp: 1 } });
+S('ivcUp', [[292, 418], [290, 392], [288, 372], H(34, 60)], { t: 'V', w: 9, c: BLUE, L: 'b', info: 'dolnaDuta', name: 'Dolná dutá žila → pravá predsieň', next: { hRV: 1 } });
+// obličky
+S('renR', [[313, 480], [292, 483], [272, 486]], { t: 'A', w: 3.2, c: RED, L: 'b', info: 'oblicky', name: 'Pravá obličková tepna', next: { kidR: 1 } });
+S('kidR', [[272, 486], [262, 474], [250, 478], [247, 492], [255, 506], [266, 500]], Object.assign({}, sysCap, { info: 'oblicky', name: 'Obličkové kapiláry – filtrácia krvi', ev: 'urea', next: { renVR: 1 } }));
+S('renVR', [[266, 500], [280, 497], [292, 494]], { t: 'V', w: 3.5, c: BLUE, L: 'b', info: 'oblicky', name: 'Pravá obličková žila', next: { ivcMid: 1 } });
+S('renL', [[313, 480], [328, 483], [338, 486]], { t: 'A', w: 3.2, c: RED, L: 'b', info: 'oblicky', name: 'Ľavá obličková tepna', next: { kidL: 1 } });
+S('kidL', [[338, 486], [346, 474], [355, 479], [357, 494], [347, 506], [334, 500]], Object.assign({}, sysCap, { info: 'oblicky', name: 'Obličkové kapiláry – filtrácia krvi', ev: 'urea', next: { renVL: 1 } }));
+S('renVL', [[334, 500], [312, 497], [292, 494]], { t: 'V', w: 3.5, c: BLUE, info: 'oblicky', name: 'Ľavá obličková žila', next: { ivcMid: 1 } });
+// tráviaci trakt a pečeň
+S('hepArt', [[316, 412], [304, 420], [288, 430], [272, 442], [262, 452]], { t: 'A', w: 2.4, c: RED, circ: 'sys port', info: 'pecenovaTepna', name: 'Pečeňová tepna', next: { livA: 1, livB: 1, livC: 1 } });
+S('splArt', [[316, 412], [335, 420], [356, 428], [372, 436]], { t: 'A', w: 2.8, c: RED, circ: 'sys port', info: 'zaludok', name: 'Slezinová tepna', next: { splCap: 1 } });
+S('splCap', [[372, 436], [380, 446], [377, 460], [364, 462], [352, 458], [348, 466]], Object.assign({}, sysCap, { circ: 'sys port', info: 'zaludok', name: 'Kapiláry sleziny a žalúdka', next: { splV: 1 } }));
+S('splV', [[348, 466], [325, 470], [300, 475], [278, 480]], Object.assign({ w: 3, info: 'vratnicova', name: 'Slezinová žila', next: { portal: 1 } }, portV));
+S('sma', [[314, 445], [316, 475], [318, 500], [318, 520]], { t: 'A', w: 3.2, c: RED, circ: 'sys port', info: 'creva', name: 'Horná mezenterická tepna', next: { gutCap: 1 } });
+S('gutCap', [[318, 520], [342, 528], [352, 552], [336, 580], [300, 588], [266, 578], [254, 552], [268, 532], [292, 528]], Object.assign({}, sysCap, { circ: 'sys port', info: 'creva', name: 'Kapiláry čriev – vstrebávanie živín', ev: 'nut', wig: 2.6, next: { sMV: 1 } }));
+S('sMV', [[292, 528], [282, 505], [278, 480]], Object.assign({ w: 3.6, info: 'vratnicova', name: 'Horná mezenterická žila', next: { portal: 1 } }, portV));
+S('portal', [[278, 480], [270, 466], [262, 452]], Object.assign({ w: 5.5, info: 'vratnicova', name: 'Vrátnicová žila → pečeň', next: { livA: 1, livB: 1, livC: 1 } }, portV));
+S('livA', [[262, 452], [240, 454], [222, 440], [226, 420], [248, 418], [268, 414], [280, 412]], livCap);
+S('livB', [[262, 452], [256, 438], [272, 430], [290, 438], [304, 428], [292, 416], [280, 412]], livCap);
+S('livC', [[262, 452], [292, 452], [318, 438], [334, 422], [316, 414], [298, 410], [280, 412]], livCap);
+S('hepV', [[280, 412], [287, 414], [292, 418]], Object.assign({ w: 4, info: 'pecenoveZily', name: 'Pečeňové žily', next: { ivcUp: 1 } }, portV));
+
+const SEG = {};
+for (const s of SD) {
+  const pts = s.wig ? wiggle(s.pts, s.wig, 13) : s.pts;
+  s.cs = cr(pts); s.d = dOf(s.cs);
+  Object.assign(s, sampleUniform(s.cs, 1.5));
+  s.nextList = Object.entries(s.next || {}); s.nextSum = s.nextList.reduce((a, b) => a + b[1], 0);
+  s.d0 = 0;
+  SEG[s.id] = s;
+}
+for (const s of SD) for (const [n] of s.nextList) if (!SEG[n]) console.error('Chýba segment', n);
+for (const id of ['renR', 'renL', 'kidR', 'kidL', 'renVR', 'renVL']) SEG[id].circ = 'sys ren';
+// vzdialenosť od srdca pre šírenie pulzovej vlny
+(function walk(id, d0) { const s = SEG[id]; s.d0 = d0; for (const [n] of s.nextList) if (SEG[n].t === 'A') walk(n, d0 + s.L); })('aAsc', 0);
+(function walk(id, d0) { const s = SEG[id]; s.d0 = d0; for (const [n] of s.nextList) if (SEG[n].t === 'P') walk(n, d0 + s.L); })('pTrunk', 0);
+
+/* =================== KRESLENIE TELA =================== */
+const svg = $('body');
+const defs = E('defs', {}, svg);
+defs.innerHTML = `
+<linearGradient id="gSkin" x1="0" y1="0" x2="0" y2="1000" gradientUnits="userSpaceOnUse">
+  <stop offset="0" stop-color="#1e2c4c"/><stop offset=".5" stop-color="#18233e"/><stop offset="1" stop-color="#131b31"/></linearGradient>
+<filter id="fOutline" x="-10%" y="-10%" width="120%" height="120%">
+  <feMorphology in="SourceAlpha" operator="dilate" radius="1.4" result="d"/>
+  <feComposite in="d" in2="SourceAlpha" operator="out" result="o"/>
+  <feFlood flood-color="#7d9cf0" flood-opacity=".55"/><feComposite in2="o" operator="in" result="line"/>
+  <feGaussianBlur in="line" stdDeviation="5" result="glow"/>
+  <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/><feMergeNode in="line"/></feMerge></filter>
+<filter id="fSoft"><feGaussianBlur stdDeviation="2.5"/></filter>
+<radialGradient id="gLung" cx=".5" cy=".4" r=".7"><stop offset="0" stop-color="#f3a3b6" stop-opacity=".38"/><stop offset="1" stop-color="#c46582" stop-opacity=".22"/></radialGradient>
+<pattern id="pAlv" width="9" height="9" patternUnits="userSpaceOnUse"><circle cx="4.5" cy="4.5" r="2.6" fill="none" stroke="#ffc4d2" stroke-opacity=".16" stroke-width=".8"/></pattern>
+<linearGradient id="gLiver" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b0523a"/><stop offset="1" stop-color="#6a2618"/></linearGradient>
+<radialGradient id="gHeart" cx=".4" cy=".35" r=".75"><stop offset="0" stop-color="#b8344a"/><stop offset="1" stop-color="#5a0f1e"/></radialGradient>
+<radialGradient id="gBrain" cx=".5" cy=".45" r=".6"><stop offset="0" stop-color="#e8b5c4" stop-opacity=".42"/><stop offset="1" stop-color="#b07890" stop-opacity=".22"/></radialGradient>
+<radialGradient id="gKid" cx=".4" cy=".4" r=".7"><stop offset="0" stop-color="#b8484a"/><stop offset="1" stop-color="#6b2228"/></radialGradient>`;
+
+function silhouette() {
+  const P0 = [300, 165];
+  const sg = [[[290,165],[276,165],[273,170]],[[272,182],[271,192],[266,200]],[[245,206],[222,210],[205,222]],[[188,230],[180,245],[180,262]],[[181,280],[190,295],[202,305]],[[206,350],[218,400],[216,440]],[[214,475],[198,505],[200,545]],[[201,620],[214,700],[222,765]],[[218,790],[212,830],[220,870]],[[226,900],[238,925],[240,945]],[[236,955],[212,962],[214,972]],[[216,980],[270,982],[284,975]],[[285,965],[280,950],[276,935]],[[280,905],[286,880],[284,850]],[[282,820],[278,790],[280,765]],[[282,700],[292,630],[300,598]]];
+  const pts = [P0]; let d = 'M' + f(P0);
+  sg.forEach(s => { d += 'C' + f(s[0]) + ' ' + f(s[1]) + ' ' + f(s[2]); pts.push(s[2]); });
+  const m = p => [600 - p[0], p[1]];
+  for (let i = sg.length - 1; i >= 0; i--) d += 'C' + f(m(sg[i][1])) + ' ' + f(m(sg[i][0])) + ' ' + f(m(pts[i]));
+  return d + 'Z';
+}
+function limb(c, w) {
+  const Lp = [], Rp = [];
+  for (let i = 0; i < c.length; i++) {
+    const a = c[Math.max(0, i - 1)], b = c[Math.min(c.length - 1, i + 1)];
+    let dx = b[0] - a[0], dy = b[1] - a[1]; const l = Math.hypot(dx, dy); dx /= l; dy /= l;
+    Lp.push([c[i][0] - dy * w[i] / 2, c[i][1] + dx * w[i] / 2]); Rp.push([c[i][0] + dy * w[i] / 2, c[i][1] - dx * w[i] / 2]);
+  }
+  const pts = Lp.concat(Rp.reverse()); pts.push(pts[0]);
+  return dOf(cr(pts)) + 'Z';
+}
+const gSil = E('g', { filter: 'url(#fOutline)', opacity: .95 }, svg);
+const skin = { fill: 'url(#gSkin)' };
+E('path', Object.assign({ d: silhouette() }, skin), gSil);
+E('ellipse', Object.assign({ cx: 300, cy: 92, rx: 50, ry: 62 }, skin), gSil);
+const armC = [[192, 250], [186, 300], [176, 360], [166, 425], [156, 490], [147, 555], [141, 588]], armW = [50, 46, 42, 38, 34, 30, 26];
+E('path', Object.assign({ d: limb(armC, armW) }, skin), gSil);
+E('path', Object.assign({ d: limb(Mx(armC), armW) }, skin), gSil);
+E('ellipse', Object.assign({ cx: 137, cy: 610, rx: 16, ry: 30, transform: 'rotate(10 137 610)' }, skin), gSil);
+E('ellipse', Object.assign({ cx: 463, cy: 610, rx: 16, ry: 30, transform: 'rotate(-10 463 610)' }, skin), gSil);
+
+// jemná kostra
+const gSk = E('g', { stroke: '#a9bce8', 'stroke-opacity': .09, fill: 'none', 'stroke-width': 3, 'stroke-linecap': 'round', 'pointer-events': 'none' }, svg);
+for (let i = 0; i < 8; i++) {
+  const y = 232 + i * 21, xo = 214 + Math.abs(i - 3) * 2.5;
+  E('path', { d: `M296 ${y} C270 ${y - 10} ${xo + 6} ${y - 4} ${xo} ${y + 22}` }, gSk);
+  E('path', { d: `M304 ${y} C330 ${y - 10} ${600 - xo - 6} ${y - 4} ${600 - xo} ${y + 22}` }, gSk);
+}
+for (let y = 168; y < 560; y += 15) E('rect', { x: 295, y, width: 10, height: 11, rx: 3, fill: '#a9bce8', 'fill-opacity': .07, stroke: 'none' }, gSk);
+E('path', { d: 'M232 548 C236 520 262 512 290 540 L310 540 C338 512 364 520 368 548 C362 580 330 596 300 598 C270 596 238 580 232 548Z', 'stroke-width': 2 }, gSk);
+E('path', { d: 'M258 222 C232 214 212 222 200 236 M342 222 C368 214 388 222 400 236', 'stroke-width': 3 }, gSk);
+
+/* ---- orgány za cievami ---- */
+const gOrgB = E('g', {}, svg);
+const kidney = (cx, cy, s) => `M${cx} ${cy - 22} C${cx + 14 * s} ${cy - 22} ${cx + 15 * s} ${cy + 22} ${cx} ${cy + 22} C${cx - 9 * s} ${cy + 22} ${cx - 8 * s} ${cy + 8} ${cx - 4 * s} ${cy + 3} C${cx - 1 * s} ${cy} ${cx - 1 * s} ${cy - 4} ${cx - 4 * s} ${cy - 7} C${cx - 9 * s} ${cy - 12} ${cx - 8 * s} ${cy - 22} ${cx} ${cy - 22}Z`;
+for (const [cx, sgn] of [[253, -1], [347, 1]]) {
+  const gk = E('g', { class: 'organ', 'data-info': 'oblicky', transform: `translate(${cx} 490) scale(1.18) translate(${-cx} -490)` }, gOrgB);
+  E('path', { d: kidney(cx, 490, sgn), fill: 'url(#gKid)', opacity: .85, stroke: '#ff9c8a', 'stroke-opacity': .5, 'stroke-width': .9 }, gk);
+  // dreň s pyramídami a panvička
+  for (const [dy, a] of [[-13, -30], [-4, -8], [6, 12], [14, 32]]) {
+    const r = a * Math.PI / 180, bx = cx + sgn * 8 * Math.cos(r), by = 490 + dy, tx = cx + sgn * 1 * Math.cos(r), ty = 490 + dy * .45;
+    E('path', { d: `M${bx - 2.6} ${by - 2.6} L${tx} ${ty} L${bx + 2.6} ${by + 2.6}Z`, fill: '#ffb3a6', 'fill-opacity': .22 }, gk);
+  }
+  E('path', { d: `M${cx + sgn * 1} ${484} C${cx - sgn * 4} 486 ${cx - sgn * 4} 494 ${cx + sgn * 1} 496 C${cx - sgn * 7} 498 ${cx - sgn * 9} 502 ${cx - sgn * 9} 506`, fill: 'none', stroke: '#ffe27a', 'stroke-opacity': .55, 'stroke-width': 2.2, 'stroke-linecap': 'round' }, gk);
+}
+const URET = [
+  [[263, 509], [268, 530], [276, 556], [286, 578], [294, 590]],
+  [[337, 509], [332, 530], [324, 556], [314, 578], [306, 590]]
+].map(pts => { const cs = cr(pts); return Object.assign({ d: dOf(cs) }, sampleUniform(cs, 1.5)); });
+const gUr = E('g', { class: 'organ', 'data-info': 'mocovody' }, gOrgB);
+for (const u of URET) E('path', { d: u.d, fill: 'none', stroke: '#e8d27a', 'stroke-opacity': .45, 'stroke-width': 2.4, 'stroke-linecap': 'round' }, gUr);
+E('ellipse', { cx: 300, cy: 592, rx: 17, ry: 12.5, fill: '#e8d27a', 'fill-opacity': .12, stroke: '#ffe27a', 'stroke-opacity': .55, 'stroke-width': 1.2 }, gUr);
+const bladderFill = E('ellipse', { cx: 300, cy: 604, rx: 15, ry: 0, fill: '#ffe27a', 'fill-opacity': .55 }, gUr);
+E('path', { d: 'M300 604 L300 612', stroke: '#e8d27a', 'stroke-opacity': .45, 'stroke-width': 2.2 }, gUr);
+const gGut = E('g', { class: 'organ', 'data-info': 'creva' }, gOrgB);
+E('rect', { x: 250, y: 518, width: 104, height: 74, rx: 24, fill: '#d8a090', opacity: .12 }, gGut);
+E('path', { d: 'M248 592 C236 566 238 532 254 516 L346 516 C362 532 364 566 352 592', fill: 'none', stroke: '#c98f7f', 'stroke-opacity': .32, 'stroke-width': 13, 'stroke-linecap': 'round' }, gGut);
+E('path', { d: 'M268 532 C290 522 312 540 334 530 C346 548 320 556 298 548 C276 542 262 556 272 566 C290 578 316 560 336 572 C330 584 300 586 280 580', fill: 'none', stroke: '#e7b3a3', 'stroke-opacity': .35, 'stroke-width': 7, 'stroke-linecap': 'round' }, gGut);
+E('ellipse', { cx: 376, cy: 446, rx: 8, ry: 17, transform: 'rotate(20 376 446)', fill: '#8b3358', opacity: .75, class: 'organ', 'data-info': 'zaludok' }, gOrgB);
+E('path', { d: 'M340 418 C356 410 378 418 378 440 C378 464 362 478 342 476 C330 475 324 466 330 458 C338 450 346 446 342 436 C340 430 334 424 340 418Z', fill: '#d09484', opacity: .35, stroke: '#e8b0a0', 'stroke-opacity': .4, class: 'organ', 'data-info': 'zaludok' }, gOrgB);
+// pľúca
+const gLungs = E('g', { class: 'organ', 'data-info': 'pluca' }, gOrgB);
+const lungR = 'M252 226 C236 228 224 252 220 285 C214 320 212 370 214 402 C236 396 262 398 288 406 C292 380 290 345 284 320 C280 290 274 250 266 234 C262 228 258 226 252 226Z';
+const lungL = 'M348 226 C364 228 376 252 380 285 C386 320 388 370 386 400 C368 396 352 398 336 404 C334 392 344 380 340 372 C330 365 332 350 330 340 C328 300 330 255 336 236 C340 229 344 226 348 226Z';
+for (const d of [lungR, lungL]) {
+  E('path', { d, fill: 'url(#gLung)', stroke: '#f0a5b8', 'stroke-opacity': .5, 'stroke-width': 1.2 }, gLungs);
+  E('path', { d, fill: 'url(#pAlv)' }, gLungs);
+}
+E('path', { d: 'M222 300 C240 296 262 304 280 300 M220 350 C246 346 266 338 286 342 M340 330 C356 318 372 312 382 300', stroke: '#f0a5b8', 'stroke-opacity': .25, fill: 'none' }, gLungs);
+// priedušnica
+const gTr = E('g', { class: 'organ', 'data-info': 'priedusnica' }, gOrgB);
+E('path', { d: 'M300 170 L300 262 M300 262 C290 272 280 280 266 292 M300 262 C310 272 320 280 336 292 M266 292 L252 306 M266 292 L262 314 M336 292 L350 306 M336 292 L340 316', stroke: '#c9d6ee', 'stroke-opacity': .32, 'stroke-width': 8, 'stroke-linecap': 'round', fill: 'none' }, gTr);
+for (let y = 176; y < 258; y += 8) E('line', { x1: 295, x2: 305, y1: y, y2: y, stroke: '#e3ecff', 'stroke-opacity': .25, 'stroke-width': 1.5 }, gTr);
+// bránica
+const diaphragm = E('path', { d: 'M212 406 C240 382 280 392 300 400 C320 392 360 382 388 404', fill: 'none', stroke: '#e7a0a8', 'stroke-opacity': .5, 'stroke-width': 3, 'stroke-dasharray': '6 4', class: 'organ', 'data-info': 'branica' }, gOrgB);
+// mozog
+const gBrain = E('g', { class: 'organ', 'data-info': 'mozog' }, gOrgB);
+E('ellipse', { cx: 300, cy: 80, rx: 41, ry: 37, fill: 'url(#gBrain)', stroke: '#e8b5c4', 'stroke-opacity': .4 }, gBrain);
+E('path', { d: 'M300 45 L300 116 M268 70 C276 62 284 74 292 66 M308 66 C316 74 324 62 332 70 M266 92 C276 86 282 98 292 90 M308 90 C318 98 324 86 334 92 M276 108 C284 104 290 112 296 106 M304 106 C310 112 316 104 324 108', stroke: '#f2c9d6', 'stroke-opacity': .3, fill: 'none', 'stroke-width': 1.3 }, gBrain);
+
+/* ---- cievy ---- */
+const gVB = E('g', {}, svg), gPB = E('g', {}, svg);
+// pečeň + žlčník
+const gLiver = E('g', { class: 'organ' }, svg);
+E('path', { d: 'M214 410 C250 398 310 400 350 414 C346 426 330 440 300 452 C270 464 238 470 222 462 C210 452 208 426 214 410Z', fill: 'url(#gLiver)', opacity: .74, stroke: '#e08a6a', 'stroke-opacity': .55, 'stroke-width': 1.2, 'data-info': 'pecen' }, gLiver);
+E('path', { d: 'M300 404 C296 420 292 438 290 452', stroke: '#e08a6a', 'stroke-opacity': .35, fill: 'none', 'pointer-events': 'none' }, gLiver);
+E('ellipse', { cx: 266, cy: 464, rx: 6.5, ry: 10, transform: 'rotate(-25 266 464)', fill: '#4f9a4a', opacity: .85, 'data-info': 'zlcnik', class: 'organ' }, gLiver);
+// srdce
+const HEART = {
+  outer: 'M20 22 C8 26 3 42 7 56 C12 76 32 94 58 108 C78 92 95 72 97 50 C99 32 90 18 74 17 C64 16 57 20 51 25 C43 18 30 18 20 22Z',
+  RA: 'M12 30 C8 40 10 56 22 62 C32 64 38 56 36 44 C34 32 22 24 12 30Z',
+  RV: 'M30 66 C30 80 42 92 56 100 C58 86 56 72 50 62 C44 56 34 58 30 66Z',
+  LA: 'M60 26 C58 34 64 42 74 42 C86 42 92 34 88 26 C84 20 66 18 60 26Z',
+  LV: 'M54 56 C60 70 62 86 60 100 C76 88 90 70 90 54 C90 44 78 40 66 44 C58 46 54 50 54 56Z'
+};
+const CH = { RA: [23, 45, 'pravaPredsien', '#2c47a8'], RV: [45, 78, 'pravaKomora', '#3456c4'], LA: [75, 31, 'lavaPredsien', '#b52a42'], LV: [72, 66, 'lavaKomora', '#cc3049'] };
+function buildHeart(g, big) {
+  E('path', { d: HEART.outer, fill: 'url(#gHeart)', stroke: '#ff8a9a', 'stroke-opacity': .55, 'stroke-width': big ? .8 : 1.1, 'data-info': 'srdce', class: 'organ' }, g);
+  const ch = {};
+  for (const k in CH) {
+    const cg = E('g', {}, g);
+    E('path', { d: HEART[k], fill: CH[k][3], 'fill-opacity': .9, stroke: '#ffffff', 'stroke-opacity': .22, 'stroke-width': big ? .6 : .8, 'data-info': CH[k][2], class: 'organ' }, cg);
+    ch[k] = cg;
+  }
+  const cor = E('g', { fill: 'none', stroke: '#ff8f6b', 'stroke-width': big ? .9 : 1.2, 'stroke-opacity': .85, 'stroke-linecap': 'round', 'data-info': 'vencovite', class: 'organ' }, g);
+  E('path', { d: 'M46 22 C36 26 26 36 28 54 C30 70 44 88 58 104' }, cor);
+  E('path', { d: 'M54 24 C62 32 62 46 58 60 C56 74 58 90 58 104 M58 40 C70 44 82 46 92 52' }, cor);
+  E('path', { d: 'M58 104 C40 100 34 96 30 88', stroke: 'transparent', 'stroke-width': 6 }, cor);
+  return ch;
+}
+const gHeartOuter = E('g', { transform: `translate(${HX} ${HY})` }, svg);
+const gHeartB = E('g', {}, gHeartOuter);
+const heartB = buildHeart(gHeartB, false);
+const gVF = E('g', {}, svg), gPF = E('g', {}, svg), gSpark = E('g', {}, svg), gHit = E('g', {}, svg), gLbl = E('g', {}, svg);
+
+const vPaths = [];
+function strokeOf(s) { return sameC(s.c, RED) ? '#c42b44' : '#3157cc'; }
+for (const s of SD) {
+  if (!s.draw) continue;
+  const layer = s.L === 'b' ? gVB : gVF;
+  let stroke;
+  if (s.t === 'C') {
+    const gid = 'gr_' + s.id, a = s.pts[0], b = s.pts[s.pts.length - 1], m = s.pts[Math.floor(s.pts.length / 2)];
+    const lg = E('linearGradient', { id: gid, gradientUnits: 'userSpaceOnUse', x1: a[0], y1: a[1], x2: (m[0] + b[0]) / 2, y2: (m[1] + b[1]) / 2 }, defs);
+    E('stop', { offset: 0, 'stop-color': rgb(mix(s.c0, [40, 40, 60], .2)) }, lg);
+    E('stop', { offset: 1, 'stop-color': rgb(mix(s.c, [40, 40, 60], .2)) }, lg);
+    stroke = `url(#${gid})`;
+    E('path', { d: s.d, class: 'vessel', stroke: rgb(mix(s.c0, s.c, .5)), 'stroke-width': 7, 'stroke-opacity': .12, filter: 'url(#fSoft)', 'pointer-events': 'none' }, layer);
+  } else stroke = strokeOf(s);
+  const el = E('path', { d: s.d, class: 'vessel', stroke, 'stroke-width': s.w, 'stroke-opacity': s.t === 'C' ? .8 : .78, 'data-info': s.info }, layer);
+  s.el = el; vPaths.push(s);
+  if (s.t !== 'C' && s.w >= 2.4) E('path', { d: s.d, class: 'hit', 'data-info': s.info }, gHit);
+}
+
+/* ---- popisky ---- */
+const LBL = [
+  ['mozog', 'Mozog', [326, 72], 'R', 66],
+  ['krcnice', 'Krčnica', [312, 196], 'R', 172],
+  ['aorta', 'Oblúk aorty', [328, 258], 'R', 232],
+  ['plucnica', 'Pľúcnica', [342, 289], 'R', 270],
+  ['pluca', 'Ľavé pľúco', [374, 340], 'R', 314],
+  ['srdce', 'Srdce', [340, 378], 'R', 356],
+  ['branica', 'Bránica', [370, 396], 'R', 394],
+  ['zaludok', 'Žalúdok a slezina', [360, 452], 'R', 430],
+  ['oblicky', 'Obličky', [352, 494], 'R', 482],
+  ['creva', 'Črevá', [344, 566], 'R', 548],
+  ['tepny', 'Tepna nohy', [349, 800], 'R', 800],
+  ['hrdelne', 'Hrdelná žila', [279, 186], 'L', 172],
+  ['priedusnica', 'Priedušnica', [300, 222], 'L', 206],
+  ['hornaDuta', 'Horná dutá žila', [290, 290], 'L', 240],
+  ['pluca', 'Pravé pľúco', [232, 330], 'L', 300],
+  ['pecen', 'Pečeň', [234, 438], 'L', 410],
+  ['vratnicova', 'Vrátnicová žila', [272, 470], 'L', 458],
+  ['zlcnik', 'Žlčník', [264, 470], 'L', 490],
+  ['dolnaDuta', 'Dolná dutá žila', [292, 545], 'L', 524],
+  ['kapilary', 'Kapiláry', [134, 614], 'L', 650],
+  ['zily', 'Žila nohy', [263, 820], 'L', 820],
+  ['mocovody', 'Močový mechúr', [292, 596], 'L', 598]
+];
+const lblEls = [];
+for (const [id, txt, at, side, ty] of LBL) {
+  const g = E('g', { class: 'lbl', 'data-info': id }, gLbl);
+  const tx = side === 'R' ? 470 : 128, ex = side === 'R' ? tx - 6 : tx + 6;
+  E('polyline', { points: `${at[0]},${at[1]} ${(at[0] + ex) / 2 + (side === 'R' ? 12 : -12)},${ty} ${ex},${ty}` }, g);
+  E('circle', { cx: at[0], cy: at[1], r: 1.8 }, g);
+  const t = E('text', { x: tx, y: ty + 4.5, 'text-anchor': side === 'R' ? 'start' : 'end' }, g);
+  t.textContent = txt;
+  lblEls.push(g);
+}
+
+/* =================== DETAIL SRDCA =================== */
+const hs = $('heartSvg');
+const hDefs = E('defs', {}, hs);
+hDefs.innerHTML = defs.querySelector('#gHeart').outerHTML.replace('id="gHeart"', 'id="gHeart2"');
+const stubs = E('g', { fill: 'none', 'stroke-linecap': 'round' }, hs);
+E('path', { d: 'M18 -24 L18 32', stroke: '#3157cc', 'stroke-width': 9, 'data-info': 'hornaDuta' }, stubs);
+E('path', { d: 'M14 112 L18 56', stroke: '#3157cc', 'stroke-width': 9, 'data-info': 'dolnaDuta' }, stubs);
+E('path', { d: 'M48 24 C46 4 50 -14 64 -18 C78 -21 88 -12 90 0 L90 20', stroke: '#c42b44', 'stroke-width': 8, 'data-info': 'aorta' }, stubs);
+E('path', { d: 'M60 20 C62 8 64 2 68 -6 C76 -10 88 -8 104 -4 M68 -6 C56 -10 40 -10 24 -6', stroke: '#3157cc', 'stroke-width': 6, 'data-info': 'plucnica' }, stubs);
+E('path', { d: 'M110 24 L88 28 M110 36 L88 34', stroke: '#c42b44', 'stroke-width': 4, 'data-info': 'plucneZily' }, stubs);
+E('path', { d: 'M48 58 C52 48 54 34 57 22 L64 22 C62 34 58 48 54 62Z', fill: '#2c47a8', stroke: 'none', 'data-info': 'pravaKomora' }, stubs);
+E('path', { d: 'M58 52 C54 42 50 34 44 26 L52 26 C56 34 62 42 64 48Z', fill: '#b52a42', stroke: 'none', 'data-info': 'lavaKomora' }, stubs);
+const gHeartI = E('g', {}, hs);
+const heartI = buildHeart(gHeartI, true);
+gHeartI.querySelector('path').setAttribute('fill', 'url(#gHeart2)');
+const tLab = E('g', { 'font-size': 6.5, fill: '#fff', 'fill-opacity': .85, 'text-anchor': 'middle', 'pointer-events': 'none', 'font-weight': 600 }, hs);
+[['PP', 23, 47], ['PK', 45, 82], ['ĽP', 75, 33], ['ĽK', 74, 70]].forEach(([t, x, y]) => { E('text', { x, y }, tLab).textContent = t; });
+const VALVES = [
+  { c: [33, 63], u: [1, .15], f: [.25, 1], w: 5.5, av: 1 },
+  { c: [70, 44], u: [1, .1], f: [-.15, 1], w: 6, av: 1 },
+  { c: [60.5, 21], u: [1, 0], f: [0, -1], w: 4, av: 0 },
+  { c: [48, 25], u: [1, 0], f: [0, -1], w: 4, av: 0 }
+];
+const gVal = E('g', { stroke: '#fff3d6', 'stroke-width': 1.5, 'stroke-linecap': 'round', 'data-info': 'chlopne' }, hs);
+for (const v of VALVES) {
+  const l = Math.hypot(v.u[0], v.u[1]); v.u = [v.u[0] / l, v.u[1] / l];
+  const lf = Math.hypot(v.f[0], v.f[1]); v.f = [v.f[0] / lf, v.f[1] / lf];
+  v.els = [E('line', {}, gVal), E('line', {}, gVal)];
+  E('circle', { cx: v.c[0], cy: v.c[1], r: v.w + 2, fill: 'transparent', stroke: 'none' }, gVal);
+  v.o = 0;
+}
+function drawValve(v) {
+  for (let i = 0; i < 2; i++) {
+    const sg = i ? 1 : -1;
+    const hx = v.c[0] + sg * v.u[0] * v.w, hy = v.c[1] + sg * v.u[1] * v.w;
+    let dx = -sg * v.u[0] * (1 - v.o) + v.f[0] * v.o, dy = -sg * v.u[1] * (1 - v.o) + v.f[1] * v.o;
+    const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
+    const len = v.w * .95;
+    v.els[i].setAttribute('x1', hx.toFixed(2)); v.els[i].setAttribute('y1', hy.toFixed(2));
+    v.els[i].setAttribute('x2', (hx + dx * len).toFixed(2)); v.els[i].setAttribute('y2', (hy + dy * len).toFixed(2));
+  }
+}
+const sound = E('text', { x: 100, y: 104, 'font-size': 9, fill: '#ffd27a', 'text-anchor': 'end', 'font-style': 'italic', opacity: 0 }, hs);
+let soundT = 0;
+// EKG
+const ecgSvg = $('ecgSvg');
+for (let i = 1; i < 6; i++) E('line', { x1: i * 40, x2: i * 40, y1: 0, y2: 54, stroke: '#ff6b7d', 'stroke-opacity': .08 }, ecgSvg);
+for (let i = 1; i < 4; i++) E('line', { x1: 0, x2: 240, y1: i * 13.5, y2: i * 13.5, stroke: '#ff6b7d', 'stroke-opacity': .08 }, ecgSvg);
+const ecgLine = E('polyline', { fill: 'none', stroke: '#7dffb0', 'stroke-width': 1.4, 'stroke-linejoin': 'round' }, ecgSvg);
+const ecgDot = E('circle', { r: 2.4, fill: '#d6ffe6' }, ecgSvg);
+
+/* =================== KRVINKY =================== */
+const parts = [];
+const NPART = 470;
+const totalW = SD.reduce((a, s) => a + s.L * (s.t === 'C' ? 1.7 : 1), 0);
+for (const s of SD) {
+  const n = Math.round(NPART * s.L * (s.t === 'C' ? 1.7 : 1) / totalW);
+  for (let i = 0; i < n; i++) {
+    const p = { s, d: Math.random() * s.L, c0: s.t === 'C' ? s.c0 : s.c, tox: false, urea: Math.random() < .08, fs: '' };
+    if (s.id === 'sMV' || s.id === 'portal' || (s.ev === 'liver' && p.d < s.L * .5)) p.tox = Math.random() < .7;
+    p.el = E('circle', { r: 2.3 }, s.L === 'b' ? gPB : gPF);
+    p.layer = s.L;
+    parts.push(p);
+  }
+}
+const sparks = [];
+for (let i = 0; i < 70; i++) sparks.push({ el: E('circle', { r: 0, fill: 'none', 'stroke-width': 1.2, opacity: 0 }, gSpark), life: 0 });
+let sparkIdx = 0;
+function spark(x, y, color) {
+  const sp = sparks[sparkIdx = (sparkIdx + 1) % sparks.length];
+  sp.x = x; sp.y = y; sp.life = 1; sp.el.setAttribute('stroke', color);
+  sp.el.setAttribute('cx', x.toFixed(1)); sp.el.setAttribute('cy', y.toFixed(1));
+}
+const followRing = E('circle', { r: 7, fill: 'none', stroke: '#fff', 'stroke-width': 1.6, opacity: 0, 'pointer-events': 'none' }, gSpark);
+const followHalo = E('circle', { r: 13, fill: 'none', stroke: '#ffd27a', 'stroke-width': 1, opacity: 0, 'pointer-events': 'none' }, gSpark);
+
+/* =================== STAV =================== */
+let playing = true, speed = 1, bpm = 72, brpm = 15, mode = 'all', sel = 'uvod', follow = null;
+let hPhase = 0, bPhase = 0, last = performance.now();
+const vent = p => (p > .17 && p < .5) ? Math.sin(Math.PI * (p - .17) / .33) : 0;
+const atr = p => (p > .04 && p < .17) ? Math.sin(Math.PI * (p - .04) / .13) : 0;
+const ejec = p => (p > .22 && p < .48) ? Math.sin(Math.PI * (p - .22) / .26) : 0;
+function ecg(p) { const g = (c, w, a) => a * Math.exp(-((p - c) ** 2) / (2 * w * w)); return g(.07, .022, .14) + g(.155, .006, -.12) + g(.17, .007, 1) + g(.185, .007, -.28) + g(.36, .035, .3); }
+function phaseName(p) {
+  if (p < .04 || p >= .55) return 'Diastola – komory sa plnia krvou';
+  if (p < .17) return 'Systola predsiení – dotlačenie krvi';
+  if (p < .22) return 'Sťah komôr – chlopne sa zatvárajú';
+  if (p < .48) return 'Systola komôr – vypudenie krvi';
+  return 'Uvoľnenie komôr';
+}
+const PWV = 1600;
+function speedOf(s, p) {
+  const k = bpm / 72;
+  switch (s.t) {
+    case 'A': { const ph = ((hPhase - (s.d0 + p.d) / PWV * bpm / 60) % 1 + 1) % 1; return 165 * (0.3 + 2.2 * ejec(ph)) * k; }
+    case 'P': { const ph = ((hPhase - (s.d0 + p.d) / PWV * bpm / 60) % 1 + 1) % 1; return 130 * (0.35 + 2 * ejec(ph)) * k; }
+    case 'V': return 78 * k;
+    case 'C': return 30 * k;
+    case 'HA': return 60 * (0.55 + 1.4 * atr(hPhase)) * k;
+    case 'HV': return 75 * (0.2 + 2.6 * ejec(hPhase)) * k;
+  }
+  return 60 * k;
+}
+const inMode = s => mode === 'all' || s.circ.indexOf(mode) >= 0 || (mode === 'clean' && (s.circ.indexOf('port') >= 0 || s.circ.indexOf('ren') >= 0));
+function pickNext(s) {
+  let r = Math.random() * s.nextSum;
+  for (const [id, w] of s.nextList) { if ((r -= w) <= 0) return SEG[id]; }
+  return SEG[s.nextList[0][0]];
+}
+function fireEvent(p, s, x, y) {
+  switch (s.ev) {
+    case 'o2': if (Math.random() < .45) spark(x, y, '#bff3ff'); break;
+    case 'nut': p.tox = true; if (Math.random() < .3) spark(x, y, '#ffb347'); break;
+    case 'liver': if (p.tox) { p.tox = false; p.urea = true; spark(x, y, '#c8f25a'); } break;
+    case 'waste': if (Math.random() < .12) p.urea = true; break;
+    case 'urea':
+      if (p.urea) { p.urea = false; spark(x, y, '#ffd84a'); dropUrine(s.id === 'kidR' ? 0 : 1); }
+      else if (Math.random() < .2) dropUrine(s.id === 'kidR' ? 0 : 1);
+      break;
+  }
+}
+function colorOf(p) {
+  const s = p.s, t = p.d / s.L;
+  if (sameC(p.c0, s.c)) return s.c;
+  const k = s.t === 'C' ? ss(.2, .8, t) : Math.min(1, t * 4);
+  return mix(p.c0, s.c, k);
+}
+const drops = [];
+for (let i = 0; i < 40; i++) drops.push({ el: E('circle', { r: 0, fill: '#ffe27a', opacity: 0, 'pointer-events': 'none' }, gSpark), on: false });
+let bladder = 0, emptying = false;
+function dropUrine(side) {
+  const d = drops.find(x => !x.on); if (!d) return;
+  d.on = true; d.u = URET[side]; d.d = 0; d.el.setAttribute('r', 1.9); d.el.setAttribute('opacity', .95);
+}
+function updateDrops(dt) {
+  const k = bpm / 72;
+  for (const d of drops) {
+    if (!d.on) continue;
+    d.d += 26 * k * dt;
+    if (d.d >= d.u.L) { d.on = false; d.el.setAttribute('opacity', 0); if (!emptying) bladder = Math.min(1, bladder + .025); continue; }
+    const fi = d.d / d.u.L * (d.u.N - 1), i = Math.min(d.u.N - 2, fi | 0);
+    d.el.setAttribute('cx', d.u.X[i].toFixed(1)); d.el.setAttribute('cy', d.u.Y[i].toFixed(1));
+  }
+  if (bladder >= 1) emptying = true;
+  if (emptying) { bladder -= dt * .35; if (bladder <= 0) { bladder = 0; emptying = false; } }
+  const ry = 11.5 * bladder;
+  bladderFill.setAttribute('ry', ry.toFixed(2)); bladderFill.setAttribute('cy', (604 - ry).toFixed(2));
+}
+function update(dt) {
+  updateDrops(dt);
+  for (const p of parts) {
+    let s = p.s;
+    const t0 = p.d / s.L;
+    p.d += speedOf(s, p) * dt;
+    if (s.ev) {
+      const t1 = Math.min(1, p.d / s.L), at = s.ev === 'liver' ? .55 : .5;
+      if (t0 < at && t1 >= at) { const i = Math.round(at * (s.N - 1)); fireEvent(p, s, s.X[i], s.Y[i]); }
+    }
+    let changed = false;
+    while (p.d >= s.L) {
+      p.d -= s.L; p.c0 = colorOf({ s, d: s.L, c0: p.c0 });
+      s = p.s = pickNext(s); changed = true;
+    }
+    if (changed) {
+      if (s.t !== 'C' && !sameC(p.c0, s.c) && s.id !== 'hepV') p.c0 = s.c;
+      if (s.L !== p.layer) { (s.L === 'b' ? gPB : gPF).appendChild(p.el); p.layer = s.L; }
+      p.el.setAttribute('opacity', inMode(s) ? 1 : .1);
+      if (p === follow) updateFollowText();
+    }
+  }
+}
+function render(realDt) {
+  for (const p of parts) {
+    const s = p.s, fi = p.d / s.L * (s.N - 1), i = Math.min(s.N - 2, fi | 0), k = fi - i;
+    const x = s.X[i] + (s.X[i + 1] - s.X[i]) * k, y = s.Y[i] + (s.Y[i + 1] - s.Y[i]) * k;
+    p.el.setAttribute('cx', x.toFixed(1)); p.el.setAttribute('cy', y.toFixed(1));
+    const c = colorOf(p), cs = rgb([Math.round(c[0] / 8) * 8, Math.round(c[1] / 8) * 8, Math.round(c[2] / 8) * 8]);
+    const fs = cs + (p.tox ? 't' : p.urea ? 'u' : '');
+    if (fs !== p.fs) {
+      p.fs = fs; p.el.setAttribute('fill', cs);
+      if (p.tox || p.urea) { p.el.setAttribute('stroke', p.tox ? '#c8f25a' : '#ffd84a'); p.el.setAttribute('stroke-width', 1.3); }
+      else p.el.removeAttribute('stroke');
+    }
+    if (p === follow) {
+      followRing.setAttribute('cx', x.toFixed(1)); followRing.setAttribute('cy', y.toFixed(1));
+      followHalo.setAttribute('cx', x.toFixed(1)); followHalo.setAttribute('cy', y.toFixed(1));
+      if (follow.fs !== follow._ls) { follow._ls = follow.fs; updateFollowText(); }
+    }
+  }
+  if (follow) followHalo.setAttribute('r', (11 + 3 * Math.sin(performance.now() / 180)).toFixed(1));
+  for (const sp of sparks) {
+    if (sp.life <= 0) continue;
+    if (playing) sp.life -= realDt * 1.6 * Math.max(.4, speed);
+    const l = Math.max(0, sp.life);
+    sp.el.setAttribute('r', (1.5 + (1 - l) * 7).toFixed(1));
+    sp.el.setAttribute('opacity', (l * .9).toFixed(2));
+  }
+  // srdce
+  const v = vent(hPhase), a = atr(hPhase);
+  const sV = 1 - .14 * v, sA = 1 - .16 * a + .05 * v;
+  for (const ch of [heartB, heartI]) {
+    for (const k in CH) {
+      const sc = (k === 'RV' || k === 'LV') ? sV : sA, [cx, cy] = CH[k];
+      ch[k].setAttribute('transform', `translate(${cx} ${cy}) scale(${sc.toFixed(3)}) translate(${-cx} ${-cy})`);
+    }
+  }
+  const sH = 1 - .045 * v + .012 * a;
+  gHeartB.setAttribute('transform', `translate(50 58) scale(${sH.toFixed(3)}) translate(-50 -58)`);
+  // chlopne
+  const avT = (hPhase < .165 || hPhase > .52) ? 1 : 0, slT = (hPhase > .22 && hPhase < .48) ? 1 : 0;
+  const kk = Math.min(1, realDt * 22 * Math.max(.3, speed * bpm / 72));
+  for (const vl of VALVES) { if (playing) vl.o += ((vl.av ? avT : slT) - vl.o) * kk; drawValve(vl); }
+  // dýchanie
+  const b = (1 - Math.cos(2 * Math.PI * bPhase)) / 2;
+  gLungs.setAttribute('transform', `translate(300 228) scale(${(1 + .03 * b).toFixed(4)} ${(1 + .055 * b).toFixed(4)}) translate(-300 -228)`);
+  diaphragm.setAttribute('transform', `translate(0 ${(9 * b).toFixed(2)})`);
+  // EKG
+  const W = 240, n = 160, win = 3 * bpm / 60;
+  let pts = '';
+  for (let i = 0; i < n; i++) {
+    const x = i / (n - 1) * W, ph = ((hPhase - (1 - i / (n - 1)) * win) % 1 + 1) % 1;
+    pts += x.toFixed(1) + ',' + (36 - ecg(ph) * 26).toFixed(1) + ' ';
+  }
+  ecgLine.setAttribute('points', pts);
+  ecgDot.setAttribute('cx', W); ecgDot.setAttribute('cy', (36 - ecg(hPhase) * 26).toFixed(1));
+  $('phase').textContent = phaseName(hPhase);
+  if (soundT > 0) { soundT -= realDt * 1.8; sound.setAttribute('opacity', Math.max(0, soundT).toFixed(2)); }
+  $('rBreath').textContent = bPhase < .5 ? 'nádych ↑' : 'výdych ↓';
+}
+function frame(now) {
+  stepZoom(now);
+  const realDt = Math.min(.05, (now - last) / 1000); last = now;
+  if (playing) {
+    const dt = realDt * speed, prev = hPhase;
+    hPhase = (hPhase + dt * bpm / 60) % 1;
+    bPhase = (bPhase + dt * brpm / 60) % 1;
+    const crossed = x => prev <= hPhase ? (prev < x && hPhase >= x) : (prev < x || hPhase >= x);
+    if (crossed(.17)) { sound.textContent = 'lub'; soundT = 1; }
+    if (crossed(.5)) { sound.textContent = 'dub'; soundT = 1; }
+    update(dt);
+  }
+  render(realDt);
+  requestAnimationFrame(frame);
+}
+
+/* =================== SLEDOVANIE KRVINKY =================== */
+function updateFollowText() {
+  const ft = $('followTxt');
+  if (!follow) { ft.innerHTML = ''; return; }
+  const c = colorOf(follow), ox = c[0] > c[2];
+  ft.innerHTML = `<span class="dot" style="background:${rgb(c)}${follow.tox ? ';box-shadow:0 0 0 2px #c8f25a' : follow.urea ? ';box-shadow:0 0 0 2px #ffd84a' : ''}"></span><b>${follow.s.name}</b><br><span style="color:var(--muted)">${ox ? 'okysličená krv' : 'odkysličená krv'}${follow.tox ? ' · nesie látky z čriev' : follow.urea ? ' · nesie močovinu a odpady' : ''}</span>`;
+}
+$('followBtn').onclick = () => {
+  if (follow) { follow.el.setAttribute('r', 2.3); follow = null; followRing.setAttribute('opacity', 0); followHalo.setAttribute('opacity', 0); $('followBtn').classList.remove('on'); updateFollowText(); return; }
+  const pool = parts.filter(p => p.s.t === 'V' && inMode(p.s));
+  follow = pool[Math.random() * pool.length | 0] || parts[0];
+  follow.el.setAttribute('r', 3.6);
+  gPF.appendChild(follow.el); follow.layer = 'f';
+  followRing.setAttribute('opacity', 1); followHalo.setAttribute('opacity', .8);
+  $('followBtn').classList.add('on'); updateFollowText();
+};
+
+/* =================== OVLÁDANIE =================== */
+const fmt = (x, d) => x.toFixed(d).replace('.', ',');
+function setPlay(v) { playing = v; $('play').textContent = v ? '❚❚' : '▶'; }
+$('play').onclick = () => setPlay(!playing);
+$('speed').oninput = e => { speed = +e.target.value; $('speedV').textContent = fmt(speed, 2) + '×'; };
+$('bpm').oninput = e => { bpm = +e.target.value; $('bpmV').textContent = bpm; readouts(); };
+$('br').oninput = e => { brpm = +e.target.value; $('brV').textContent = brpm; };
+function readouts() { $('rCO').textContent = fmt(bpm * 70 / 1000, 1) + ' l/min'; $('rBeat').textContent = fmt(60 / bpm, 2) + ' s'; }
+readouts();
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+  for (const s of vPaths) s.el.classList.toggle('dim', !inMode(s));
+  for (const p of parts) p.el.setAttribute('opacity', inMode(p.s) ? 1 : .1);
+}
+document.querySelectorAll('#modes button').forEach(b => b.onclick = () => setMode(b.dataset.m));
+$('lblBtn').onclick = () => { const on = $('lblBtn').classList.toggle('on'); gLbl.style.display = on ? '' : 'none'; };
+$('menuBtn').onclick = () => { const o = $('left').classList.toggle('open'); $('menuBtn').textContent = o ? 'Ovládanie ▴' : 'Ovládanie ▾'; };
+
+/* =================== INFO PANEL =================== */
+function select(id) {
+  if (!INFO[id]) return;
+  sel = id;
+  const it = INFO[id];
+  $('iKat').textContent = it.k;
+  let h = `<h2 id="iTitle">${it.t}</h2><p class="lead">${it.lead}</p>`;
+  if (it.mode) h += `<button class="hlBtn" data-mode="${it.mode}">${it.mode === 'all' ? 'Zobraziť celý obeh' : 'Zvýrazniť tento okruh v modeli'}</button>`;
+  h += it.p.map(x => `<p>${x}</p>`).join('');
+  if (it.f && it.f.length) h += '<dl class="facts">' + it.f.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('') + '</dl>';
+  if (it.rel && it.rel.length) h += '<div class="subh">Súvisí s</div>' + it.rel.map(r => `<span class="chip" data-go="${r}">${INFO[r].t}</span>`).join('');
+  h += '<div class="subh">Všetky objekty</div>';
+  for (const [g, ids] of GROUPS) h += `<div style="margin:6px 0 2px;font-size:12px;color:var(--muted)">${g}</div>` + ids.map(r => `<span class="chip${r === id ? ' on' : ''}" data-go="${r}">${INFO[r].t}</span>`).join('');
+  h += '<div class="note">Zjednodušený schematický model – rozmery, poloha a počet ciev nie sú v mierke. Červená = okysličená, modrá = odkysličená krv. Ovládanie: medzerník = pauza, šípky ← → = prechádzanie popisov, + / − / 0 = zoom.</div>';
+  const sc = $('iScroll'); sc.innerHTML = h; sc.scrollTop = 0;
+  const hb = sc.querySelector('.hlBtn'); if (hb) hb.onclick = () => setMode(hb.dataset.mode);
+  if (targetsOf(id).length) {
+    const zb = document.createElement('button'); zb.className = 'zoomBtn'; zb.textContent = '🔍 Priblížiť v modeli';
+    zb.onclick = () => zoomTo(id); sc.querySelector('.lead').after(zb);
+  }
+  if (it.mode) setMode(it.mode);
+  const hl = new Set([id].concat(it.hl || []));
+  document.querySelectorAll('#body [data-info], #heartSvg [data-info]').forEach(e => {
+    if (e.classList.contains('hit')) return;
+    if (!e.classList.contains('lbl')) e.classList.toggle('sel', hl.has(e.dataset.info));
+  });
+  lblEls.forEach(g => g.classList.toggle('sel', hl.has(g.dataset.info)));
+}
+$('iScroll').addEventListener('click', e => { const c = e.target.closest('[data-go]'); if (c) select(c.dataset.go); });
+const step = d => { const i = ORDER.indexOf(sel); select(ORDER[(i + d + ORDER.length) % ORDER.length]); };
+$('prev').onclick = () => step(-1); $('next').onclick = () => step(1);
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space') { e.preventDefault(); setPlay(!playing); }
+  else if (e.key === 'ArrowRight') step(1);
+  else if (e.key === 'ArrowLeft') step(-1);
+});
+// klik a tooltip
+const tip = $('tip');
+function infoTarget(e) { const t = e.target.closest && e.target.closest('[data-info]'); return t && (t.closest('#body') || t.closest('#heartSvg')) ? t : null; }
+document.addEventListener('pointermove', e => {
+  const t = infoTarget(e);
+  if (t && e.pointerType === 'mouse') {
+    tip.textContent = INFO[t.dataset.info].t; tip.style.opacity = 1;
+    const x = Math.min(innerWidth - tip.offsetWidth - 8, e.clientX + 14);
+    tip.style.left = x + 'px'; tip.style.top = (e.clientY + 16) + 'px';
+  } else tip.style.opacity = 0;
+});
+document.addEventListener('click', e => { const t = infoTarget(e); if (t) select(t.dataset.info); });
+
+/* =================== ZOOM A POSUN =================== */
+const VB0 = { x: -40, y: 0, w: 680, h: 1000 }, ZMAX = 10;
+let vb = Object.assign({}, VB0), anim = null, dragged = false;
+function clampVB(v) {
+  v.w = clamp(v.w, VB0.w / ZMAX, VB0.w); v.h = v.w * VB0.h / VB0.w;
+  const sx = v.w * .2, sy = v.h * .2;
+  v.x = clamp(v.x, VB0.x - sx, VB0.x + VB0.w - v.w + sx);
+  v.y = clamp(v.y, VB0.y - sy, VB0.y + VB0.h - v.h + sy);
+  return v;
+}
+function applyVB() {
+  svg.setAttribute('viewBox', `${vb.x.toFixed(2)} ${vb.y.toFixed(2)} ${vb.w.toFixed(2)} ${vb.h.toFixed(2)}`);
+  const z = VB0.w / vb.w;
+  svg.style.setProperty('--z', (1 / Math.sqrt(z)).toFixed(3));
+  $('zoomV').textContent = Math.round(z * 100) + ' %';
+}
+function toSvg(cx, cy) { const m = svg.getScreenCTM().inverse(); return { x: m.a * cx + m.c * cy + m.e, y: m.b * cx + m.d * cy + m.f }; }
+function zoomAt(factor, cx, cy) {
+  anim = null;
+  const p = toSvg(cx, cy), nw = clamp(vb.w / factor, VB0.w / ZMAX, VB0.w), k = nw / vb.w;
+  vb = clampVB({ x: p.x - (p.x - vb.x) * k, y: p.y - (p.y - vb.y) * k, w: nw });
+  applyVB();
+}
+function animateTo(t) { anim = { from: Object.assign({}, vb), to: clampVB(t), t0: performance.now() }; }
+function stepZoom(now) {
+  if (!anim) return;
+  const t = Math.min(1, (now - anim.t0) / 450), e = t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  for (const k of ['x', 'y', 'w', 'h']) vb[k] = anim.from[k] + (anim.to[k] - anim.from[k]) * e;
+  applyVB(); if (t >= 1) anim = null;
+}
+function zoomCenter(factor) {
+  const r = svg.getBoundingClientRect(), p = toSvg(r.left + r.width / 2, r.top + r.height / 2);
+  const nw = clamp(vb.w / factor, VB0.w / ZMAX, VB0.w), nh = nw * VB0.h / VB0.w;
+  animateTo({ x: p.x - nw / 2, y: p.y - nh / 2, w: nw });
+}
+function targetsOf(id) {
+  return [...svg.querySelectorAll(`[data-info="${id}"]`)].filter(e => !e.classList.contains('lbl') && !e.classList.contains('hit'));
+}
+function zoomTo(id) {
+  const els = targetsOf(id); if (!els.length) return;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const e of els) {
+    const r = e.getBoundingClientRect(); if (!r.width && !r.height) continue;
+    const a = toSvg(r.left, r.top), b = toSvg(r.right, r.bottom);
+    x0 = Math.min(x0, a.x); y0 = Math.min(y0, a.y); x1 = Math.max(x1, b.x); y1 = Math.max(y1, b.y);
+  }
+  if (x0 > x1) return;
+  // viditeľná plocha pri "meet" je širšia/vyššia ako viewBox – prepočítame
+  const r = svg.getBoundingClientRect(), aspect = r.width / r.height, vbAspect = VB0.w / VB0.h;
+  const bw = (x1 - x0) * 1.35, bh = (y1 - y0) * 1.35;
+  let w;
+  if (aspect >= vbAspect) w = Math.max(bh * vbAspect, bw * vbAspect / aspect);
+  else w = Math.max(bw, bh * aspect);
+  w = Math.max(w, VB0.w / ZMAX);
+  const h = w * VB0.h / VB0.w;
+  animateTo({ x: (x0 + x1) / 2 - w / 2, y: (y0 + y1) / 2 - h / 2, w });
+}
+svg.addEventListener('wheel', e => {
+  e.preventDefault();
+  const d = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+  zoomAt(Math.exp(-d * .0018), e.clientX, e.clientY);
+}, { passive: false });
+const ptrs = new Map(); let pinch = null, downAt = null;
+svg.addEventListener('pointerdown', e => {
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size === 1) { dragged = false; downAt = { x: e.clientX, y: e.clientY }; }
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = Math.hypot(a.x - b.x, a.y - b.y); dragged = true; }
+});
+window.addEventListener('pointermove', e => {
+  const old = ptrs.get(e.pointerId); if (!old) return;
+  const cur = { x: e.clientX, y: e.clientY };
+  if (ptrs.size === 1) {
+    if (!dragged && Math.hypot(cur.x - downAt.x, cur.y - downAt.y) > 5) { dragged = true; svg.classList.add('drag'); }
+    if (dragged) {
+      anim = null;
+      const sc = svg.getScreenCTM().a;
+      vb.x -= (cur.x - old.x) / sc; vb.y -= (cur.y - old.y) / sc; clampVB(vb); applyVB();
+    }
+  }
+  ptrs.set(e.pointerId, cur);
+  if (ptrs.size === 2 && pinch) {
+    const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+    zoomAt(d / pinch, (a.x + b.x) / 2, (a.y + b.y) / 2); pinch = d;
+  }
+});
+const endPtr = e => {
+  ptrs.delete(e.pointerId);
+  if (ptrs.size < 2) pinch = null;
+  if (!ptrs.size) svg.classList.remove('drag');
+};
+window.addEventListener('pointerup', endPtr); window.addEventListener('pointercancel', endPtr);
+svg.addEventListener('click', e => { if (dragged) { e.stopPropagation(); dragged = false; } }, true);
+svg.addEventListener('dblclick', e => {
+  e.preventDefault();
+  const p = toSvg(e.clientX, e.clientY), nw = clamp(vb.w / 2, VB0.w / ZMAX, VB0.w), nh = nw * VB0.h / VB0.w;
+  animateTo({ x: p.x - nw / 2, y: p.y - nh / 2, w: nw });
+});
+$('zIn').onclick = () => zoomCenter(1.6);
+$('zOut').onclick = () => zoomCenter(1 / 1.6);
+$('zReset').onclick = () => animateTo(Object.assign({}, VB0));
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === '+' || e.key === '=') zoomCenter(1.6);
+  else if (e.key === '-') zoomCenter(1 / 1.6);
+  else if (e.key === '0') animateTo(Object.assign({}, VB0));
+});
+applyVB();
+
+select('uvod');
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
