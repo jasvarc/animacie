@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fotosyntéza</title>
+<link rel="icon" href="data:,">
+<script>
+/* =====================================================================
+   TEXTY A ÚDAJE – všetko, čo sa dá ľahko upraviť, je na jednom mieste.
+   Upravuj len hodnoty v úvodzovkách. HTML značky (<b>, <i>, <br>) sú povolené.
+   Značky [co2] [voda] [svetlo] [glukoza] [kyslik] [mineraly] sa v textoch
+   nahradia malou ikonkou látky (rovnaká farba a tvar ako v animácii).
+   ===================================================================== */
+const DATA = {
+  titul: 'Fotosyntéza',
+  podtitul: 'Ako rastlina zo vzduchu, vody a svetla vyrába cukor a kyslík – a prečo pritom stále aj dýcha',
+  nav: { anim: 'Animácia', porov: 'Fotosyntéza a dýchanie', omyly: 'Časté omyly', kviz: 'Kvíz', pozn: 'Zjednodušenia' },
+
+  /* ---------- LÁTKY: farba (c) a tvar značky sú rovnaké v celej animácii aj v rovnici ---------- */
+  latky: {
+    co2:      { n: 'oxid uhličitý', f: 'CO₂',       c: '#c3cad8', tvar: 'tri guľôčky v rade' },
+    voda:     { n: 'voda',          f: 'H₂O',       c: '#6fb4ff', tvar: 'kvapka' },
+    svetlo:   { n: 'svetlo',        f: 'energia',   c: '#fff1a6', tvar: 'hviezdička' },
+    glukoza:  { n: 'glukóza',       f: 'C₆H₁₂O₆',   c: '#f3a53a', tvar: 'šesťuholník' },
+    kyslik:   { n: 'kyslík',        f: 'O₂',        c: '#ff7a6b', tvar: 'dve guľôčky' },
+    mineraly: { n: 'minerálne látky', f: '',        c: '#b9a3ff', tvar: 'kosoštvorec' }
+  },
+
+  rovnica: {
+    slovna: [['co2', 'oxid uhličitý'], '+', ['voda', 'voda'], '+', ['svetlo', 'svetlo'], '→', ['glukoza', 'glukóza'], '+', ['kyslik', 'kyslík']],
+    chem:   [['co2', '6 CO₂'], '+', ['voda', '6 H₂O'], '+', ['svetlo', 'svetelná energia'], '→', ['glukoza', 'C₆H₁₂O₆'], '+', ['kyslik', '6 O₂']],
+    slovnaLbl: 'Slovne:',
+    chemLbl: 'Chemicky:',
+    rozsir: 'rozširujúce učivo',
+    tip: 'Klikni na časť rovnice – v animácii sa zvýrazní príslušná látka (a naopak).'
+  },
+
+  urovne: [
+    { nazov: 'Celá rastlina', popis: 'Čo do rastliny vstupuje a čo z nej vystupuje' },
+    { nazov: 'Rez listom', popis: 'Vnútro listu a prieduchy na jeho spodnej strane' },
+    { nazov: 'Bunka listu', popis: 'Chloroplasty – tu prebieha fotosyntéza' }
+  ],
+
+  ui: {
+    spustit: '▶ Spustiť', pauza: '❚❚ Pauza',
+    rychlost: 'Rýchlosť animácie', svetlo: '☀ Intenzita svetla', co2: 'Množstvo CO₂ vo vzduchu', voda: '💧 Zalievanie (voda v pôde)',
+    kraje: { svetlo: ['tma', 'silné slnko'], co2: ['málo', 'veľa'], voda: ['sucho', 'dostatok'] },
+    svetloNoc: 'V noci svetlo chýba – posuvník platí len cez deň.',
+    den: '☀ Deň', noc: '☾ Noc', uroven: 'Priblíženie:',
+    priblizit: 'Priblížiť', oddialit: 'Oddialiť', lupa: 'priblížiť',
+    mierka: 'Nie je v mierke · zjednodušené',
+    legenda: 'Značky v animácii (klikni pre popis):',
+    dychanieLeg: 'dýchanie (prebieha stále)', fotoLeg: 'fotosyntéza práve prebieha',
+    deje: 'Čo sa práve deje', popis: 'Popis',
+    popisUvod: 'Klikni alebo ukáž prstom či myšou na objekt v animácii (koreň, list, prieduch, chloroplast, častice…). Tu sa zobrazí jeho vysvetlenie.',
+    vsetky: 'Všetky pojmy',
+    ukazTam: 'Ukáž v animácii', kdeJe: 'Viditeľné pri priblížení:',
+    fotoBar: 'Fotosyntéza', dychBar: 'Dýchanie', dychStale: 'stále',
+    relativne: 'Pruhy ukazujú rýchlosť len orientačne (v porovnaní s najvyššou možnou v modeli).',
+    navonok: 'Navonok rastlina:', uvolnuje: '<b class="ok">uvoľňuje kyslík ↑</b>, prijíma CO₂',
+    prijima: '<b class="zle">prijíma kyslík ↓</b>, uvoľňuje CO₂',
+    pocO2: 'Kyslík uvoľnený', pocGlu: 'Glukóza vyrobená', pocO2p: 'Kyslík prijatý dýchaním',
+    pocPozn: 'Orientačné jednotky modelu (nie skutočné množstvá). Na 1 glukózu vznikne 6 kyslíkov ako v rovnici.',
+    nulovat: 'Vynulovať',
+    obmedzuje: 'Obmedzuje:', nic: 'nič – všetkého je dosť',
+    limitNazov: { svetlo: 'svetlo', co2: 'CO₂', voda: 'voda', noc: 'noc (žiadne svetlo)', tma: 'tma' },
+    hodnoty: {
+      svetlo: v => v <= 0 ? 'tma' : v < 25 ? 'slabé' : v < 50 ? 'stredné' : v < 80 ? 'silné' : 'veľmi silné',
+      co2:    v => v <= 0 ? 'žiadny' : v < 30 ? 'málo' : v < 70 ? 'stredne' : 'veľa',
+      voda:   v => v <= 0 ? 'úplné sucho' : v < 25 ? 'sucho' : v < 55 ? 'málo' : 'dostatok'
+    },
+    stavC: 'V chloroplaste čaká:', stavSvetloChyba: '⚠ chýba svetlo', stavVznika: '☀ vzniká glukóza',
+    stavB: 'Prieduchy:', prieduchy: o => o > 0.6 ? 'otvorené' : o > 0.25 ? 'privreté' : 'takmer zatvorené',
+    fxGluk: 'svetelná energia → uložená v glukóze', fxEnergia: '⚡ energia pre bunku',
+    lab: {
+      slnko: 'Slnko', list: 'list', stonka: 'stonka (zelená)', koren: 'koreň', poda: 'pôda', kvet: 'kvet',
+      kutikula: 'kutikula (vosk)', hornaP: 'horná pokožka', pal: 'palisádový parenchým', hub: 'hubovitý parenchým',
+      cievy: 'cievny zväzok (žilka)', dolnaP: 'dolná pokožka', prieduch: 'prieduch', vzduch: 'vzduch', svetloB: 'svetlo',
+      chloroplast: 'chloroplast', chlorofyl: 'tylakoidy s chlorofylom', jadro: 'jadro', vakuola: 'vakuola',
+      mito: 'mitochondria', stena: 'bunková stena', cyto: 'cytoplazma', medzib: 'vzduch medzi bunkami', kCievam: '↓ k cievnemu zväzku'
+    }
+  },
+
+  /* ---------- TEXTY „ČO SA PRÁVE DEJE“ ---------- */
+  deje: {
+    noc: 'Je <b>noc</b>. Bez svetla sa fotosyntéza <b>zastavila</b>. Dýchanie pokračuje vo všetkých bunkách: rastlina <b>prijíma kyslík</b> a <b>uvoľňuje CO₂</b>. Prieduchy sú takmer zatvorené. Cukor na dýchanie berie zo zásob (škrobu), ktoré si vyrobila cez deň.',
+    tma: 'Svetlo je na nule – je úplná tma. Fotosyntéza sa <b>zastavila</b>, prebieha len dýchanie: rastlina prijíma kyslík a uvoľňuje CO₂.',
+    beh: 'Prebieha <b>fotosyntéza</b> (asi {p} % najvyššej rýchlosti v modeli) a zároveň aj <b>dýchanie</b>.',
+    stoj: 'Fotosyntéza <b>stojí</b>, hoci svetla je dosť.',
+    limit: {
+      svetlo: 'Najviac ju brzdí <b>nedostatok svetla</b>.',
+      co2: 'Najviac ju brzdí <b>nedostatok CO₂</b> – svetlo ani voda ho nenahradia.',
+      voda: 'Najviac ju brzdí <b>nedostatok vody</b>. Rastlina privrela prieduchy, aby nestrácala vodu – preto do listov vchádza aj menej CO₂.'
+    },
+    naplno: 'Svetla, CO₂ aj vody je dosť – fotosyntéza ide naplno.',
+    nasyt: 'Svetla je viac, než rastlina stihne využiť: ďalšie zosilnenie už fotosyntézu nezrýchli (<b>nasýtenie</b>).',
+    prevlada: 'Fotosyntéza je rýchlejšia ako dýchanie, preto rastlina navonok <b>uvoľňuje kyslík</b>.',
+    dychPrevlada: 'Fotosyntéza je pomalšia ako dýchanie, preto rastlina navonok <b>kyslík spotrebúva</b> – aj keď je deň.',
+    sucho: 'Pôda je veľmi suchá – listy vädnú.',
+    uroven: [
+      'Sleduj, ako voda stúpa z koreňa stonkou do listov a cukor putuje z listov do koreňa a kvetu.',
+      'Sleduj prieduchy na spodnej strane listu: cez ne vchádza CO₂ a vychádza kyslík a vodná para.',
+      'V chloroplaste sa zo 6 CO₂ a 6 H₂O pomocou energie svetla vytvorí 1 glukóza a 6 O₂. V mitochondrii zároveň prebieha dýchanie.'
+    ]
+  },
+
+  /* ---------- POPISY OBJEKTOV (k = krátko pre bublinu, t = celé vysvetlenie, lv = úrovne 0/1/2, kde je objekt vidno) ---------- */
+  objekty: {
+    slnko: { n: 'Slnko', lv: [0], k: 'Zdroj svetla – energie pre fotosyntézu.',
+      t: 'Slnko je zdroj svetla. <b>Svetelná energia poháňa fotosyntézu</b> – bez svetla sa fotosyntéza zastaví. Rastlina využije len časť svetla, ktoré na ňu dopadne. Pri veľmi silnom svetle sa už fotosyntéza ďalej nezrýchľuje.' },
+    koren: { n: 'Koreň', lv: [0], k: 'Nasáva vodu a minerálne látky z pôdy.',
+      t: 'Koreň upevňuje rastlinu v pôde a <b>koreňovými vláskami nasáva vodu</b> s rozpustenými minerálnymi látkami. Koreň nie je zelený – nemá chloroplasty, preto v ňom <b>fotosyntéza neprebieha</b>. Bunky koreňa však <b>dýchajú</b>: potrebujú kyslík zo vzduchu v pôde a cukor, ktorý im z listov privedie stonka.' },
+    stonka: { n: 'Stonka', lv: [0], k: 'Nesie listy, vedie vodu hore a cukor dole. Zelená stonka tiež fotosyntetizuje.',
+      t: 'Stonka nesie listy a kvety. <b>Vodivými pletivami</b> vedie vodu s minerálnymi látkami z koreňa do listov a cukor z listov do ostatných častí rastliny. <b>Zelená stonka má chloroplasty</b>, preto v nej tiež prebieha fotosyntéza.' },
+    cievy: { n: 'Vodivé pletivá (cievne zväzky)', lv: [0, 1], k: 'Cievy vedú vodu nahor, sitkovice vedú cukor.',
+      t: 'Vodivé pletivá tvoria <b>cievne zväzky</b> – v liste ich vidíme ako žilky. <b>Cievy</b> vedú vodu a minerálne látky od koreňa nahor (v animácii modrá). <b>Sitkovice</b> vedú roztok cukrov z listov do ostatných častí rastliny (v animácii oranžová).' },
+    list: { n: 'List', lv: [0], k: 'Hlavný orgán fotosyntézy.',
+      t: 'List je <b>hlavný orgán fotosyntézy</b>. Je tenký a plochý, aby zachytil veľa svetla. U väčšiny rastlín má najviac prieduchov na <b>spodnej strane</b> – nimi prijíma CO₂ a vypúšťa kyslík a vodnú paru. Žilkami k nemu prichádza voda a odchádza cukor. Pri nedostatku vody list vädne.' },
+    kvet: { n: 'Kvet', lv: [0], k: 'Potrebuje cukor z listov na rast a tvorbu semien.',
+      t: 'Kvet nie je hlavným miestom fotosyntézy. Na rast, tvorbu semien a plodov potrebuje <b>cukor, ktorý mu privedú sitkovice z listov</b>. Jeho bunky tiež dýchajú.' },
+    pokozka: { n: 'Pokožka a kutikula', lv: [1], k: 'Priehľadná ochranná vrstva listu.',
+      t: 'Pokožka je vrstva <b>priehľadných buniek</b> na povrchu listu. Chráni list a prepúšťa svetlo k bunkám pod ňou. Navrchu je pokrytá voskovou vrstvičkou – <b>kutikulou</b>, ktorá obmedzuje vyparovanie vody. V dolnej pokožke sú prieduchy.' },
+    palisady: { n: 'Palisádový parenchým', lv: [1], k: 'Podlhovasté bunky s najviac chloroplastmi.',
+      t: 'Palisádový parenchým (pletivo) leží pod hornou pokožkou. Jeho bunky sú <b>podlhovasté, tesne vedľa seba</b> a majú <b>najviac chloroplastov</b>. Dostanú najviac svetla, preto tu prebieha najviac fotosyntézy. Klikni na lupu a priblíž si jednu bunku.' },
+    hubovity: { n: 'Hubovitý parenchým', lv: [1], k: 'Bunky so vzduchovými priestormi medzi sebou.',
+      t: 'Hubovitý parenchým má okrúhlejšie bunky a medzi nimi veľké <b>medzibunkové priestory so vzduchom</b>. Nimi sa CO₂ dostane od prieduchov k bunkám a kyslík a vodná para k prieduchom. Aj tieto bunky majú chloroplasty, ale menej.' },
+    prieduch: { n: 'Prieduch', lv: [1], k: 'Otvor v pokožke – vchádza CO₂, vychádza O₂ a vodná para.',
+      t: 'Prieduch je malý otvor v pokožke listu medzi dvoma <b>ochrannými (zatváracími) bunkami</b>. Cez prieduch <b>vchádza CO₂</b> a <b>vychádza kyslík a vodná para</b>. Na svetle sa prieduchy zvyčajne otvárajú. V tme a pri <b>suchu sa zatvárajú</b>, aby rastlina nestrácala vodu – vtedy však do listu vchádza menej CO₂.' },
+    ochranne: { n: 'Ochranné (zatváracie) bunky', lv: [1], k: 'Dve bunky, ktoré otvárajú a zatvárajú prieduch.',
+      t: 'Dve bunky v tvare fazule okolo štrbiny prieduchu. Keď <b>nasajú vodu, napnú sa</b> a štrbina sa otvorí. Keď vodu <b>strácajú, ochabnú</b> a prieduch sa zatvorí. Na rozdiel od ostatných buniek pokožky <b>majú chloroplasty</b>.' },
+    bunka: { n: 'Bunka listu', lv: [2], k: 'Bunka palisádového pletiva s chloroplastmi.',
+      t: 'Rastlinná bunka listu má <b>bunkovú stenu</b>, cytoplazmu, <b>jadro</b>, veľkú <b>vakuolu</b>, <b>mitochondrie</b> a veľa <b>chloroplastov</b>. Vo vnútri prebieha fotosyntéza (v chloroplastoch) aj dýchanie (v mitochondriách).' },
+    stena: { n: 'Bunková stena', lv: [2], k: 'Pevný obal rastlinnej bunky.',
+      t: 'Bunková stena je pevný obal rastlinnej bunky – dáva jej tvar a chráni ju. Je zložená najmä z <b>celulózy</b>, ktorú si rastlina vyrába z glukózy. Plyny a voda cez ňu prechádzajú.' },
+    chloroplast: { n: 'Chloroplast', lv: [1, 2], k: 'Zelené teliesko – miesto fotosyntézy.',
+      t: 'Chloroplast je zelené teliesko v bunke – <b>miesto, kde prebieha fotosyntéza</b>. Obsahuje zelené farbivo <b>chlorofyl</b>. V bunkách listu je chloroplastov veľa. Majú ich len zelené časti rastliny.' },
+    chlorofyl: { n: 'Chlorofyl', lv: [2], k: 'Zelené farbivo, ktoré zachytáva svetlo.',
+      t: 'Chlorofyl je <b>zelené farbivo</b> v chloroplastoch (je uložený v sploštených mechúrikoch – tylakoidoch). <b>Zachytáva energiu svetla</b>, najmä modrej a červenej zložky. Zelenú časť svetla odráža – preto vidíme listy zelené.' },
+    mitochondria: { n: 'Mitochondria', lv: [2], k: 'Teliesko, v ktorom prebieha dýchanie.',
+      t: 'Mitochondria je teliesko, v ktorom prebieha <b>dýchanie</b>: glukóza sa s pomocou kyslíka rozloží na CO₂ a vodu a <b>uvoľní sa energia</b>, ktorú bunka potrebuje na život a rast. Mitochondrie majú bunky rastlín aj živočíchov.' },
+    vakuola: { n: 'Vakuola', lv: [2], k: 'Mechúrik s bunkovou šťavou.',
+      t: 'Vakuola je veľký mechúrik s <b>bunkovou šťavou</b> (hlavne voda s rozpustenými látkami). Keď je plná vody, bunka je napnutá a rastlina nevädne.' },
+    jadro: { n: 'Jadro', lv: [2], k: 'Riadi činnosť bunky.',
+      t: 'Jadro <b>riadi činnosť bunky</b> a obsahuje dedičnú informáciu.' },
+    dychanie: { n: 'Dýchanie', lv: [0, 2], k: 'Prebieha stále vo všetkých živých bunkách.',
+      t: 'Dýchanie prebieha <b>stále – vo dne aj v noci</b> – vo <b>všetkých živých bunkách</b> rastliny (aj v koreni a kvete). Glukóza + kyslík → oxid uhličitý + voda + <b>energia</b>. Je to ten istý dej ako dýchanie v bunkách živočíchov a človeka. Cez deň ho „prekryje“ rýchlejšia fotosyntéza.' },
+    fotosynteza: { n: 'Fotosyntéza', lv: [0, 2], k: 'Prebieha len na svetle v zelených častiach.',
+      t: 'Fotosyntéza prebieha <b>len na svetle</b> v <b>zelených častiach</b> rastliny, ktoré majú chloroplasty – najmä v listoch, ale aj v zelenej stonke. Oxid uhličitý + voda + svetlo → glukóza + kyslík. Svetelná energia sa ukladá do glukózy.' },
+    voda: { n: 'Voda (H₂O)', lv: [0, 1, 2], k: 'Vstupuje do fotosyntézy, prichádza z pôdy.',
+      t: '<b>Voda vstupuje do fotosyntézy.</b> Rastlina ju nasáva koreňmi z pôdy a cievami ju vedie do listov. Pri fotosyntéze sa voda rozkladá – <b>z nej pochádza uvoľňovaný kyslík</b> (rozširujúce učivo). Veľká časť vody sa z listov vyparí cez prieduchy ako vodná para. Voda vzniká aj pri dýchaní.' },
+    co2: { n: 'Oxid uhličitý (CO₂)', lv: [0, 1, 2], k: 'Plyn zo vzduchu, vstupuje do fotosyntézy.',
+      t: '<b>Oxid uhličitý vstupuje do fotosyntézy.</b> Je to plyn zo vzduchu, do listu vchádza cez prieduchy. <b>Z jeho uhlíka rastlina stavia cukor</b> – a z cukru potom aj ostatné látky svojho tela. Vo vzduchu ho je málo, no rastline stačí. Pri dýchaní CO₂ naopak vzniká.' },
+    kyslik: { n: 'Kyslík (O₂)', lv: [0, 1, 2], k: 'Vedľajší produkt fotosyntézy, spotrebúva sa pri dýchaní.',
+      t: '<b>Kyslík vzniká pri fotosyntéze</b> ako vedľajší produkt (pre rastlinu odpad). Časť ho rastlina sama spotrebuje pri dýchaní, zvyšok uvoľní cez prieduchy do vzduchu. Kyslík potrebuje na dýchanie väčšina organizmov – aj my.' },
+    glukoza: { n: 'Glukóza (C₆H₁₂O₆)', lv: [0, 1, 2], k: 'Cukor – hlavný produkt fotosyntézy.',
+      t: '<b>Glukóza je cukor – hlavný produkt fotosyntézy.</b> Je v nej uložená energia zo svetla. Rastlina ju využíva ako <b>zdroj energie</b> (pri dýchaní) aj ako <b>stavebnú látku</b> (napr. celulóza bunkových stien). Zásoby si ukladá najmä ako <b>škrob</b>. Sitkovicami putuje cukor do celej rastliny.' },
+    svetlo: { n: 'Svetlo', lv: [0, 1, 2], k: 'Zdroj energie pre fotosyntézu.',
+      t: '<b>Svetlo je zdroj energie</b> pre fotosyntézu. Chlorofyl ho zachytí a jeho energia sa uloží do glukózy. Svetlo nie je látka – do rastliny „nevchádza“ ako stavebný materiál. Silnejšie svetlo zrýchli fotosyntézu len po určitú hranicu (nasýtenie).' },
+    mineraly: { n: 'Minerálne látky', lv: [0], k: 'Rozpustené vo vode z pôdy, potrebné na stavbu tela.',
+      t: 'Minerálne látky sú <b>rozpustené vo vode v pôde</b> (napr. zlúčeniny dusíka, fosforu, draslíka). Rastlina ich potrebuje na stavbu tela a zdravý rast – napríklad horčík je súčasťou chlorofylu. <b>Nie sú zdrojom energie ani hlavným zdrojom hmoty</b> rastliny.' }
+  },
+  skupinyPojmov: [
+    ['Rastlina', ['slnko', 'koren', 'stonka', 'list', 'kvet', 'cievy']],
+    ['List', ['pokozka', 'palisady', 'hubovity', 'prieduch', 'ochranne']],
+    ['Bunka', ['bunka', 'stena', 'chloroplast', 'chlorofyl', 'mitochondria', 'vakuola', 'jadro']],
+    ['Látky', ['co2', 'voda', 'svetlo', 'glukoza', 'kyslik', 'mineraly']],
+    ['Deje', ['fotosynteza', 'dychanie']]
+  ],
+
+  /* ---------- POROVNANIE FOTOSYNTÉZY A DÝCHANIA ---------- */
+  porov: {
+    nadpis: 'Fotosyntéza a dýchanie',
+    uvod: 'Rastlina robí oba deje. Cez deň prebieha fotosyntéza aj dýchanie, v noci len dýchanie.',
+    hlavicka: ['', '☀ Fotosyntéza', '⟳ Dýchanie'],
+    riadky: [
+      ['Kedy prebieha', 'len na svetle (cez deň)', '<b>stále</b> – vo dne aj v noci'],
+      ['V ktorých častiach rastliny', 'v zelených častiach (najmä v listoch, aj v zelenej stonke)', 'vo všetkých živých častiach (aj v koreni, kvete, semene)'],
+      ['Kde v bunke', 'v chloroplastoch', 'v mitochondriách'],
+      ['Čo vstupuje', '[co2] oxid uhličitý + [voda] voda (+ [svetlo] svetlo)', '[glukoza] glukóza + [kyslik] kyslík'],
+      ['Čo vystupuje', '[glukoza] glukóza + [kyslik] kyslík', '[co2] oxid uhličitý + [voda] voda'],
+      ['Čo sa deje s energiou', 'energia svetla sa <b>ukladá</b> do glukózy', 'energia z glukózy sa <b>uvoľňuje</b> – bunka ju využije na život a rast']
+    ],
+    pozor: '<b>Rastliny nedýchajú „inak“.</b> Dýchanie rastlín je ten istý dej, ktorý prebieha v bunkách živočíchov aj človeka: z glukózy a kyslíka sa uvoľní energia a vznikne CO₂ a voda. Dýchanie nie je „spätný chod“ fotosyntézy – látky sa síce menia opačným smerom, ale prebieha v iných častiach bunky, inými krokmi a v každej živej bunke, nielen v zelených. Rastliny len <b>navyše</b> vedia aj fotosyntézu.',
+    bilancia: 'Prečo cez deň „nevidno“, že rastlina dýcha? Fotosyntéza je cez deň oveľa rýchlejšia ako dýchanie. Rastlina vyrobí viac kyslíka, než sama spotrebuje, a prebytok uvoľní. V noci fotosyntéza chýba, a tak je dýchanie zrazu „viditeľné“ – rastlina kyslík prijíma. Vyskúšaj v animácii prepínač Deň / Noc a pozri pruhy v okne „Čo sa práve deje“.'
+  },
+
+  /* ---------- ČASTÉ OMYLY ---------- */
+  omyly: {
+    nadpis: 'Časté omyly',
+    polozky: [
+      { id: 'mPoda', omyl: 'Rastlina rastie tak, že „zje“ pôdu.',
+        pravda: 'Drvivá väčšina hmoty rastliny pochádza z <b>oxidu uhličitého zo vzduchu a z vody</b> – rastlina si z nich pri fotosyntéze vyrobí cukor a z neho stavia svoje telo. Pôda dodáva vodu a <b>minerálne látky</b>, ktoré tvoria len malú časť hmoty rastliny. Už v 17. storočí pestoval J. B. van Helmont vŕbu v kvetináči: vŕba za niekoľko rokov veľmi narástla, ale pôdy v kvetináči takmer neubudlo. (Myslel si, že všetko pochádza z vody – o úlohe CO₂ sa vtedy ešte nevedelo.)',
+        fig: 'Strom rastie, pôdy v kvetináči takmer neubúda. Hmota pribúda z CO₂ a vody.' },
+      { id: 'mDych', omyl: 'Rastliny dýchajú len v noci.',
+        pravda: 'Rastliny <b>dýchajú neustále</b> – vo dne aj v noci, vo všetkých živých bunkách. Cez deň je fotosyntéza rýchlejšia, preto rastlina navonok kyslík uvoľňuje a dýchanie „prekryje“. V noci fotosyntéza chýba, preto je dýchanie zrazu vidieť.',
+        fig: 'Fotosyntéza sa v noci zastaví, dýchanie beží stále.' },
+      { id: 'mZelene', omyl: 'Fotosyntéza prebieha len v listoch.',
+        pravda: 'Fotosyntéza prebieha vo <b>všetkých zelených častiach rastliny, ktoré obsahujú chloroplasty</b> – napríklad aj v zelenej stonke alebo v zelených plodoch. Kaktus fotosyntetizuje hlavne svojou zelenou stonkou. Listy sú len hlavné miesto. Korene (nie sú zelené) fotosyntézu nerobia.',
+        fig: 'Zelené iskričky ukazujú, kde prebieha fotosyntéza.' },
+      { id: 'mKyslik', omyl: 'Rastlina uvoľňuje kyslík preto, aby sme mohli dýchať.',
+        pravda: 'Kyslík je pri fotosyntéze <b>vedľajší produkt</b> – pre rastlinu je to odpad. Časť ho rastlina sama spotrebuje pri dýchaní, zvyšok uvoľní. To, že ho môžeme dýchať my a ostatné organizmy, nie je „zámer“ rastliny.',
+        fig: 'Väčšina kyslíka odchádza preč, časť spotrebuje rastlina sama.' }
+    ],
+    omylH: 'Omyl', pravdaH: 'Ako to je',
+    mini: {
+      zaciatok: 'na začiatku', rastie: 'strom rastie…', neskor: 'o niekoľko rokov', uroven: 'úroveň pôdy', takmer: 'pôdy takmer neubudlo',
+      den: 'deň', noc: 'noc', foto: 'Fotosyntéza', dych: 'Dýchanie', bezi: 'beží', stoji: 'stojí', stale: 'beží stále',
+      stonka: 'zelená stonka ✓', koren: 'koreň ✗', kaktus: 'kaktus – stonka ✓', list: 'list ✓',
+      vedl: 'kyslík = vedľajší produkt', sebe: 'časť na vlastné dýchanie'
+    }
+  },
+
+  /* ---------- KVÍZ (spravna = poradie správnej možnosti od 0; poradie sa pri zobrazení zamieša) ---------- */
+  kviz: {
+    nadpis: 'Kvíz',
+    uvod: '5 otázok. Po každej odpovedi hneď uvidíš, či je správna. Nič sa neukladá ani neodosiela.',
+    otazky: [
+      { typ: 'triedenie', q: '1. Roztrieď látky: vstupujú do fotosyntézy, alebo z nej vystupujú?',
+        polozky: [['co2', 'oxid uhličitý', 'vstup'], ['kyslik', 'kyslík', 'vystup'], ['voda', 'voda', 'vstup'], ['glukoza', 'glukóza', 'vystup']],
+        vstup: 'vstupuje', vystup: 'vystupuje',
+        vysvetlenie: 'Do fotosyntézy vstupujú oxid uhličitý a voda (a svetlo ako zdroj energie). Vystupujú glukóza a kyslík.' },
+      { q: '2. Rastlinu zavrieme na dva dni do úplnej tmy. Čo sa v nej deje?',
+        moznosti: ['Fotosyntéza sa zastaví, dýchanie pokračuje.', 'Fotosyntéza aj dýchanie sa zastavia.', 'Fotosyntéza pokračuje, len pomalšie.', 'Rastlina začne v tme uvoľňovať viac kyslíka.'], spravna: 0,
+        vysvetlenie: 'Bez svetla nemá fotosyntéza zdroj energie a zastaví sa. Dýchanie však prebieha stále – rastlina spotrebúva zásoby cukru a kyslík.' },
+      { q: '3. Rastlina má veľa svetla aj vody, ale vo vzduchu je veľmi málo CO₂. Čo sa stane?',
+        moznosti: ['Fotosyntéza sa spomalí, lebo chýba CO₂.', 'Nič – veľa svetla nedostatok CO₂ vynahradí.', 'Fotosyntéza sa zrýchli.', 'Rastlina si CO₂ vezme z pôdy.'], spravna: 0,
+        vysvetlenie: 'Rýchlosť fotosyntézy obmedzuje to, čoho je najmenej. Svetlo ani voda nedostatok CO₂ nenahradia. Vyskúšaj posuvník CO₂ v animácii.' },
+      { q: '4. Ktoré tvrdenie o dýchaní rastlín je správne?',
+        moznosti: ['Rastliny dýchajú stále – vo dne aj v noci.', 'Rastliny dýchajú len v noci.', 'Rastliny nedýchajú, robia len fotosyntézu.', 'Rastliny cez deň dýchajú „opačne“ – vdychujú CO₂ namiesto kyslíka.'], spravna: 0,
+        vysvetlenie: 'Dýchanie prebieha vo všetkých živých bunkách neustále. Cez deň je fotosyntéza rýchlejšia, preto rastlina navonok kyslík uvoľňuje. Prijímanie CO₂ cez deň patrí fotosyntéze, nie dýchaniu.' },
+      { q: '5. Z čoho pochádza väčšina hmoty kmeňa a listov stromu?',
+        moznosti: ['Z oxidu uhličitého zo vzduchu a z vody.', 'Z pôdy, ktorú strom „zje“ koreňmi.', 'Z minerálnych látok z hnojiva.', 'Zo slnečného svetla.'], spravna: 0,
+        vysvetlenie: 'Uhlík na stavbu tela berie rastlina z CO₂ zo vzduchu, ďalšie látky z vody. Pôda dodáva vodu a malé množstvo minerálnych látok. Svetlo je zdroj energie, nie stavebný materiál.' }
+    ],
+    spravne: 'Správne!', nespravne: 'Nesprávne.', vysledok: 'Výsledok: {s} z {n} správne.', znova: 'Skúsiť znova'
+  },
+
+  /* ---------- ZJEDNODUŠENIA ---------- */
+  pozn: {
+    nadpis: 'Čo je v animácii zjednodušené',
+    body: [
+      '<b>Nič nie je v mierke.</b> Molekuly sú v skutočnosti nepredstaviteľne malé – na úrovni celej rastliny by neboli vidieť. Aj prieduchy a bunky sú zväčšené.',
+      '<b>Počet a rýchlosť častíc sú len ilustračné.</b> Skutočných molekúl je obrovské množstvo. Častica na obrázku zastupuje „veľa“ molekúl.',
+      '<b>Posuvníky a počítadlá sú len kvalitatívne.</b> Čísla sú orientačné jednotky modelu, nie skutočné hodnoty. Pomer 1 glukóza : 6 kyslíkov zodpovedá rovnici. Hranica nasýtenia svetlom a rýchlosť dýchania sú v modeli zvolené len pre názornosť.',
+      '<b>Model používa „zákon minima“:</b> rýchlosť fotosyntézy určuje činiteľ, ktorého je najmenej. V skutočnosti sa vplyvy svetla, CO₂ a vody čiastočne prekrývajú. Teplotu model neuvažuje, hoci ovplyvňuje fotosyntézu aj dýchanie.',
+      '<b>Fotosyntéza má v skutočnosti veľa krokov</b> (časť deja potrebuje svetlo priamo, časť nie). Animácia ukazuje len celkový výsledok: 6 CO₂ + 6 H₂O → C₆H₁₂O₆ + 6 O₂.',
+      '<b>Po rastline sa prenáša najmä iný cukor (sacharóza), nie glukóza.</b> Zjednodušene hovoríme o glukóze. Zásoby sa ukladajú najmä ako škrob.',
+      '<b>Chloroplast je nakreslený zjednodušene</b> (obal, tylakoidy s chlorofylom uložené v stĺpčekoch). V skutočnej bunke je chloroplastov aj mitochondrií viac a bunka je pretiahnutejšia.',
+      '<b>Dýchanie je ukázané ako jeden krok v mitochondrii.</b> V skutočnosti začína už v cytoplazme a má viac krokov. Rýchlosť dýchania je v modeli stála.',
+      '<b>Prieduchy</b> sa v modeli riadia len svetlom a vodou. V skutočnosti ich ovplyvňuje aj CO₂, teplota a druh rastliny. Niektoré rastliny suchých oblastí (napr. kaktusy) majú prieduchy otvorené v noci.',
+      '<b>Výmena plynov</b> je na úrovni celej rastliny ukázaná len ako výsledok (to, čo navonok prevláda). Dýchanie koreňov (prijímajú kyslík zo vzduchu v pôde) nie je zobrazené časticami. Model neukazuje, že škodí aj premokrená pôda.'
+    ]
+  },
+
+  pata: 'Fotosyntéza · výučbová animácia pre 6. ročník ZŠ'
+};
+</script>
+<style>
+/* ===== Farby a základ – rovnaká paleta ako predošlé animácie ===== */
+:root{
+  --bg:#04060c;--panel:rgba(12,16,28,.86);--line:rgba(140,160,215,.22);
+  --text:#e2e8f5;--muted:#a3adc6;--gold:#f3b453;--gold2:#ffd88a;--blue:#6fb4ff;--red:#ff7a6b;--green:#7fdc8f;--violet:#b9a3ff;
+  --dych:#e58fd9;--foto:#d9ff8a;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--text);background:var(--bg);
+  background-image:radial-gradient(ellipse at 50% -10%,#14204a 0%,#070b18 50%,#04060c 100%);background-attachment:fixed;
+  font:17px/1.5 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1440px;margin:0 auto;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 12px 40px rgba(0,0,0,.45);padding:16px}
+h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+h2{margin:0 0 10px;font-size:23px;line-height:1.25}
+h3{margin:0 0 6px;font-size:16px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:650}
+p{margin:0 0 10px}
+.sub{color:var(--muted);margin:4px 0 0;font-size:17px}
+button{font:inherit;font-size:16px;color:var(--text);background:rgba(255,255,255,.07);border:1px solid var(--line);
+  border-radius:10px;padding:8px 14px;min-height:44px;cursor:pointer;transition:background .15s,border-color .15s,color .15s;touch-action:manipulation}
+button:hover{background:rgba(255,255,255,.13);border-color:rgba(160,180,230,.4)}
+button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
+button.on{background:rgba(243,180,83,.2);border-color:rgba(243,180,83,.65);color:var(--gold2)}
+button.primary{background:linear-gradient(135deg,#f3b453,#d9772f);color:#1a0e02;border:none;font-weight:700;min-width:140px}
+button.primary:hover{filter:brightness(1.08)}
+button:disabled{cursor:default}
+svg.ic{width:24px;height:24px;flex:none;vertical-align:middle;overflow:visible}
+
+/* ===== Hlavička a navigácia ===== */
+header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between;margin-bottom:16px}
+nav.skoky{display:flex;flex-wrap:wrap;gap:6px}
+nav.skoky a{color:var(--text);text-decoration:none;font-size:16px;padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.05)}
+nav.skoky a:hover{border-color:var(--gold);color:var(--gold2)}
+
+/* ===== Rozloženie ===== */
+.hlavna{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:16px;align-items:start}
+.stlpec{display:flex;flex-direction:column;gap:16px;min-width:0}
+section{scroll-margin-top:12px}
+.sekcia{margin-top:16px}
+@media (max-width:1100px){.hlavna{grid-template-columns:minmax(0,1fr)}}
+
+/* ===== Rovnica (vždy viditeľná – prilepí sa k hornému okraju) ===== */
+.rovnica{position:sticky;top:0;z-index:20;padding:10px 14px;background:rgba(10,14,26,.97)}
+.rovRiadok{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.rovRiadok .rl{color:var(--muted);font-size:16px;min-width:82px}
+.rovRiadok.chem{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.term{display:inline-flex;align-items:center;gap:6px;padding:3px 11px 3px 7px;min-height:40px;border-radius:999px;border:2px solid transparent;background:rgba(255,255,255,.06);font-weight:700;font-size:18px}
+.rovRiadok.chem .term{font-size:17px}
+.term:hover{background:rgba(255,255,255,.12)}
+.term.on{border-color:currentColor;background:rgba(255,255,255,.15);box-shadow:0 0 12px -2px currentColor}
+.op{color:var(--muted);font-weight:700;font-size:20px;padding:0 2px}
+.op.sipka{color:var(--gold2);transition:transform .2s}
+.op.sipka.flash{animation:sipFlash .8s}
+@keyframes sipFlash{0%{transform:scale(1.7);text-shadow:0 0 12px var(--gold2)}100%{transform:scale(1)}}
+.odznak{display:inline-block;font-size:16px;padding:1px 9px;border-radius:7px;border:1px dashed var(--violet);color:var(--violet)}
+.rovTip{color:var(--muted);font-size:16px;margin:6px 0 0}
+@media (max-width:600px){
+  .rovnica{padding:8px 10px;position:relative} /* na mobile by prilepená rovnica zakryla priveľa obrazovky */
+  .rovRiadok{gap:4px}
+  .rovRiadok .rl{min-width:0;width:100%}
+  .term{font-size:16px!important;padding:2px 8px 2px 5px;min-height:38px}
+  .term svg.ic{width:20px;height:20px}
+  .rovTip{display:none}
+}
+
+/* ===== Scéna ===== */
+.sceneCard{position:relative;padding:0;overflow:hidden}
+.sceneCard svg#scena{display:block;width:100%;height:auto;background:#08101c;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#scena [data-obj],#scena [data-zoom]{cursor:pointer}
+#scena .hl,#scena g.hl *{stroke:#ffd88a!important;stroke-width:3px!important;animation:hlPulse 1s infinite alternate}
+@keyframes hlPulse{from{stroke-opacity:1}to{stroke-opacity:.35}}
+#scena .lupa{animation:lupaP 1.6s infinite}
+@keyframes lupaP{0%,100%{opacity:1}50%{opacity:.55}}
+.overlay{position:absolute;left:10px;top:10px;padding:6px 11px;border-radius:10px;background:rgba(8,12,24,.82);border:1px solid var(--line);pointer-events:none;max-width:calc(100% - 20px)}
+.overlay b{display:block;font-size:19px;line-height:1.25}
+.overlay span{color:var(--muted);font-size:16px}
+.chipy{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;pointer-events:none;max-width:52%}
+.chipy span{font-size:16px;padding:3px 10px;border-radius:12px;background:rgba(8,12,24,.84);border:1px solid var(--line);display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.chipy span:empty{display:none}
+.chipy .warn{color:var(--gold2);border-color:var(--gold)}
+.zoomBar{position:absolute;left:10px;bottom:10px;display:flex;gap:6px}
+.zoomBar button{background:rgba(8,12,24,.82);min-width:44px;font-weight:700}
+.mierka{position:absolute;right:10px;bottom:8px;font-size:16px;color:var(--muted);background:rgba(8,12,24,.75);padding:2px 9px;border-radius:8px}
+.mierka a{color:var(--muted)}
+.tip{position:absolute;z-index:5;pointer-events:none;max-width:270px;padding:7px 11px;border-radius:10px;background:rgba(6,10,20,.95);border:1px solid var(--gold);font-size:16px;line-height:1.35;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+.tip b{color:var(--gold2);display:block}
+@media (max-width:600px){
+  .sceneCard{display:flex;flex-direction:column}
+  .sceneCard .overlay{position:static;order:-2;margin:8px 8px 0;max-width:none}
+  .sceneCard .chipy{position:static;order:-1;flex-direction:row;flex-wrap:wrap;margin:6px 8px 0;justify-content:flex-start;max-width:none}
+  .sceneCard .zoomBar{position:static;order:3;margin:6px 8px}
+  .sceneCard .mierka{position:static;order:4;align-self:flex-end;margin:0 8px 8px}
+  #scena .lab{display:none}
+}
+
+/* Legenda */
+.legenda .mini{margin-top:0}
+.legBtns{display:flex;flex-wrap:wrap;gap:6px}
+.legBtns button{display:inline-flex;align-items:center;gap:7px;padding:5px 11px}
+.legBtns button small{color:var(--muted);font-size:16px}
+.legBtns button.on{border-color:var(--gold2);background:rgba(255,255,255,.14)}
+
+/* Ovládanie */
+.ovl .row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.ovl .row+.row{margin-top:10px}
+.seg{display:inline-flex;gap:0}
+.seg button{border-radius:0;margin-left:-1px}
+.seg button:first-child{border-radius:10px 0 0 10px;margin-left:0}
+.seg button:last-child{border-radius:0 10px 10px 0}
+.seg .lbl0{color:var(--muted);margin-right:8px;align-self:center}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr));gap:4px 18px;margin-top:10px}
+.sl{display:block}
+.sl .lbl{display:flex;justify-content:space-between;gap:10px}
+.sl .lbl b{color:var(--gold2);font-variant-numeric:tabular-nums}
+.sl .kraje{display:flex;justify-content:space-between;color:var(--muted);font-size:16px;margin-top:-6px}
+.sl.vyp{opacity:.5}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:40px;background:transparent;margin:2px 0 0;cursor:pointer;touch-action:pan-y}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;margin-top:-10px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02;box-shadow:0 0 0 2px var(--gold)}
+input[type=range]::-moz-range-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02}
+input[type=range]:disabled{cursor:default}
+.mini{color:var(--muted);font-size:16px;margin:10px 0 4px}
+.pocitadla{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:8px;margin-top:12px}
+.poc{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.poc span{display:inline-flex;align-items:center;gap:7px}
+.poc b{font-size:22px;font-variant-numeric:tabular-nums;color:var(--gold2)}
+.pocRow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.pocRow .mini{margin:6px 0 0;flex:1 1 260px}
+
+/* Pravý panel */
+#deje{font-size:17px}
+#deje .ur{display:block;margin-top:8px;color:var(--muted);font-size:16px}
+.bary{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.bar{display:grid;grid-template-columns:104px 1fr 58px;gap:8px;align-items:center;margin:6px 0}
+.bar .tr{height:16px;border-radius:8px;background:rgba(255,255,255,.1);overflow:hidden}
+.bar .tr i{display:block;height:100%;border-radius:8px}
+.bar .tr i.fs{background:repeating-linear-gradient(45deg,#7fdc8f 0 8px,#5fb86f 8px 12px)}
+.bar .tr i.dy{background:repeating-linear-gradient(-45deg,#e58fd9 0 8px,#b866ad 8px 12px)}
+.bar b{text-align:right;font-variant-numeric:tabular-nums;font-size:16px}
+.netto{margin-top:6px}
+.netto b.ok{color:var(--green)}.netto b.zle{color:var(--red)}
+.limit{margin-top:6px;color:var(--muted)}
+.limit b{color:var(--gold2)}
+#infoCard.flash{animation:flash .9s}
+@keyframes flash{0%{box-shadow:0 0 0 3px var(--gold2)}100%{box-shadow:0 12px 40px rgba(0,0,0,.45)}}
+#infoNazov{font-size:22px;font-weight:750;margin:0 0 6px;display:flex;align-items:center;gap:8px}
+#infoKde{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:var(--muted);font-size:16px}
+details.pojmy{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+details.pojmy summary{cursor:pointer;color:var(--gold2);font-weight:650;min-height:32px}
+.skup{margin-top:8px}
+.skup>span{display:block;color:var(--muted);font-size:16px;margin-bottom:4px}
+.skup .chips{display:flex;flex-wrap:wrap;gap:6px}
+.skup .chips button{padding:5px 10px;min-height:40px}
+
+/* Porovnanie */
+.porovWrap{overflow-x:auto}
+table.porov{width:100%;border-collapse:collapse;font-size:17px;min-width:560px}
+table.porov th{text-align:left;padding:8px;border-bottom:2px solid var(--line);font-size:18px}
+table.porov th:nth-child(2){color:var(--green)}
+table.porov th:nth-child(3){color:var(--dych)}
+table.porov td{padding:8px;border-bottom:1px solid rgba(140,160,215,.14);vertical-align:top}
+table.porov td:first-child{color:var(--muted);font-weight:650;width:22%}
+table.porov td svg.ic{width:20px;height:20px;margin-right:2px}
+.dvoj{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start;margin-top:14px}
+.box{margin:10px 0;padding:10px 13px;border-radius:10px;border:1px solid}
+.box b.h{display:block;font-size:16px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.box.omyl{background:rgba(255,122,107,.09);border-color:rgba(255,122,107,.45)}.box.omyl b.h{color:var(--red)}
+.box.pravda{background:rgba(127,220,143,.08);border-color:rgba(127,220,143,.4)}.box.pravda b.h{color:var(--green)}
+.box.info{background:rgba(111,180,255,.08);border-color:rgba(111,180,255,.4)}
+
+/* Omyly */
+.omylyGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(330px,100%),1fr));gap:16px}
+.omylyGrid svg{display:block;width:100%;height:auto;background:#0b1626;border-radius:10px}
+figure{margin:0}
+figcaption{color:var(--muted);font-size:16px;margin:6px 0 0}
+
+/* Kvíz */
+.otazka{padding:12px 0;border-bottom:1px solid var(--line)}
+.otazka .q{font-size:18px;margin-bottom:8px}
+.moznosti{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}
+.moznosti button{text-align:left}
+.moznosti button:disabled{opacity:.8}
+.otazka button.ok{background:rgba(127,220,143,.2);border-color:var(--green);color:#d7ffdf;opacity:1}
+.otazka button.zle{background:rgba(255,122,107,.2);border-color:var(--red);color:#ffe0dc;opacity:1}
+.otazka button.vyb{background:rgba(243,180,83,.2);border-color:var(--gold)}
+.triedRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0}
+.triedRow .nm{display:inline-flex;align-items:center;gap:7px;min-width:170px;font-weight:650}
+.fb{margin-top:8px;font-size:16px}
+.fb.ok b{color:var(--green)}.fb.zle b{color:var(--red)}
+#kvizVysl{font-size:20px;font-weight:700;color:var(--gold2);margin:12px 0}
+ul.poznList{margin:0;padding-left:22px}
+ul.poznList li{margin:6px 0}
+footer{color:var(--muted);text-align:center;font-size:16px;padding:20px 0 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div><h1 data-t="titul"></h1><p class="sub" data-t="podtitul"></p></div>
+  <nav class="skoky">
+    <a href="#anim" data-t="nav.anim"></a><a href="#porov" data-t="nav.porov"></a><a href="#omyly" data-t="nav.omyly"></a>
+    <a href="#kviz" data-t="nav.kviz"></a><a href="#pozn" data-t="nav.pozn"></a>
+  </nav>
+</header>
+
+<!-- ============ HLAVNÁ ANIMÁCIA ============ -->
+<section id="anim" class="hlavna">
+  <div class="stlpec">
+    <!-- Rovnica – prilepená hore, aby bola stále viditeľná -->
+    <div class="card rovnica" id="rovCard">
+      <div class="rovRiadok" id="rovSlovna"></div>
+      <div class="rovRiadok chem" id="rovChem"></div>
+      <p class="rovTip" data-t="rovnica.tip"></p>
+    </div>
+
+    <div class="card sceneCard" id="sceneCard">
+      <svg id="scena" viewBox="0 0 800 520" role="img" aria-label="Animácia fotosyntézy">
+        <defs id="defs"></defs>
+        <g id="lv0"><g class="st"></g><g class="dy"></g></g>
+        <g id="lv1"><g class="st"></g><g class="dy"></g></g>
+        <g id="lv2"><g class="st"></g><g class="dy"></g></g>
+      </svg>
+      <div class="overlay"><b id="lvNazov"></b><span id="lvPopis"></span></div>
+      <div class="chipy"><span id="chipDen"></span><span id="chipStav"></span></div>
+      <div class="zoomBar">
+        <button id="zoomOut" aria-label="Oddialiť">− <span data-t="ui.oddialit"></span></button>
+        <button id="zoomIn" aria-label="Priblížiť">+ <span data-t="ui.priblizit"></span></button>
+      </div>
+      <div class="mierka"><a href="#pozn" data-t="ui.mierka"></a></div>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+
+    <div class="card legenda">
+      <p class="mini" data-t="ui.legenda"></p>
+      <div class="legBtns" id="legBtns"></div>
+    </div>
+
+    <div class="card ovl">
+      <div class="row">
+        <button id="btnPlay" class="primary"></button>
+        <div class="seg"><button id="btnDen" data-t="ui.den"></button><button id="btnNoc" data-t="ui.noc"></button></div>
+        <div class="seg" id="lvBtns"><span class="lbl0" data-t="ui.uroven"></span></div>
+      </div>
+      <div class="sliders">
+        <label class="sl" id="slSvetlo">
+          <span class="lbl"><span data-t="ui.svetlo"></span><b id="vSvetlo"></b></span>
+          <input type="range" id="inSvetlo" min="0" max="100" step="1" value="70" aria-label="Intenzita svetla">
+          <span class="kraje"><span data-t="ui.kraje.svetlo.0"></span><span data-t="ui.kraje.svetlo.1"></span></span>
+        </label>
+        <label class="sl">
+          <span class="lbl"><span>CO₂ – <span data-t="ui.co2"></span></span><b id="vCo2"></b></span>
+          <input type="range" id="inCo2" min="0" max="100" step="1" value="60" aria-label="Množstvo CO2">
+          <span class="kraje"><span data-t="ui.kraje.co2.0"></span><span data-t="ui.kraje.co2.1"></span></span>
+        </label>
+        <label class="sl">
+          <span class="lbl"><span data-t="ui.voda"></span><b id="vVoda"></b></span>
+          <input type="range" id="inVoda" min="0" max="100" step="1" value="80" aria-label="Množstvo vody">
+          <span class="kraje"><span data-t="ui.kraje.voda.0"></span><span data-t="ui.kraje.voda.1"></span></span>
+        </label>
+        <label class="sl">
+          <span class="lbl"><span data-t="ui.rychlost"></span><b id="vRychl">1×</b></span>
+          <input type="range" id="inRychl" min="0.25" max="3" step="0.25" value="1" aria-label="Rýchlosť animácie">
+          <span class="kraje"><span>0,25×</span><span>3×</span></span>
+        </label>
+      </div>
+      <p class="mini" id="notaNoc" hidden data-t="ui.svetloNoc"></p>
+      <div class="pocitadla">
+        <div class="poc"><span id="icO2"></span><b id="cO2">0</b></div>
+        <div class="poc"><span id="icGlu"></span><b id="cGlu">0</b></div>
+        <div class="poc"><span id="icO2p"></span><b id="cO2p">0</b></div>
+      </div>
+      <div class="pocRow"><p class="mini" data-t="ui.pocPozn"></p><button id="btnNul" data-t="ui.nulovat"></button></div>
+    </div>
+  </div>
+
+  <div class="stlpec">
+    <div class="card" id="dejeCard">
+      <h3 data-t="ui.deje"></h3>
+      <div id="deje"></div>
+      <div class="bary">
+        <div class="bar"><span data-t="ui.fotoBar"></span><span class="tr"><i class="fs" id="barP"></i></span><b id="valP"></b></div>
+        <div class="bar"><span data-t="ui.dychBar"></span><span class="tr"><i class="dy" id="barR"></i></span><b data-t="ui.dychStale"></b></div>
+        <div class="netto"><span data-t="ui.navonok"></span> <span id="netto"></span></div>
+        <div class="limit" id="limit"></div>
+        <p class="mini" data-t="ui.relativne"></p>
+      </div>
+    </div>
+    <div class="card" id="infoCard">
+      <h3 data-t="ui.popis"></h3>
+      <div id="infoNazov"></div>
+      <div id="infoText"></div>
+      <div id="infoKde"></div>
+      <details class="pojmy"><summary data-t="ui.vsetky"></summary><div id="pojmy"></div></details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOTOSYNTÉZA A DÝCHANIE ============ -->
+<section id="porov" class="card sekcia">
+  <h2 data-t="porov.nadpis"></h2>
+  <p data-t="porov.uvod"></p>
+  <div class="porovWrap"><table class="porov" id="porovTab"></table></div>
+  <div class="dvoj">
+    <div class="box pravda" data-t="porov.pozor"></div>
+    <div class="box info" data-t="porov.bilancia"></div>
+  </div>
+</section>
+
+<!-- ============ ČASTÉ OMYLY ============ -->
+<section id="omyly" class="card sekcia">
+  <h2 data-t="omyly.nadpis"></h2>
+  <div class="omylyGrid" id="omylyGrid"></div>
+</section>
+
+<!-- ============ KVÍZ ============ -->
+<section id="kviz" class="card sekcia">
+  <h2 data-t="kviz.nadpis"></h2>
+  <p class="mini" data-t="kviz.uvod"></p>
+  <div id="kvizBox"></div>
+  <div id="kvizVysl"></div>
+  <button id="kvizZnova" data-t="kviz.znova"></button>
+</section>
+
+<!-- ============ ZJEDNODUŠENIA ============ -->
+<section id="pozn" class="card sekcia">
+  <h2 data-t="pozn.nadpis"></h2>
+  <ul class="poznList" id="poznList"></ul>
+</section>
+
+<footer data-t="pata"></footer>
+</div>
+
+<script>
+/* =====================================================================
+   POMOCNÉ FUNKCIE
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const PI = Math.PI;
+const cl = (x, a = 0, b = 1) => x < a ? a : x > b ? b : x;      // orezanie do intervalu
+const lerp = (a, b, t) => a + (b - a) * t;                      // lineárny prechod
+const ez = t => t * t * (3 - 2 * t);                            // plynulý nábeh a dobeh
+const r1 = v => Math.round(v * 10) / 10;                        // zaokrúhlenie (kratšie SVG)
+const rnd = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }; // pevná „náhoda“ pre kresbu
+const R = Math.random;                                          // skutočná náhoda pre častice
+const pick = a => a[Math.floor(R() * a.length)];
+const sablona = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => o[k]);
+/* miešanie dvoch farieb #rrggbb */
+function mix(a, b, t) {
+  t = cl(t); const A = [1, 3, 5].map(i => parseInt(a.substr(i, 2), 16)), B = [1, 3, 5].map(i => parseInt(b.substr(i, 2), 16));
+  return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join('');
+}
+/* ikonka látky pre HTML (používa tie isté značky ako animácia) */
+const ikona = k => `<svg class="ic" viewBox="-13 -13 26 26" aria-hidden="true"><use href="#p-${k}"/></svg>`;
+const sIkonami = s => s.replace(/\[(co2|voda|svetlo|glukoza|kyslik|mineraly|dychanie|fotosynteza)\]/g, (_, k) => ikona(k));
+/* popisok v SVG s tmavým podkladom (na malých obrazovkách sa skryje) */
+function lab(x, y, t, anchor = 'start') {
+  const w = t.length * 8.7 + 14, x0 = anchor === 'middle' ? x - w / 2 : anchor === 'end' ? x - w : x;
+  return `<g class="lab" pointer-events="none"><rect x="${r1(x0)}" y="${r1(y - 15)}" width="${r1(w)}" height="24" rx="7" fill="rgba(6,10,20,.78)"/>`
+    + `<text x="${r1(x0 + 7)}" y="${r1(y + 3)}" font-size="17" fill="#e2e8f5">${t}</text></g>`;
+}
+/* lomená čiara ako „cesta“ častice; d = vzdialenosti od začiatku */
+function cesta(pts) {
+  const d = [0];
+  for (let i = 1; i < pts.length; i++) d.push(d[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  return { pts, d, L: d[d.length - 1] };
+}
+function bodNa(c, s) {
+  const { pts, d, L } = c;
+  if (s <= 0) return pts[0];
+  if (s >= L) return pts[pts.length - 1];
+  let i = 1; while (d[i] < s) i++;
+  const t = (s - d[i - 1]) / ((d[i] - d[i - 1]) || 1);
+  return [lerp(pts[i - 1][0], pts[i][0], t), lerp(pts[i - 1][1], pts[i][1], t)];
+}
+
+/* =====================================================================
+   ZNAČKY LÁTOK – kreslia sa raz do <defs>, potom sa len odkazujú (<use>).
+   Každá látka má inú farbu AJ iný tvar (kvôli farboslepým žiakom).
+   Priehľadný kruh okolo značky = väčšia plocha na kliknutie prstom.
+   ===================================================================== */
+function vytvorZnacky() {
+  const c = k => DATA.latky[k].c;
+  const hex = r => [30, 90, 150, 210, 270, 330].map(a => r1(r * Math.cos(a * PI / 180)) + ',' + r1(r * Math.sin(a * PI / 180))).join(' ');
+  $('#defs').innerHTML =
+    // CO₂: tri guľôčky v rade (O–C–O)
+    `<g id="p-co2"><circle r="15" fill="transparent"/><circle cx="-8.5" r="5.6" fill="${c('co2')}" stroke="#151a26" stroke-width="1.2"/><circle cx="8.5" r="5.6" fill="${c('co2')}" stroke="#151a26" stroke-width="1.2"/><circle r="6.2" fill="#4a5163" stroke="${c('co2')}" stroke-width="1.8"/></g>`
+    // voda: kvapka
+    + `<g id="p-voda"><circle r="14" fill="transparent"/><path d="M0,-10 C4,-4 7.5,0 7.5,4 A7.5,7.5 0 0 1 -7.5,4 C-7.5,0 -4,-4 0,-10Z" fill="${c('voda')}" stroke="#0d2a4a" stroke-width="1.2"/><ellipse cx="-2.6" cy="3.5" rx="1.6" ry="2.6" fill="#e2f0ff" opacity=".8"/></g>`
+    // kyslík: dve guľôčky
+    + `<g id="p-kyslik"><circle r="14" fill="transparent"/><circle cx="-4.8" r="5.8" fill="${c('kyslik')}" stroke="#3a0d08" stroke-width="1.2"/><circle cx="4.8" r="5.8" fill="${c('kyslik')}" stroke="#3a0d08" stroke-width="1.2"/></g>`
+    // glukóza: šesťuholník (ako kruh v molekule glukózy)
+    + `<g id="p-glukoza"><circle r="14" fill="transparent"/><polygon points="${hex(9)}" fill="${c('glukoza')}" stroke="#3a2205" stroke-width="1.4"/><polygon points="${hex(4.2)}" fill="none" stroke="#3a2205" stroke-width="1.1" opacity=".6"/></g>`
+    // svetlo: štvorcípa hviezdička
+    + `<g id="p-svetlo"><circle r="13" fill="transparent"/><path d="M0,-10 L2.4,-2.4 L10,0 L2.4,2.4 L0,10 L-2.4,2.4 L-10,0 L-2.4,-2.4Z" fill="${c('svetlo')}" stroke="#6b5a10" stroke-width=".8"/><circle r="2.4" fill="#fff"/></g>`
+    // minerálne látky: kosoštvorec
+    + `<g id="p-mineraly"><circle r="12" fill="transparent"/><rect x="-4.8" y="-4.8" width="9.6" height="9.6" transform="rotate(45)" fill="${c('mineraly')}" stroke="#24183f" stroke-width="1.2"/></g>`
+    // dýchanie: krúživá šípka
+    + `<g id="p-dychanie"><circle r="12" fill="#2a1630" stroke="#e58fd9" stroke-width="2"/><path d="M6.5,0 A6.5,6.5 0 1 1 0,-6.5" fill="none" stroke="#e58fd9" stroke-width="2.4"/><path d="M-1,-10 L3.5,-6.5 L-1,-3Z" fill="#e58fd9"/></g>`
+    // fotosyntéza: zelenkastá šesťramenná iskra (iný tvar ako svetlo)
+    + `<g id="p-fotosynteza"><circle r="12" fill="transparent"/><path d="M0,-9 V9 M-7.8,-4.5 L7.8,4.5 M-7.8,4.5 L7.8,-4.5" stroke="#3d6a10" stroke-width="4.4" stroke-linecap="round"/><path d="M0,-9 V9 M-7.8,-4.5 L7.8,4.5 M-7.8,4.5 L7.8,-4.5" stroke="#d9ff8a" stroke-width="2.4" stroke-linecap="round"/></g>`;
+}
+
+/* =====================================================================
+   STAV ANIMÁCIE A MODEL FOTOSYNTÉZY
+   ===================================================================== */
+const S = {
+  beh: true, rychl: 1, t: 0,              // beží?, rýchlosť, čas animácie (s)
+  svetlo: 70, co2: 60, voda: 80, den: true,
+  lvPos: 0, lvCil: 0,                     // úroveň priblíženia (0 rastlina, 1 list, 2 bunka); lvPos sa plynulo blíži k lvCil
+  open: 0.8,                              // otvorenie prieduchov 0..1
+  vyber: null,                            // vybraný objekt (id z DATA.objekty)
+  gluk: 0, o2uv: 0, o2pr: 0,              // počítadlá
+  dirty: [true, true, true]               // treba prekresliť statickú časť úrovne?
+};
+const SAT = 65;     // od tejto intenzity svetla (%) sa už fotosyntéza nezrýchľuje – hodnota zvolená len pre názornosť
+const RESP = 0.22;  // stála rýchlosť dýchania v modeli (v pomere k najvyššej rýchlosti fotosyntézy) – ilustračná hodnota
+
+/* Rýchlosť fotosyntézy podľa „zákona minima“: rozhoduje činiteľ, ktorého je najmenej. */
+function model() {
+  const den = S.den, L = den ? S.svetlo : 0;
+  const fL = L <= 0 ? 0 : 1 - Math.pow(1 - Math.min(1, L / SAT), 2); // svetlo: rastie a nad SAT sa už nemení (nasýtenie)
+  const fC = Math.min(1, S.co2 / 75);                                 // CO₂
+  const fW = Math.min(1, S.voda / 60);                                // voda (pri suchu sa privrú prieduchy)
+  const P = Math.min(fL, fC, fW);
+  let limit = null;
+  if (!den) limit = 'noc';
+  else if (L <= 0) limit = 'tma';
+  else if (P < 0.97) limit = [['svetlo', fL], ['co2', fC], ['voda', fW]].sort((a, b) => a[1] - b[1])[0][0];
+  // prieduchy: otvárajú sa na svetle, zatvárajú v tme a pri suchu
+  const openCiel = (den ? Math.min(1, 0.2 + fL) : 0.12) * Math.max(0.05, Math.min(1, S.voda / 45));
+  return { den, Lv: L, fL, fC, fW, P, R: RESP, limit, openCiel, nasyt: den && S.svetlo > SAT };
+}
+
+/* =====================================================================
+   SYSTÉM ČASTÍC – každá častica ide po svojej ceste (lomenej čiare).
+   ===================================================================== */
+const SYS = [[], [], []];     // častice pre každú úroveň
+const ACC = [{}, {}, {}];     // „zásobníky“ na rovnomerné vypúšťanie častíc
+/* pridaj časticu: lv úroveň, k látka, pts body cesty, v rýchlosť (px/s), end = čo sa stane na konci, oneskor = s */
+function pridaj(lv, k, pts, v, end, oneskor = 0, o = {}) {
+  if (SYS[lv].length > 260) return;
+  const c = cesta(pts);
+  SYS[lv].push(Object.assign({ k, c, v, s: -oneskor * v, end, seed: R() * 10 }, o));
+}
+/* vypúšťaj časticu s priemernou frekvenciou rate (za s) */
+function emit(lv, id, rate, dt, fn) {
+  const A = ACC[lv]; A[id] = (A[id] || 0) + rate * dt;
+  let n = 0; while (A[id] >= 1 && n < 4) { A[id] -= 1; n++; fn(); }
+  if (A[id] > 1) A[id] = 1;
+}
+function posun(arr, dt) {
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const p = arr[i]; p.s += p.v * dt;
+    if (p.s >= p.c.L) { arr.splice(i, 1); if (p.end) p.end(); }
+  }
+}
+/* kreslenie častíc; zvýraznená látka je väčšia a má krúžok, ostatné sa stlmia */
+function kresliCastice(arr, sc) {
+  const z = zvyrLatka(); let s = '';
+  for (const p of arr) {
+    if (p.s < 0) continue;
+    let [x, y] = bodNa(p.c, p.s);
+    if (p.wob) y += Math.sin(S.t * 3 + p.seed) * p.wob;
+    let m = sc * (p.sc || 1), op = (p.op ?? 1) * Math.min(1, p.s / 14, (p.c.L - p.s) / 14 + 0.15);
+    if (z) { if (p.k === z) m *= 1.45; else op *= 0.25; }
+    if (z === p.k) s += `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(15 * m)}" fill="none" stroke="#ffd88a" stroke-width="2"/>`;
+    s += `<use href="#p-${p.k}" data-obj="${p.k}" transform="translate(${r1(x)} ${r1(y)}) scale(${m.toFixed(2)})"${op < 0.99 ? ` opacity="${cl(op).toFixed(2)}"` : ''}/>`;
+  }
+  return s;
+}
+const LATKY_ID = ['co2', 'voda', 'svetlo', 'glukoza', 'kyslik', 'mineraly'];
+const zvyrLatka = () => LATKY_ID.includes(S.vyber) ? S.vyber : null;
+
+/* =====================================================================
+   ÚROVEŇ 0 – CELÁ RASTLINA
+   ===================================================================== */
+const ZEM = 372;                                             // povrch pôdy
+const stemX = y => 400 + 3 * Math.sin((ZEM - y) / 45);       // stonka je mierne zvlnená
+const SLNKO = [95, 78];
+const KORENE = [
+  [[400, 372], [398, 420], [402, 468], [400, 508]],
+  [[400, 388], [372, 416], [334, 440], [296, 462]],
+  [[400, 394], [430, 422], [470, 446], [508, 464]],
+  [[399, 428], [376, 462], [356, 498]],
+  [[401, 440], [428, 472], [446, 504]]
+];
+/* listy: y = výška na stonke, ang = smer (0 = doprava), dir = ktorým smerom list ovisne pri suchu */
+const LISTY_DEF = [
+  { y: 300, ang: -162, len: 170, dir: -1 },
+  { y: 248, ang: -18, len: 185, dir: 1 },
+  { y: 190, ang: -158, len: 150, dir: -1 },
+  { y: 146, ang: -28, len: 130, dir: 1 }
+];
+function listy() {
+  const d = (1 - cl(S.voda / 40)) * 38;                      // vädnutie pri suchu (stupne)
+  return LISTY_DEF.map(D => {
+    const a = D.ang + D.dir * d, x = stemX(D.y), y = D.y, ca = Math.cos(a * PI / 180), sa = Math.sin(a * PI / 180), b = 16;
+    return { x, y, a, len: D.len, pt: (u, off = 0) => { const lx = b + (D.len - b) * u; return [x + lx * ca - off * sa, y + lx * sa + off * ca]; } };
+  });
+}
+function kresliList(L, sucho) {
+  const w = L.len * 0.27, b = 16, e = L.len, m = e - b;
+  const blade = `M${b},0 C${r1(b + m * .25)},${r1(-w)} ${r1(b + m * .7)},${r1(-w * .9)} ${e},0 C${r1(b + m * .7)},${r1(w * .9)} ${r1(b + m * .25)},${r1(w)} ${b},0Z`;
+  let zil = '';
+  for (let i = 1; i <= 4; i++) { const x0 = b + m * i / 5.2, x1 = x0 + m * 0.13; zil += `M${r1(x0)},0 L${r1(x1)},${r1(-w * .55)} M${r1(x0)},0 L${r1(x1)},${r1(w * .55)} `; }
+  return `<g data-obj="list" transform="translate(${r1(L.x)} ${L.y}) rotate(${r1(L.a)})">`
+    + `<path d="M0,0 L${b},0" stroke="#2f6b28" stroke-width="5" stroke-linecap="round"/>`
+    + `<path d="${blade}" fill="${mix('#3f9a3c', '#a39a3a', sucho * .85)}" stroke="#1f4d1f" stroke-width="1.6"/>`
+    + `<path d="${zil}" stroke="#a6dc8a" stroke-width="1.1" opacity=".55" fill="none"/>`
+    + `<path d="M${b},0 L${e - 4},0" stroke="#bfe6a0" stroke-width="1.8" opacity=".8"/></g>`;
+}
+const lupa = (x, y, lv) => `<g class="lupa" data-zoom="${lv}" transform="translate(${r1(x)} ${r1(y)})"><circle r="24" fill="rgba(8,12,24,.6)" stroke="#ffd88a" stroke-width="3"/>`
+  + `<circle cx="-3" cy="-3" r="9.5" fill="none" stroke="#ffd88a" stroke-width="3"/><path d="M4,4 L12,12" stroke="#ffd88a" stroke-width="4.5" stroke-linecap="round"/>`
+  + `<path d="M-8,-3 H2 M-3,-8 V2" stroke="#ffd88a" stroke-width="2.4"/></g>`;
+
+function staticA() {
+  const den = S.den, Lk = den ? S.svetlo / 100 : 0, W = S.voda / 100, sucho = 1 - cl(S.voda / 40), T = DATA.ui.lab;
+  const hore = den ? mix('#1a2232', '#2f6fb3', Lk) : '#030716', dole = den ? mix('#262f40', '#8cc0e6', Lk) : '#0c1530';
+  let s = `<defs><linearGradient id="gNebo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hore}"/><stop offset="1" stop-color="${dole}"/></linearGradient>`
+    + `<linearGradient id="gPoda" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${mix('#7a5c3a', '#4a3020', W)}"/><stop offset="1" stop-color="#22160d"/></linearGradient></defs>`;
+  s += `<rect width="800" height="${ZEM + 2}" fill="url(#gNebo)"/>`;
+  if (!den) {   // noc: hviezdy a mesiac
+    for (let i = 0; i < 45; i++) s += `<circle cx="${r1(rnd(i) * 800)}" cy="${r1(rnd(i + 50) * 330)}" r="${r1(.7 + rnd(i + 90) * 1.3)}" fill="#fff" opacity="${(.35 + rnd(i + 7) * .6).toFixed(2)}"/>`;
+    s += `<circle cx="700" cy="70" r="26" fill="#e8ecf5"/><circle cx="713" cy="61" r="24" fill="${hore}"/>`;
+  } else {      // deň: Slnko, jeho veľkosť a jas podľa intenzity svetla
+    const r = 24 + 16 * Lk;
+    let lu = '';
+    for (let i = 0; i < 12; i++) { const a = i * PI / 6, r0 = r + 6, r2 = r + 12 + 16 * Lk; lu += `M${r1(SLNKO[0] + r0 * Math.cos(a))},${r1(SLNKO[1] + r0 * Math.sin(a))} L${r1(SLNKO[0] + r2 * Math.cos(a))},${r1(SLNKO[1] + r2 * Math.sin(a))} `; }
+    s += `<g data-obj="slnko"><circle cx="${SLNKO[0]}" cy="${SLNKO[1]}" r="${r1(r * 2.2)}" fill="#ffe27a" opacity="${(.04 + .22 * Lk).toFixed(2)}"/>`
+      + `<path d="${lu}" stroke="#ffe27a" stroke-width="3" stroke-linecap="round" opacity="${Lk.toFixed(2)}"/>`
+      + `<circle cx="${SLNKO[0]}" cy="${SLNKO[1]}" r="${r1(r)}" fill="${mix('#5d5a4c', '#ffe27a', Lk)}" stroke="#fff6c8" stroke-width="2" opacity="${(.3 + .7 * Math.min(1, Lk * 2)).toFixed(2)}"/></g>`;
+  }
+  // pôda
+  s += `<rect y="${ZEM}" width="800" height="${520 - ZEM}" fill="url(#gPoda)"/>`;
+  for (let i = 0; i < 30; i++) s += `<ellipse cx="${r1(rnd(i + 200) * 800)}" cy="${r1(388 + rnd(i + 230) * 125)}" rx="${r1(2 + rnd(i + 260) * 5)}" ry="${r1(1.5 + rnd(i + 290) * 3)}" fill="#6a5238" opacity=".55"/>`;
+  if (sucho > 0.4) s += `<path d="M120,374 l8,14 l-5,10 l9,12 M640,374 l-6,12 l7,9 l-4,13 M250,374 l5,9 l-6,8" stroke="#140c05" stroke-width="2" fill="none" opacity="${sucho.toFixed(2)}"/>`;
+  s += `<path d="M0,${ZEM} H800" stroke="${mix('#5c8a3a', '#8a8a3a', sucho)}" stroke-width="4"/>`;
+  // korene s koreňovými vláskami
+  let vl = '';
+  KORENE.forEach((k, i) => {
+    const c = cesta(k);
+    for (let j = 0; j < 7; j++) {
+      const s0 = c.L * (0.45 + j * 0.08); if (s0 >= c.L) break;
+      const [x, y] = bodNa(c, s0), [x2, y2] = bodNa(c, s0 + 2), dx = x2 - x, dy = y2 - y, n = Math.hypot(dx, dy) || 1, sg = j % 2 ? 1 : -1;
+      vl += `M${r1(x)},${r1(y)} l${r1(-dy / n * 7 * sg)},${r1(dx / n * 7 * sg)} `;
+    }
+  });
+  s += `<g data-obj="koren">` + KORENE.map((k, i) => `<polyline points="${k.join(' ')}" fill="none" stroke="#e2cfa2" stroke-width="${i ? 4 : 7}" stroke-linecap="round" stroke-linejoin="round"/>`).join('')
+    + `<path d="${vl}" stroke="#e2cfa2" stroke-width="1.2" opacity=".85"/>`
+    + KORENE.map(k => `<polyline points="${k.join(' ')}" fill="none" stroke="transparent" stroke-width="20"/>`).join('') + `</g>`;
+  // stonka (zelená) s vodivými pletivami
+  let d = '', dL = '', dP = '';
+  for (let y = ZEM; y >= 100; y -= 9) { const x = r1(stemX(y)); d += (d ? 'L' : 'M') + x + ',' + y + ' '; dL += (dL ? 'L' : 'M') + r1(x - 2.6) + ',' + y + ' '; dP += (dP ? 'L' : 'M') + r1(x + 2.6) + ',' + y + ' '; }
+  s += `<g data-obj="stonka"><path d="${d}" stroke="#2f6b28" stroke-width="15" fill="none" stroke-linecap="round"/><path d="${d}" stroke="#56a844" stroke-width="10" fill="none" stroke-linecap="round"/></g>`;
+  s += `<g data-obj="cievy"><path d="${dL}" stroke="#6fb4ff" stroke-width="1.8" opacity=".75" fill="none"/><path d="${dP}" stroke="#f3a53a" stroke-width="1.8" opacity=".75" fill="none"/></g>`;
+  // listy a kvet
+  const LS = listy();
+  for (const L of LS) s += kresliList(L, sucho);
+  s += `<g data-obj="kvet" transform="translate(${r1(stemX(100))} 94)">`;
+  for (let i = 0; i < 6; i++) s += `<ellipse cx="0" cy="-12" rx="8.5" ry="14" fill="#f4b6d2" stroke="#b0577f" stroke-width="1.2" transform="rotate(${i * 60})"/>`;
+  s += `<circle r="8" fill="#ffe6a0" stroke="#b08a3a"/></g>`;
+  // popisky
+  s += lab(SLNKO[0], 152, T.slnko, 'middle') + lab(LS[0].pt(.55)[0], LS[0].pt(.55)[1] + 46, T.list, 'middle')
+    + lab(414, 338, T.stonka) + lab(512, 440, T.koren) + lab(640, 410, T.poda) + lab(424, 72, T.kvet);
+  // lupa na priblíženie listu
+  const [lx, ly] = LS[1].pt(0.6);
+  s += lupa(lx, ly, 1) + lab(lx, ly - 34, DATA.ui.lupa, 'middle');
+  return s;
+}
+/* cesty častíc na úrovni rastliny */
+function cestaVodaA() {
+  const k = pick(KORENE), L = pick(listy()), tip = k[k.length - 1];
+  const pts = [[tip[0] + (R() - .5) * 30, Math.min(515, tip[1] + 14)], ...k.slice().reverse(), [stemX(ZEM), ZEM]];
+  for (let y = ZEM - 30; y > L.y; y -= 30) pts.push([stemX(y), y]);
+  pts.push([L.x, L.y], L.pt(.2), L.pt(.55 + R() * .35, (R() - .5) * 14));
+  return pts;
+}
+function cestaGlukA() {
+  const L = pick(listy()), pts = [L.pt(.5 + R() * .35, (R() - .5) * 14), L.pt(.15), [L.x, L.y]];
+  if (R() < 0.7) {   // dole do koreňa
+    for (let y = L.y + 30; y < ZEM; y += 30) pts.push([stemX(y), y]);
+    pts.push([stemX(ZEM), ZEM]);
+    const k = pick(KORENE); pts.push(...k);
+  } else {           // hore do kvetu
+    for (let y = L.y - 30; y > 108; y -= 30) pts.push([stemX(y), y]);
+    pts.push([stemX(104), 104]);
+  }
+  return pts;
+}
+function cestaPlynA(dnu) {   // dnu = smerom do listu
+  const L = pick(listy()), p = L.pt(.25 + R() * .7);
+  const z = [cl(p[0] + (R() - .5) * 170, 10, 790), Math.min(ZEM - 12, p[1] + 40 + R() * 80)];
+  const k = [cl(p[0] + (R() - .5) * 190, 10, 790), Math.max(10, p[1] - 70 - R() * 90)];
+  const vonku = R() < 0.5 ? z : k, mid = [lerp(p[0], vonku[0], .5) + (R() - .5) * 30, lerp(p[1], vonku[1], .5) + (R() - .5) * 20];
+  return dnu ? [vonku, mid, p] : [p, mid, vonku];
+}
+function krokA(dt, M) {
+  const N = M.P - M.R;
+  emit(0, 'voda', 2.4 * cl(S.voda / 60) * (0.35 + 0.65 * S.open), dt, () => pridaj(0, 'voda', cestaVodaA(), 60));
+  emit(0, 'min', 0.6 * cl(S.voda / 60), dt, () => pridaj(0, 'mineraly', cestaVodaA(), 52));
+  if (M.Lv > 0) emit(0, 'svetlo', 7 * M.Lv / 100, dt, () => { const L = pick(listy()); pridaj(0, 'svetlo', [SLNKO, L.pt(.3 + R() * .6)], 280); });
+  emit(0, 'co2in', 4.5 * Math.max(0, N), dt, () => pridaj(0, 'co2', cestaPlynA(true), 45, null, 0, { wob: 3 }));
+  emit(0, 'o2out', 4.5 * Math.max(0, N), dt, () => pridaj(0, 'kyslik', cestaPlynA(false), 45, null, 0, { wob: 3 }));
+  emit(0, 'co2out', 10 * Math.max(0, -N), dt, () => pridaj(0, 'co2', cestaPlynA(false), 40, null, 0, { wob: 3 }));
+  emit(0, 'o2in', 10 * Math.max(0, -N), dt, () => pridaj(0, 'kyslik', cestaPlynA(true), 40, null, 0, { wob: 3 }));
+  emit(0, 'glu', 2 * M.P + (M.P < 0.05 ? 0.45 : 0), dt, () => pridaj(0, 'glukoza', cestaGlukA(), 50));
+  posun(SYS[0], dt);
+}
+function dynamicA(M) {
+  let s = '';
+  const LS = listy(), z = zvyrLatka();
+  // lúče svetla od Slnka k listom
+  if (M.Lv > 0) {
+    const op = (z === 'svetlo' ? .55 : .1 + .22 * M.Lv / 100).toFixed(2), off = r1(-(S.t * 70) % 20);
+    s += `<g pointer-events="none">` + LS.map(L => { const p = L.pt(.6); return `<line x1="${SLNKO[0]}" y1="${SLNKO[1]}" x2="${r1(p[0])}" y2="${r1(p[1])}" stroke="#fff1a6" stroke-width="2.5" stroke-dasharray="6 14" stroke-dashoffset="${off}" opacity="${op}"/>`; }).join('') + `</g>`;
+  }
+  // iskry = tu práve prebieha fotosyntéza (listy aj zelená stonka)
+  if (M.P > 0.02) {
+    const body = [];
+    LS.forEach((L, i) => [.35, .6, .85].forEach((u, j) => body.push(L.pt(u, (j % 2 ? 1 : -1) * L.len * .07))));
+    body.push([stemX(220), 220], [stemX(165), 165]);
+    body.forEach((p, i) => {
+      const op = M.P * (0.35 + 0.65 * Math.max(0, Math.sin(S.t * 3.2 + i * 1.7)));
+      if (op > 0.05) s += `<use href="#p-fotosynteza" data-obj="fotosynteza" transform="translate(${r1(p[0])} ${r1(p[1])}) scale(.75)" opacity="${op.toFixed(2)}"/>`;
+    });
+  }
+  // dýchanie – v každej časti rastliny, stále (vo dne aj v noci)
+  const rot = r1((S.t * 110) % 360), hl = S.vyber === 'dychanie';
+  [[LS[1].pt(.32, 16)], [[stemX(330) - 24, 330]], [[430, 432]], [[stemX(110) + 24, 112]]].forEach(([p]) => {
+    s += `<g data-obj="dychanie" transform="translate(${r1(p[0])} ${r1(p[1])})">${hl ? '<circle r="18" fill="none" stroke="#ffd88a" stroke-width="2.5"/>' : ''}<g transform="rotate(${rot})"><use href="#p-dychanie"/></g></g>`;
+  });
+  s += kresliCastice(SYS[0], 1);
+  return s;
+}
+
+/* =====================================================================
+   ÚROVEŇ 1 – REZ LISTOM
+   ===================================================================== */
+const STOM = [230, 590];          // poloha prieduchov (x) v dolnej pokožke
+const ZVAZOK = [400, 294];        // stred cievneho zväzku
+const BB = (() => {               // pevné rozmiestnenie buniek hubovitého pletiva
+  const hub = []; let n = 0;
+  for (let row = 0; row < 3; row++) for (let x = 18 + (row % 2) * 23; x < 790; x += 46) {
+    n++;
+    const cx = x + (rnd(n) - .5) * 10, cy = 256 + row * 42 + (rnd(n + 40) - .5) * 8;
+    if (Math.hypot(cx - ZVAZOK[0], cy - ZVAZOK[1]) < 80) continue;
+    if (STOM.some(sx => Math.abs(cx - sx) < 42 && cy > 285)) continue;
+    hub.push({ cx, cy, rx: 16 + rnd(n + 80) * 6, ry: 13 + rnd(n + 120) * 5, a: (rnd(n + 160) - .5) * 50 });
+  }
+  return { hub };
+})();
+const palC = () => { const i = Math.floor(R() * 20); return [2 + i * 40 + 18, 118 + R() * 92]; };
+
+function staticB() {
+  const den = S.den, Lk = den ? S.svetlo / 100 : 0, T = DATA.ui.lab;
+  let s = `<rect width="800" height="56" fill="${den ? mix('#121a28', '#2a5c92', Lk) : '#050a1a'}"/>`
+    + `<rect y="56" width="800" height="338" fill="#0e2616"/>`
+    + `<rect y="394" width="800" height="126" fill="#0a1220"/>`;
+  // kutikula a horná pokožka
+  s += `<g data-obj="pokozka"><rect y="54" width="800" height="8" fill="#e7f5c0" opacity=".6"/>`;
+  for (let i = 0; i < 16; i++) s += `<rect x="${i * 50 + 1}" y="62" width="48" height="34" rx="6" fill="#cfe3d6" fill-opacity=".22" stroke="#cfe3d6" stroke-opacity=".6" stroke-width="1.4"/>`;
+  s += `</g>`;
+  // palisádový parenchým s chloroplastmi
+  for (let i = 0; i < 20; i++) {
+    const x = 2 + i * 40;
+    s += `<g data-obj="palisady"><rect x="${x}" y="99" width="36" height="128" rx="12" fill="#2c6330" stroke="#8fd47a" stroke-width="1.5"/></g><g>`;
+    for (let j = 0; j < 6; j++) s += `<ellipse data-obj="chloroplast" cx="${x + 8}" cy="${112 + j * 20}" rx="4.2" ry="6.5" fill="#7fe06a"/><ellipse data-obj="chloroplast" cx="${x + 28}" cy="${121 + j * 18}" rx="4.2" ry="6.5" fill="#7fe06a"/>`;
+    s += `</g>`;
+  }
+  // hubovitý parenchým
+  for (const h of BB.hub) {
+    s += `<g data-obj="hubovity"><ellipse cx="${r1(h.cx)}" cy="${r1(h.cy)}" rx="${r1(h.rx)}" ry="${r1(h.ry)}" transform="rotate(${r1(h.a)} ${r1(h.cx)} ${r1(h.cy)})" fill="#285a2c" stroke="#7cc46a" stroke-width="1.4"/></g>`
+      + `<ellipse data-obj="chloroplast" cx="${r1(h.cx - 6)}" cy="${r1(h.cy - 3)}" rx="3.5" ry="5" fill="#7fe06a" opacity=".85"/><ellipse data-obj="chloroplast" cx="${r1(h.cx + 7)}" cy="${r1(h.cy + 3)}" rx="3.5" ry="5" fill="#7fe06a" opacity=".85"/>`;
+  }
+  // cievny zväzok: cievy (voda) hore, sitkovice (cukor) dole
+  s += `<g data-obj="cievy"><circle cx="${ZVAZOK[0]}" cy="${ZVAZOK[1]}" r="58" fill="#22402f" stroke="#cfe3d6" stroke-width="2" stroke-dasharray="5 3"/>`;
+  [[378, 272, 10], [400, 264, 11], [422, 272, 10], [388, 292, 8], [412, 292, 8]].forEach(([x, y, r]) => s += `<circle cx="${x}" cy="${y}" r="${r}" fill="#10304f" stroke="#6fb4ff" stroke-width="2.6"/>`);
+  [[381, 318], [393, 327], [407, 327], [419, 318], [400, 312]].forEach(([x, y]) => s += `<circle cx="${x}" cy="${y}" r="5.6" fill="#4a3412" stroke="#f3a53a" stroke-width="2"/>`);
+  s += `</g>`;
+  // dolná pokožka (pri prieduchoch je medzera pre ochranné bunky)
+  s += `<g data-obj="pokozka">`;
+  for (let i = 0; i < 16; i++) { const cx = i * 50 + 25; if (STOM.some(sx => Math.abs(cx - sx) < 50)) continue; s += `<rect x="${i * 50 + 1}" y="362" width="48" height="32" rx="6" fill="#cfe3d6" fill-opacity=".22" stroke="#cfe3d6" stroke-opacity=".6" stroke-width="1.4"/>`; }
+  STOM.forEach(sx => s += `<rect x="${sx - 50}" y="362" width="100" height="32" rx="6" fill="#cfe3d6" fill-opacity=".1"/>`);
+  s += `</g>`;
+  // popisky
+  s += lab(300, 38, T.kutikula) + lab(8, 82, T.hornaP) + lab(8, 168, T.pal) + lab(8, 308, T.hub) + lab(466, 300, T.cievy)
+    + lab(8, 418, T.dolnaP) + lab(STOM[1], 432, T.prieduch, 'middle') + lab(700, 440, T.vzduch, 'middle') + lab(540, 38, T.svetloB, 'middle');
+  s += lupa(340, 164, 2);
+  return s;
+}
+/* prieduch: štrbina medzi dvoma ochrannými bunkami; o = otvorenie 0..1 */
+function prieduch(sx, o) {
+  const g = 2 + 15 * o, cy = 378, hlO = S.vyber === 'ochranne', hlP = S.vyber === 'prieduch';
+  let s = `<rect x="${r1(sx - g / 2)}" y="${cy - 15}" width="${r1(g)}" height="30" fill="#050b14"/>`;
+  for (const sd of [-1, 1]) {
+    const cx = sx + sd * (g / 2 + 13), ix = sx + sd * (g / 2 + 1.5);
+    s += `<g data-obj="ochranne"${hlO ? ' class="hl"' : ''}><ellipse cx="${r1(cx)}" cy="${cy}" rx="13" ry="17" fill="#3f8f3f" stroke="#b5ec9a" stroke-width="2"/>`
+      + `<path d="M${r1(ix)},${cy - 13} Q${r1(sx + sd * (g / 2 + 5))},${cy} ${r1(ix)},${cy + 13}" stroke="#e6ffd6" stroke-width="3.5" fill="none"/>`
+      + `<ellipse cx="${r1(cx + sd * 3)}" cy="${cy - 6}" rx="3" ry="4.5" fill="#8fe07a"/><ellipse cx="${r1(cx + sd * 3)}" cy="${cy + 6}" rx="3" ry="4.5" fill="#8fe07a"/></g>`;
+  }
+  s += `<rect data-obj="prieduch" x="${r1(sx - g / 2 - 4)}" y="${cy - 18}" width="${r1(g + 8)}" height="36" fill="transparent"${hlP ? ' stroke="#ffd88a" stroke-width="3"' : ''}/>`;
+  return s;
+}
+function cestaPrieduchB(dnu) {    // vzduch pod listom ↔ prieduch ↔ bunka palisádového pletiva
+  const sx = pick(STOM), c = palC();
+  const p = [[sx + (R() - .5) * 110, 530], [sx + (R() - .5) * 14, 412], [sx, 378], [sx + (R() - .5) * 30, 338], [lerp(sx, c[0], .5) + (R() - .5) * 40, 262], [c[0], c[1] + 25 + R() * 30]];
+  return dnu ? p : p.reverse();
+}
+function krokB(dt, M) {
+  const N = M.P - M.R;
+  emit(1, 'co2in', 5 * Math.max(0, N), dt, () => pridaj(1, 'co2', cestaPrieduchB(true), 62));
+  emit(1, 'o2out', 5 * Math.max(0, N), dt, () => pridaj(1, 'kyslik', cestaPrieduchB(false), 62));
+  emit(1, 'co2out', 9 * Math.max(0, -N), dt, () => pridaj(1, 'co2', cestaPrieduchB(false), 55));
+  emit(1, 'o2in', 9 * Math.max(0, -N), dt, () => pridaj(1, 'kyslik', cestaPrieduchB(true), 55));
+  emit(1, 'voda', 3 * M.fW, dt, () => { const c = palC(); pridaj(1, 'voda', [[ZVAZOK[0] + (R() - .5) * 34, 272], [lerp(ZVAZOK[0], c[0], .5), 240], [c[0], c[1] + 30 - R() * 40]], 48); });
+  emit(1, 'para', 3.2 * S.open * cl(S.voda / 40), dt, () => { const sx = pick(STOM); pridaj(1, 'voda', [[sx + (R() - .5) * 34, 335], [sx, 378], [sx + (R() - .5) * 90, 530]], 55, null, 0, { sc: .7, op: .55 }); });
+  emit(1, 'glu', 2.5 * M.P + (S.den ? 0 : .35), dt, () => { const c = palC(); pridaj(1, 'glukoza', [[c[0], c[1] + R() * 30], [lerp(c[0], ZVAZOK[0], .5), 250], [ZVAZOK[0] + (R() - .5) * 26, 322]], 45); });
+  if (M.Lv > 0) emit(1, 'svetlo', 10 * M.Lv / 100, dt, () => { const x = R() * 800; pridaj(1, 'svetlo', [[x, -12], [x + (R() - .5) * 16, 112 + R() * 100]], 320); });
+  posun(SYS[1], dt);
+}
+function dynamicB() {
+  return STOM.map(sx => prieduch(sx, S.open)).join('') + kresliCastice(SYS[1], 1.1);
+}
+
+/* =====================================================================
+   ÚROVEŇ 2 – BUNKA S CHLOROPLASTMI
+   ===================================================================== */
+const CEN = [330, 250];                    // stred hlavného chloroplastu
+const SLOT_C = [[208, 212], [236, 193], [266, 182], [208, 288], [236, 307], [266, 318]];   // tu čakajú CO₂
+const SLOT_W = [[394, 182], [424, 193], [452, 212], [394, 318], [424, 307], [452, 288]];   // tu čaká voda
+const MITO = [440, 420];                   // mitochondria, kde ukazujeme dýchanie
+const GRANA = [[240, 222], [300, 285], [358, 215], [418, 280], [262, 286], [412, 214]];
+const MALE_CHL = [[185, 82, -15], [292, 64, 5], [420, 72, 10], [168, 432, 20], [300, 456, -5]];
+const MITO_RATE = 1 / 6;                   // ako často prebehne jedno „dýchanie“ v mitochondrii (za s) – ilustračné
+const KC = 0.4;                            // rýchlosť prísunu látok do chloroplastu
+const CS = { invC: 0, invW: 0, inC: 0, inW: 0, asm: 0, m: { st: 'idle', acc: .6, n: 0, t: 0 }, fx: [] };
+
+function staticC() {
+  const T = DATA.ui.lab, den = S.den, tlm = den && S.svetlo > 0 ? 1 : 0.65;
+  let s = `<rect width="800" height="520" fill="#0e2616"/>`;
+  // susedné bunky (len naznačené)
+  s += `<rect x="704" y="20" width="140" height="480" rx="40" fill="#1a3522" stroke="#7cc46a" stroke-width="6" opacity=".55"/>`
+    + `<rect x="120" y="-460" width="560" height="478" rx="40" fill="#1a3522" stroke="#7cc46a" stroke-width="6" opacity=".45"/>`
+    + `<rect x="120" y="502" width="560" height="300" rx="40" fill="#1a3522" stroke="#7cc46a" stroke-width="6" opacity=".45"/>`;
+  // bunka: cytoplazma a bunková stena
+  s += `<rect data-obj="bunka" x="110" y="28" width="580" height="464" rx="44" fill="#1d3a26"/>`
+    + `<rect data-obj="stena" x="110" y="28" width="580" height="464" rx="44" fill="none" stroke="#a6e391" stroke-width="10" pointer-events="stroke"/>`;
+  // vakuola a jadro
+  s += `<ellipse data-obj="vakuola" cx="585" cy="305" rx="82" ry="150" fill="#1f3f5c" stroke="#6fb4ff" stroke-width="2" opacity=".95"/>`
+    + `<g data-obj="jadro"><circle cx="585" cy="94" r="38" fill="#4c3f7a" stroke="#b9a3ff" stroke-width="2.5"/><circle cx="594" cy="88" r="11" fill="#6d5aa8"/></g>`;
+  // menšie chloroplasty
+  MALE_CHL.forEach(([x, y, a]) => {
+    s += `<g data-obj="chloroplast" transform="translate(${x} ${y}) rotate(${a})" opacity="${tlm}"><ellipse rx="34" ry="17" fill="#2f7a35" stroke="#8fe07a" stroke-width="2"/>`
+      + [-14, 0, 14].map(dx => `<rect x="${dx - 5}" y="-6" width="10" height="12" rx="2" fill="#5fd35a"/>`).join('') + `</g>`;
+  });
+  // mitochondria (dýchanie)
+  s += `<g data-obj="mitochondria" transform="translate(${MITO[0]} ${MITO[1]}) rotate(-15)"><ellipse rx="34" ry="17" fill="#3a2238" stroke="#e58fd9" stroke-width="2.5"/>`
+    + `<path d="M-24,0 l5,-9 l5,16 l5,-16 l5,16 l5,-16 l5,16 l5,-16 l5,9" stroke="#e58fd9" stroke-width="1.6" fill="none"/></g>`;
+  // hlavný chloroplast: obal, tylakoidy s chlorofylom
+  s += `<g data-obj="chloroplast" opacity="${tlm}"><ellipse cx="${CEN[0]}" cy="${CEN[1]}" rx="168" ry="96" fill="#245a2c" stroke="#a6e391" stroke-width="3"/>`
+    + `<ellipse cx="${CEN[0]}" cy="${CEN[1]}" rx="161" ry="89" fill="none" stroke="#a6e391" stroke-width="1.4" opacity=".7"/>`
+    + `<path d="M240,222 L300,285 L358,215 L418,280 M262,286 L240,222 M358,215 L412,214" stroke="#5fd35a" stroke-width="2" opacity=".7" fill="none"/></g>`;
+  s += `<g data-obj="chlorofyl" opacity="${tlm}">`;
+  GRANA.forEach(([x, y]) => { for (let j = 0; j < 5; j++) s += `<ellipse cx="${x}" cy="${y - 12 + j * 6}" rx="19" ry="4.4" fill="#5fd35a" stroke="#1d4a22" stroke-width="1"/>`; });
+  s += `</g>`;
+  // popisky
+  s += lab(6, 130, T.medzib) + lab(CEN[0], 368, T.chloroplast, 'middle') + lab(CEN[0], 142, T.chlorofyl, 'middle')
+    + lab(585, 150, T.jadro, 'middle') + lab(585, 300, T.vakuola, 'middle') + lab(MITO[0] + 30, 460, T.mito, 'middle')
+    + lab(400, 26, T.stena, 'middle') + lab(150, 395, T.cyto) + lab(310, 512, T.kCievam, 'middle');
+  return s;
+}
+const vzduchC = () => [-15, 60 + R() * 390];
+function vyrobC() {   // v chloroplaste vznikla 1 glukóza a 6 O₂
+  S.rovFlash = true;
+  CS.fx.push({ x: CEN[0], y: CEN[1] - 30, t: S.t, txt: DATA.ui.fxGluk, col: '#ffd88a' });
+  pridaj(2, 'glukoza', [CEN, [350, 330], [410, 400], [405, 470], [405, 540]], 70);
+  for (let i = 0; i < 6; i++) {
+    const y = 180 + R() * 140;
+    pridaj(2, 'kyslik', [[CEN[0] + (R() - .5) * 50, CEN[1] + (R() - .5) * 40], [170, y], [112, y + (R() - .5) * 20], [-20, y + (R() - .5) * 60]], 95, null, i * 0.22);
+  }
+}
+function krokC(dt, M) {
+  // prísun CO₂ (zo vzduchu medzi bunkami) a vody (z ciev) – len kým v chloroplaste nie je 6 a 6
+  if (CS.asm === 0) {
+    if (M.den && CS.invC + CS.inC < 6) emit(2, 'co2', 6 * KC * M.fC * (.3 + .7 * S.open), dt, () => {
+      const sl = SLOT_C[CS.invC + CS.inC], [x0, y0] = vzduchC(); CS.inC++;
+      pridaj(2, 'co2', [[x0, y0], [70, y0 + (R() - .5) * 30], [116, lerp(y0, sl[1], .4)], [sl[0] - 40, sl[1] + (R() - .5) * 20], sl], 110, () => { CS.inC--; CS.invC++; });
+    });
+    if (CS.invW + CS.inW < 6) emit(2, 'voda', 6 * KC * M.fW, dt, () => {
+      const sl = SLOT_W[CS.invW + CS.inW], x = 200 + R() * 260; CS.inW++;
+      pridaj(2, 'voda', [[x, 540], [x + (R() - .5) * 20, 488], [lerp(x, sl[0], .5), 400], sl], 100, () => { CS.inW--; CS.invW++; });
+    });
+  }
+  // svetlo dopadá na chloroplast
+  if (M.Lv > 0) emit(2, 'svetlo', 6 * M.Lv / 100, dt, () => {
+    const x = 190 + R() * 280, y = 172 + R() * 30;
+    pridaj(2, 'svetlo', [[x, -12], [x + (R() - .5) * 30, y]], 300, () => CS.fx.push({ x, y, t: S.t, blesk: 1 }));
+  });
+  // premena: keď je pripravených 6 CO₂ a 6 H₂O a svieti svetlo
+  if (CS.asm === 0 && CS.invC >= 6 && CS.invW >= 6 && M.fL > 0) CS.asm = 1e-4;
+  if (CS.asm > 0) { CS.asm += dt * M.fL / 1.3; if (CS.asm >= 1) { CS.asm = 0; CS.invC = 0; CS.invW = 0; vyrobC(); } }
+  // dýchanie v mitochondrii: glukóza + 6 O₂ → 6 CO₂ + 6 H₂O + energia (prebieha stále)
+  const m = CS.m;
+  if (m.st === 'idle') {
+    m.acc += dt * MITO_RATE;
+    if (m.acc >= 1) {
+      m.acc = 0; m.st = 'in'; m.n = 0;
+      pridaj(2, 'glukoza', [[330, 330], [390, 380], MITO], 70, () => m.n++);
+      const zChl = M.den && M.P > M.R;   // cez deň berie kyslík priamo z fotosyntézy
+      for (let i = 0; i < 6; i++) {
+        const ciel = [MITO[0] + (R() - .5) * 26, MITO[1] + (R() - .5) * 10];
+        if (zChl) pridaj(2, 'kyslik', [[CEN[0] + (R() - .5) * 60, CEN[1] + 10 + (R() - .5) * 40], [400, 360], ciel], 90, () => m.n++, i * .3);
+        else { const y = 300 + R() * 150; pridaj(2, 'kyslik', [[-15, y], [116, y], [300, lerp(y, MITO[1], .6)], ciel], 100, () => m.n++, i * .3); }
+      }
+    }
+  } else if (m.st === 'in' && m.n >= 7) { m.st = 'horenie'; m.t = 0; }
+  else if (m.st === 'horenie') {
+    m.t += dt;
+    if (m.t >= 1) {
+      m.st = 'idle';
+      CS.fx.push({ x: MITO[0], y: MITO[1] - 30, t: S.t, txt: DATA.ui.fxEnergia, col: '#e58fd9' });
+      for (let i = 0; i < 6; i++) {
+        if (M.den && M.P > 0.02 && CS.asm === 0 && CS.invC + CS.inC < 6) {   // cez deň CO₂ z dýchania hneď využije chloroplast
+          const sl = SLOT_C[CS.invC + CS.inC]; CS.inC++;
+          pridaj(2, 'co2', [MITO, [360, 372], sl], 90, () => { CS.inC--; CS.invC++; }, i * .2);
+        } else { const y = 380 + R() * 80; pridaj(2, 'co2', [MITO, [300, y], [116, y], [-20, y + (R() - .5) * 40]], 95, null, i * .2); }
+        pridaj(2, 'voda', [MITO, [540, 400], [585 + (R() - .5) * 60, 300 + (R() - .5) * 140]], 70, null, i * .2);
+      }
+    }
+  }
+  posun(SYS[2], dt);
+}
+function dynamicC(M) {
+  let s = '';
+  const a = CS.asm, z = zvyrLatka(), zb = ez(cl(a / 0.55)), sc = 1.6;
+  // žiara chloroplastu počas premeny
+  if (a > 0) { const g = Math.sin(PI * a); s += `<ellipse cx="${CEN[0]}" cy="${CEN[1]}" rx="${r1(40 + 60 * g)}" ry="${r1(30 + 40 * g)}" fill="#fff1a6" opacity="${(.12 + .3 * g).toFixed(2)}" pointer-events="none"/>`; }
+  // žiara mitochondrie počas dýchania
+  if (CS.m.st === 'horenie') s += `<ellipse cx="${MITO[0]}" cy="${MITO[1]}" rx="48" ry="28" fill="#e58fd9" opacity="${(.35 * Math.sin(PI * CS.m.t)).toFixed(2)}" pointer-events="none"/>`;
+  // čakajúce molekuly v chloroplaste (pri premene sa zbiehajú do stredu)
+  const park = (k, slots, n) => {
+    for (let i = 0; i < n; i++) {
+      const x = lerp(slots[i][0], CEN[0], zb), y = lerp(slots[i][1], CEN[1], zb);
+      let op = a > 0.7 ? 1 - (a - 0.7) / 0.12 : 1, m = sc;
+      if (op <= 0.02) continue;
+      if (z) { if (z === k) m *= 1.45; else op *= .25; }
+      if (z === k) s += `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(15 * m)}" fill="none" stroke="#ffd88a" stroke-width="2"/>`;
+      s += `<use href="#p-${k}" data-obj="${k}" transform="translate(${r1(x)} ${r1(y)}) scale(${m.toFixed(2)})" opacity="${cl(op).toFixed(2)}"/>`;
+    }
+  };
+  park('co2', SLOT_C, CS.invC); park('voda', SLOT_W, CS.invW);
+  if (a > 0.72) s += `<use href="#p-glukoza" data-obj="glukoza" transform="translate(${CEN[0]} ${CEN[1]}) scale(${(ez(cl((a - .72) / .28)) * 1.8).toFixed(2)})"/>`;
+  s += kresliCastice(SYS[2], sc);
+  // efekty: záblesky svetla a plávajúce texty
+  CS.fx = CS.fx.filter(f => S.t - f.t < (f.blesk ? .5 : 2.2));
+  for (const f of CS.fx) {
+    const age = S.t - f.t;
+    if (f.blesk) s += `<circle cx="${r1(f.x)}" cy="${r1(f.y)}" r="${r1(4 + age * 36)}" fill="none" stroke="#fff1a6" stroke-width="2" opacity="${(1 - age / .5).toFixed(2)}" pointer-events="none"/>`;
+    else s += `<g class="lab" pointer-events="none" opacity="${cl(1.4 - age / 1.6).toFixed(2)}"><text x="${f.x}" y="${r1(f.y - age * 22)}" text-anchor="middle" font-size="18" font-weight="700" fill="${f.col}" stroke="#08101c" stroke-width="4" paint-order="stroke">${f.txt}</text></g>`;
+  }
+  return s;
+}
+
+/* =====================================================================
+   PRIBLÍŽENIE (ZOOM) – plynulý prechod medzi úrovňami
+   ===================================================================== */
+const STAT = [staticA, staticB, staticC], KROK = [krokA, krokB, krokC], DYN = [dynamicA, dynamicB, dynamicC];
+const LV = [0, 1, 2].map(i => ({ g: $('#lv' + i), st: $('#lv' + i + ' .st'), dy: $('#lv' + i + ' .dy') }));
+const fokus = i => i === 0 ? listy()[1].pt(0.6) : [340, 164];   // kam sa približuje (list → bunka palisádového pletiva)
+function viditelne() {
+  const p = S.lvPos, r = Math.round(p);
+  if (Math.abs(p - r) < 1e-3) return [r];
+  const i = Math.floor(p); return [i, i + 1];
+}
+function transformuj(vid) {
+  for (let i = 0; i < 3; i++) LV[i].g.style.display = vid.includes(i) ? '' : 'none';
+  if (vid.length === 1) { LV[vid[0]].g.removeAttribute('transform'); LV[vid[0]].g.removeAttribute('opacity'); return; }
+  const [i, j] = vid, e = ez(S.lvPos - i), F = fokus(i);
+  LV[i].g.setAttribute('transform', `translate(${r1(lerp(F[0], 400, e))} ${r1(lerp(F[1], 260, e))}) scale(${(1 + 5 * e).toFixed(3)}) translate(${r1(-F[0])} ${r1(-F[1])})`);
+  LV[i].g.setAttribute('opacity', (1 - ez(cl((e - .25) / .6))).toFixed(3));
+  LV[j].g.setAttribute('transform', `translate(400 260) scale(${lerp(.18, 1, e).toFixed(3)}) translate(-400 -260)`);
+  LV[j].g.setAttribute('opacity', ez(cl((e - .15) / .6)).toFixed(3));
+}
+function nastavUroven(cil) {
+  S.lvCil = cl(Math.round(cil), 0, 2);
+  document.querySelectorAll('#lvBtns button').forEach(b => b.classList.toggle('on', +b.dataset.lv === S.lvCil));
+  $('#zoomOut').disabled = S.lvCil === 0; $('#zoomIn').disabled = S.lvCil === 2;
+  const U = DATA.urovne[S.lvCil]; $('#lvNazov').textContent = U.nazov; $('#lvPopis').textContent = U.popis;
+  skryTip(); aktualizujInfo();
+}
+const oznacStatic = i => {   // zvýraznenie vybranej štruktúry v statickej kresbe
+  if (!S.vyber) return;
+  LV[i].st.querySelectorAll(`[data-obj="${S.vyber}"]`).forEach(el => el.classList.add('hl'));
+};
+
+/* =====================================================================
+   ROVNICA, LEGENDA, POPISY OBJEKTOV, BUBLINA
+   ===================================================================== */
+function vykresliRovnicu() {
+  const riadok = (arr, lbl) => `<span class="rl">${lbl}</span>` + arr.map(x => Array.isArray(x)
+    ? `<button class="term" data-l="${x[0]}" style="color:${DATA.latky[x[0]].c}">${ikona(x[0])}${x[1]}</button>`
+    : `<span class="op${x === '→' ? ' sipka' : ''}">${x}</span>`).join('');
+  const RV = DATA.rovnica;
+  $('#rovSlovna').innerHTML = riadok(RV.slovna, RV.slovnaLbl);
+  $('#rovChem').innerHTML = riadok(RV.chem, RV.chemLbl + ` <span class="odznak">${RV.rozsir}</span>`);
+  document.querySelectorAll('.term').forEach(b => b.addEventListener('click', () => vyber(b.dataset.l === S.vyber ? null : b.dataset.l)));
+}
+function vykresliLegendu() {
+  let h = Object.keys(DATA.latky).map(k => { const L = DATA.latky[k]; return `<button data-l="${k}">${ikona(k)}<span>${L.n}${L.f && L.f !== 'energia' ? ' <small>' + L.f + '</small>' : ''}</span></button>`; }).join('');
+  h += `<button data-l="dychanie">${ikona('dychanie')}<span>${DATA.ui.dychanieLeg}</span></button><button data-l="fotosynteza">${ikona('fotosynteza')}<span>${DATA.ui.fotoLeg}</span></button>`;
+  $('#legBtns').innerHTML = h;
+  document.querySelectorAll('#legBtns button').forEach(b => b.addEventListener('click', () => vyber(b.dataset.l === S.vyber ? null : b.dataset.l)));
+}
+function vykresliPojmy() {
+  $('#pojmy').innerHTML = DATA.skupinyPojmov.map(([n, ids]) => `<div class="skup"><span>${n}</span><div class="chips">`
+    + ids.map(id => `<button data-o="${id}">${DATA.objekty[id].n}</button>`).join('') + `</div></div>`).join('');
+  document.querySelectorAll('#pojmy button').forEach(b => b.addEventListener('click', () => vyber(b.dataset.o)));
+}
+/* vyber objekt: zobrazí popis, zvýrazní ho v scéne aj v rovnici */
+function vyber(id) {
+  S.vyber = id; S.dirty = [true, true, true];
+  document.querySelectorAll('.term').forEach(b => b.classList.toggle('on', b.dataset.l === id));
+  document.querySelectorAll('#legBtns button').forEach(b => b.classList.toggle('on', b.dataset.l === id));
+  aktualizujInfo();
+  const c = $('#infoCard'); c.classList.remove('flash'); void c.offsetWidth; if (id) c.classList.add('flash');
+}
+function aktualizujInfo() {
+  const id = S.vyber, U = DATA.ui;
+  if (!id) { $('#infoNazov').textContent = ''; $('#infoText').innerHTML = U.popisUvod; $('#infoKde').innerHTML = ''; return; }
+  const O = DATA.objekty[id], ik = DATA.latky[id] || id === 'dychanie' || id === 'fotosynteza' ? ikona(id) : '';
+  $('#infoNazov').innerHTML = ik + `<span>${O.n}</span>`;
+  $('#infoText').innerHTML = O.t;
+  const kde = $('#infoKde');
+  if (O.lv.includes(S.lvCil)) kde.innerHTML = '';
+  else {
+    kde.innerHTML = `<span>${U.kdeJe} ${O.lv.map(i => DATA.urovne[i].nazov).join(', ')}</span><button>${U.ukazTam}</button>`;
+    kde.querySelector('button').addEventListener('click', () => { nastavUroven(O.lv[0]); $('#sceneCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+  }
+}
+/* bublina pri ukázaní na objekt */
+const tip = $('#tip'), karta = $('#sceneCard');
+let tipCas = 0;
+function ukazTip(id, ex, ey) {
+  const O = DATA.objekty[id]; if (!O) return;
+  tip.innerHTML = `<b>${O.n}</b>${O.k}`; tip.hidden = false;
+  const r = karta.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = ex - r.left + 14, y = ey - r.top + 16;
+  if (x + w > r.width - 6) x = ex - r.left - w - 14;
+  if (y + h > r.height - 6) y = ey - r.top - h - 12;
+  tip.style.left = Math.max(6, x) + 'px'; tip.style.top = Math.max(6, y) + 'px';
+}
+function skryTip() { tip.hidden = true; }
+const svg = $('#scena');
+const objZ = t => { const el = t && t.closest ? t.closest('[data-obj]') : null; return el ? el.getAttribute('data-obj') : null; };
+svg.addEventListener('pointermove', e => {
+  if (e.pointerType === 'touch') return;
+  const id = objZ(e.target);
+  if (id) ukazTip(id, e.clientX, e.clientY); else skryTip();
+});
+svg.addEventListener('pointerleave', e => { if (e.pointerType !== 'touch') skryTip(); });
+/* klik/ťuknutie: vyberie objekt pod prstom (zistí ho už pri dotyku – častice sa medzitým posunú) */
+let dole = null;
+svg.addEventListener('pointerdown', e => {
+  const z = e.target.closest ? e.target.closest('[data-zoom]') : null;
+  dole = { x: e.clientX, y: e.clientY, id: objZ(e.target), zoom: z ? +z.getAttribute('data-zoom') : null };
+});
+svg.addEventListener('pointerup', e => {
+  if (!dole || Math.hypot(e.clientX - dole.x, e.clientY - dole.y) > 12) { dole = null; return; }
+  if (dole.zoom != null) nastavUroven(dole.zoom);
+  else if (dole.id) {
+    vyber(dole.id);
+    if (e.pointerType === 'touch') { ukazTip(dole.id, e.clientX, e.clientY); tipCas = performance.now() + 2500; }
+  } else vyber(null);
+  dole = null;
+});
+
+/* =====================================================================
+   OVLÁDANIE
+   ===================================================================== */
+function nastavPlay() { $('#btnPlay').textContent = S.beh ? DATA.ui.pauza : DATA.ui.spustit; }
+function nastavDen(d) {
+  S.den = d; S.dirty = [true, true, true];
+  $('#btnDen').classList.toggle('on', d); $('#btnNoc').classList.toggle('on', !d);
+  $('#inSvetlo').disabled = !d; $('#slSvetlo').classList.toggle('vyp', !d); $('#notaNoc').hidden = d;
+  $('#chipDen').textContent = d ? DATA.ui.den : DATA.ui.noc;
+}
+function popisSlidera() {
+  const H = DATA.ui.hodnoty;
+  $('#vSvetlo').textContent = H.svetlo(S.svetlo); $('#vCo2').textContent = H.co2(S.co2); $('#vVoda').textContent = H.voda(S.voda);
+  $('#vRychl').textContent = String(S.rychl).replace('.', ',') + '×';
+}
+$('#btnPlay').addEventListener('click', () => { S.beh = !S.beh; nastavPlay(); });
+$('#btnDen').addEventListener('click', () => nastavDen(true));
+$('#btnNoc').addEventListener('click', () => nastavDen(false));
+[['#inSvetlo', 'svetlo'], ['#inCo2', 'co2'], ['#inVoda', 'voda'], ['#inRychl', 'rychl']].forEach(([sel, k]) => {
+  $(sel).addEventListener('input', e => { S[k] = +e.target.value; if (k !== 'rychl') S.dirty = [true, true, true]; popisSlidera(); });
+});
+$('#zoomIn').addEventListener('click', () => nastavUroven(S.lvCil + 1));
+$('#zoomOut').addEventListener('click', () => nastavUroven(S.lvCil - 1));
+$('#btnNul').addEventListener('click', () => { S.gluk = S.o2uv = S.o2pr = 0; });
+function vytvorUrovneTlacidla() {
+  DATA.urovne.forEach((u, i) => {
+    const b = document.createElement('button'); b.dataset.lv = i; b.textContent = u.nazov;
+    b.addEventListener('click', () => nastavUroven(i)); $('#lvBtns').appendChild(b);
+  });
+}
+
+/* text „Čo sa práve deje“ + pruhy fotosyntéza / dýchanie */
+let poslDeje = '';
+function aktualizujDeje(M) {
+  const D = DATA.deje, U = DATA.ui;
+  let h;
+  if (!M.den) h = D.noc;
+  else if (M.Lv <= 0) h = D.tma;
+  else {
+    h = M.P < 0.01 ? D.stoj : sablona(D.beh, { p: Math.round(M.P * 100) });
+    if (M.limit && D.limit[M.limit]) h += ' ' + D.limit[M.limit]; else h += ' ' + D.naplno;
+    if (M.nasyt && M.limit !== 'svetlo') h += ' ' + D.nasyt;
+    h += ' ' + (M.P > M.R ? D.prevlada : D.dychPrevlada);
+  }
+  if (S.voda < 20) h += ' ' + D.sucho;
+  h += `<span class="ur">${D.uroven[Math.round(S.lvCil)]}</span>`;
+  if (h !== poslDeje) { $('#deje').innerHTML = h; poslDeje = h; }
+  $('#barP').style.width = Math.round(M.P * 100) + '%'; $('#valP').textContent = Math.round(M.P * 100) + ' %';
+  $('#barR').style.width = Math.round(M.R * 100) + '%';
+  $('#netto').innerHTML = M.P > M.R ? U.uvolnuje : U.prijima;
+  $('#limit').innerHTML = `${U.obmedzuje} <b>${M.limit ? U.limitNazov[M.limit] : U.nic}</b>`;
+  // počítadlá
+  $('#cO2').textContent = Math.floor(S.o2uv); $('#cGlu').textContent = Math.floor(S.gluk); $('#cO2p').textContent = Math.floor(S.o2pr);
+  // stav na úrovni listu / bunky
+  const lv = Math.round(S.lvPos), st = $('#chipStav');
+  if (lv === 1) { st.className = ''; st.textContent = U.stavB + ' ' + U.prieduchy(S.open); }
+  else if (lv === 2) {
+    let t = `${U.stavC} ${ikona('co2')} ${CS.invC}/6 ${ikona('voda')} ${CS.invW}/6`, warn = false;
+    if (CS.asm > 0) t += ' · ' + U.stavVznika;
+    else if (CS.invC >= 6 && CS.invW >= 6 && M.fL <= 0) { t += ' · ' + U.stavSvetloChyba; warn = true; }
+    st.innerHTML = t; st.className = warn ? 'warn' : '';
+  } else { st.textContent = ''; st.className = ''; }
+}
+
+/* =====================================================================
+   POROVNANIE, OMYLY (krátke animácie), ZJEDNODUŠENIA
+   ===================================================================== */
+function vykresliPorovnanie() {
+  const P = DATA.porov;
+  $('#porovTab').innerHTML = `<thead><tr>${P.hlavicka.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>`
+    + P.riadky.map(r => `<tr>${r.map(c => `<td>${sIkonami(c)}</td>`).join('')}</tr>`).join('') + `</tbody>`;
+}
+function vykresliOmyly() {
+  const O = DATA.omyly;
+  $('#omylyGrid').innerHTML = O.polozky.map(p => `<div><figure><svg id="${p.id}" viewBox="0 0 400 230" role="img" aria-label="${p.fig}"></svg><figcaption>${p.fig}</figcaption></figure>`
+    + `<div class="box omyl"><b class="h">${O.omylH}</b>${p.omyl}</div><div class="box pravda"><b class="h">${O.pravdaH}</b>${p.pravda}</div></div>`).join('');
+  $('#poznList').innerHTML = DATA.pozn.body.map(b => `<li>${b}</li>`).join('');
+}
+const tx = (x, y, t, o = {}) => `<text x="${x}" y="${y}" font-size="${o.fs || 17}" fill="${o.c || '#e2e8f5'}" text-anchor="${o.a || 'start'}" font-weight="${o.w || 500}">${t}</text>`;
+const uz = (k, x, y, m = 1, op = 1) => `<use href="#p-${k}" transform="translate(${r1(x)} ${r1(y)}) scale(${m})"${op < 1 ? ` opacity="${cl(op).toFixed(2)}"` : ''}/>`;
+const iskra = (x, y, t, i) => uz('fotosynteza', x, y, .8, .3 + .7 * Math.max(0, Math.sin(t * 3 + i * 1.9)));
+const MINI = {
+  /* Omyl 1: strom v kvetináči rastie, pôdy neubúda */
+  mPoda(t) {
+    const T = (t % 12) / 12, g = ez(cl(T / .75)), h = 18 + 92 * g, Mt = DATA.omyly.mini;
+    let s = `<path d="M138,168 L262,168 L250,224 L150,224Z" fill="#9a5a3a" stroke="#5e3420" stroke-width="2"/><rect x="141" y="160" width="118" height="10" fill="#4a3322"/>`;
+    s += `<path d="M110,160 H290" stroke="#ffd88a" stroke-width="2" stroke-dasharray="6 5"/>` + tx(296, 165, Mt.uroven, { fs: 16, c: '#ffd88a' });
+    s += `<path d="M200,162 L200,${r1(162 - h)}" stroke="#7a5233" stroke-width="${r1(3 + 8 * g)}" stroke-linecap="round"/>`
+      + `<circle cx="200" cy="${r1(162 - h)}" r="${r1(10 + 42 * g)}" fill="#3f9a3c" stroke="#1f4d1f" stroke-width="2"/>`;
+    for (let i = 0; i < 5; i++) {   // CO₂ zo vzduchu do koruny
+      const ph = (t * .32 + i / 5) % 1, sx = i % 2 ? 380 : 20, sy = 30 + i * 22;
+      s += uz('co2', lerp(sx, 200, ph), lerp(sy, 162 - h, ph), 1, Math.min(1, (1 - ph) * 4));
+    }
+    for (let i = 0; i < 2; i++) { const ph = (t * .5 + i / 2) % 1; s += uz('voda', 165 + i * 70, lerp(100, 160, ph), 1, Math.min(1, (1 - ph) * 3)); }
+    s += tx(14, 26, T < .12 ? Mt.zaciatok : T > .75 ? Mt.neskor : Mt.rastie, { w: 700, c: '#ffd88a' });
+    if (T > .75) s += tx(200, 212, Mt.takmer, { a: 'middle', fs: 16, c: '#fff' });
+    return s;
+  },
+  /* Omyl 2: deň a noc – fotosyntéza len cez deň, dýchanie stále */
+  mDych(t) {
+    const ph = (t % 10) / 10, f = cl((0.5 + 0.5 * Math.cos(2 * PI * (ph - .25)) - .3) / .4), den = f > .5, Mt = DATA.omyly.mini;
+    let s = `<rect width="400" height="185" rx="10" fill="${mix('#060b1c', '#2f6fb3', f)}"/><rect y="185" width="400" height="45" fill="#3a2818"/>`;
+    s += f > .05 ? `<circle cx="40" cy="40" r="18" fill="#ffe27a" opacity="${f.toFixed(2)}"/>` : '';
+    s += f < .95 ? `<circle cx="40" cy="40" r="14" fill="#e8ecf5" opacity="${(1 - f).toFixed(2)}"/>` : '';
+    s += tx(70, 46, den ? Mt.den : Mt.noc, { w: 700, c: den ? '#1a0e02' : '#e2e8f5' });
+    s += `<path d="M120,185 Q118,140 122,95" stroke="#56a844" stroke-width="7" fill="none"/><ellipse cx="92" cy="120" rx="32" ry="11" transform="rotate(-20 92 120)" fill="#3f9a3c"/><ellipse cx="150" cy="105" rx="32" ry="11" transform="rotate(20 150 105)" fill="#3f9a3c"/>`;
+    for (let i = 0; i < 3; i++) {   // výmena kyslíka navonok
+      const q = (t * .45 + i / 3) % 1, a = den ? q : 1 - q;
+      s += uz('kyslik', lerp(150, 200 + i * 6, a), lerp(110, 40 + i * 30, a), 1, Math.min(1, q * 4, (1 - q) * 4));
+    }
+    s += `<rect x="226" y="72" width="164" height="96" rx="10" fill="rgba(6,10,20,.75)"/>`;
+    s += uz('fotosynteza', 244, 98, 1, den ? 1 : .25) + tx(260, 96, Mt.foto, { fs: 16, w: 700 }) + tx(260, 114, den ? Mt.bezi : Mt.stoji, { fs: 16, c: den ? '#7fdc8f' : '#ff7a6b' });
+    s += `<g transform="translate(244 146) rotate(${r1((t * 110) % 360)})"><use href="#p-dychanie"/></g>` + tx(260, 144, Mt.dych, { fs: 16, w: 700 }) + tx(260, 162, Mt.stale, { fs: 16, c: '#7fdc8f' });
+    return s;
+  },
+  /* Omyl 3: fotosyntéza vo všetkých zelených častiach */
+  mZelene(t) {
+    const Mt = DATA.omyly.mini;
+    let s = `<rect y="178" width="400" height="52" fill="#3a2818"/><path d="M0,178 H400" stroke="#5c8a3a" stroke-width="3"/>`;
+    s += `<path d="M110,178 L110,40" stroke="#56a844" stroke-width="10"/><ellipse cx="70" cy="110" rx="40" ry="13" transform="rotate(-20 70 110)" fill="#3f9a3c"/><ellipse cx="150" cy="80" rx="40" ry="13" transform="rotate(20 150 80)" fill="#3f9a3c"/>`;
+    s += `<path d="M110,178 L108,214 M110,186 L88,210 M110,190 L132,214" stroke="#e2cfa2" stroke-width="3.5" fill="none"/>`;
+    [[70, 110], [150, 80], [110, 150], [110, 120], [110, 62]].forEach(([x, y], i) => s += iskra(x, y, t, i));
+    s += `<rect x="285" y="70" width="44" height="108" rx="22" fill="#4a9a4a" stroke="#1f4d1f" stroke-width="2"/><rect x="255" y="110" width="30" height="16" rx="8" fill="#4a9a4a"/><rect x="255" y="88" width="16" height="38" rx="8" fill="#4a9a4a"/>`;
+    s += `<path d="M300,74 V176 M314,74 V176" stroke="#2f6b28" stroke-width="1.5"/>`;
+    [[307, 95], [307, 140], [262, 100]].forEach(([x, y], i) => s += iskra(x, y, t, i + 5));
+    s += lab(118, 166, Mt.stonka) + lab(140, 222, Mt.koren) + lab(306, 52, Mt.kaktus, 'middle') + lab(40, 70, Mt.list);
+    return s;
+  },
+  /* Omyl 4: kyslík je vedľajší produkt, časť spotrebuje rastlina sama */
+  mKyslik(t) {
+    const Mt = DATA.omyly.mini;
+    let s = `<ellipse cx="120" cy="120" rx="100" ry="40" transform="rotate(-10 120 120)" fill="#3f9a3c" stroke="#1f4d1f" stroke-width="2"/><path d="M28,135 L212,103" stroke="#bfe6a0" stroke-width="2"/>`;
+    s += `<g transform="translate(110 132) rotate(${r1((t * 110) % 360)})"><use href="#p-dychanie"/></g>`;
+    for (let i = 0; i < 8; i++) {
+      const q = (t * .3 + i / 8) % 1, x0 = 70 + (i * 37) % 110, y0 = 110 + (i * 13) % 20;
+      if (i % 4 === 0) s += uz('kyslik', lerp(x0, 110, q), lerp(y0, 132, q), 1, Math.min(1, (1 - q) * 3));
+      else s += uz('kyslik', lerp(x0, 380, q), lerp(y0, 40 + (i * 23) % 150, q), 1, Math.min(1, q * 5, (1 - q) * 3));
+    }
+    s += lab(392, 214, Mt.vedl, 'end') + lab(18, 196, Mt.sebe);
+    return s;
+  }
+};
+const VIDNO = {};
+
+/* =====================================================================
+   KVÍZ
+   ===================================================================== */
+function kviz() {
+  const K = DATA.kviz, box = $('#kvizBox'); box.innerHTML = ''; $('#kvizVysl').textContent = '';
+  let skore = 0, hotovo = 0; const n = K.otazky.length;
+  const koniec = () => { if (hotovo === n) $('#kvizVysl').textContent = sablona(K.vysledok, { s: skore, n }); };
+  K.otazky.forEach(q => {
+    const div = document.createElement('div'); div.className = 'otazka';
+    div.innerHTML = `<div class="q">${q.q}</div>`;
+    const fb = document.createElement('div'); fb.className = 'fb';
+    if (q.typ === 'triedenie') {   // priradiť látky k vstupom a výstupom
+      const volby = {}, riadky = [];
+      q.polozky.forEach(([l, nazov, ok]) => {
+        const r = document.createElement('div'); r.className = 'triedRow';
+        r.innerHTML = `<span class="nm">${ikona(l)}${nazov}</span>`;
+        const bt = {};
+        for (const v of ['vstup', 'vystup']) {
+          const b = document.createElement('button'); b.textContent = q[v]; bt[v] = b;
+          b.addEventListener('click', () => {
+            if (div.dataset.hotovo) return;
+            volby[l] = v; bt.vstup.classList.toggle('vyb', v === 'vstup'); bt.vystup.classList.toggle('vyb', v === 'vystup');
+            if (Object.keys(volby).length === q.polozky.length) {   // všetko priradené → vyhodnotiť
+              div.dataset.hotovo = 1; hotovo++;
+              let vsetko = true;
+              riadky.forEach(([ll, okk, btt]) => {
+                const dobre = volby[ll] === okk; if (!dobre) vsetko = false;
+                btt[volby[ll]].classList.remove('vyb'); btt[volby[ll]].classList.add(dobre ? 'ok' : 'zle'); btt[okk].classList.add('ok');
+                btt.vstup.disabled = btt.vystup.disabled = true;
+              });
+              if (vsetko) skore++;
+              fb.className = 'fb ' + (vsetko ? 'ok' : 'zle'); fb.innerHTML = `<b>${vsetko ? K.spravne : K.nespravne}</b> ${q.vysvetlenie}`;
+              koniec();
+            }
+          });
+          r.appendChild(b);
+        }
+        riadky.push([l, ok, bt]); div.appendChild(r);
+      });
+    } else {
+      const opts = document.createElement('div'); opts.className = 'moznosti';
+      const poradie = q.moznosti.map((_, i) => i).sort(() => R() - .5), tlac = [];
+      poradie.forEach(j => {
+        const b = document.createElement('button'); b.textContent = q.moznosti[j]; tlac[j] = b;
+        b.addEventListener('click', () => {
+          if (div.dataset.hotovo) return;
+          div.dataset.hotovo = 1; hotovo++;
+          const ok = j === q.spravna; if (ok) skore++;
+          b.classList.add(ok ? 'ok' : 'zle'); tlac[q.spravna].classList.add('ok');
+          [...opts.children].forEach(x => x.disabled = true);
+          fb.className = 'fb ' + (ok ? 'ok' : 'zle'); fb.innerHTML = `<b>${ok ? K.spravne : K.nespravne}</b> ${q.vysvetlenie}`;
+          koniec();
+        });
+        opts.appendChild(b);
+      });
+      div.appendChild(opts);
+    }
+    div.appendChild(fb); box.appendChild(div);
+  });
+}
+$('#kvizZnova').addEventListener('click', kviz);
+
+/* =====================================================================
+   TEXTY Z OBJEKTU DATA → do stránky
+   ===================================================================== */
+function vyplnTexty() {
+  document.querySelectorAll('[data-t]').forEach(el => {
+    const v = el.dataset.t.split('.').reduce((o, k) => o == null ? o : o[k], DATA);
+    if (typeof v === 'string') el.innerHTML = v;
+  });
+  const U = DATA.ui;
+  $('#icO2').innerHTML = ikona('kyslik') + U.pocO2; $('#icGlu').innerHTML = ikona('glukoza') + U.pocGlu; $('#icO2p').innerHTML = ikona('dychanie') + U.pocO2p;
+}
+
+/* =====================================================================
+   ŠTART A HLAVNÁ SLUČKA (requestAnimationFrame, časovanie podľa skutočného času)
+   ===================================================================== */
+vytvorZnacky();
+vyplnTexty();
+vykresliRovnicu();
+vykresliLegendu();
+vykresliPojmy();
+vykresliPorovnanie();
+vykresliOmyly();
+vytvorUrovneTlacidla();
+kviz();
+nastavDen(true);
+nastavPlay();
+popisSlidera();
+nastavUroven(0);
+if ('IntersectionObserver' in window) {
+  const io = new IntersectionObserver(es => es.forEach(e => VIDNO[e.target.id] = e.isIntersecting));
+  Object.keys(MINI).forEach(id => { const el = document.getElementById(id); if (el) io.observe(el); });
+} else Object.keys(MINI).forEach(id => VIDNO[id] = true);
+
+let posledny = performance.now(), realny = 0, dejeCas = 0;
+function snimka(now) {
+  const dtR = Math.min(0.1, Math.max(0, (now - posledny) / 1000)); posledny = now; realny += dtR;
+  const dt = S.beh ? dtR * S.rychl : 0;      // čas animácie (zastaví sa pri pauze, zrýchli posuvníkom)
+  S.t += dt;
+  const M = model();
+  S.open += (M.openCiel - S.open) * Math.min(1, dt * 1.5);   // prieduchy sa otvárajú/zatvárajú postupne
+  // počítadlá: 1 glukóza ↔ 6 O₂ (ako v rovnici); dýchanie kyslík spotrebúva
+  S.gluk += M.P * dt;
+  const netto = 6 * (M.P - M.R) * dt;
+  if (netto > 0) S.o2uv += netto; else S.o2pr -= netto;
+  // plynulé priblíženie (beží v skutočnom čase, aj počas pauzy)
+  if (S.lvPos !== S.lvCil) {
+    const smer = Math.sign(S.lvCil - S.lvPos), v = 0.9 * Math.max(1, Math.abs(S.lvCil - S.lvPos));
+    S.lvPos += smer * dtR * v;
+    if ((S.lvCil - S.lvPos) * smer <= 0) S.lvPos = S.lvCil;
+  }
+  const vid = viditelne();
+  for (const i of vid) {
+    if (S.dirty[i]) { LV[i].st.innerHTML = STAT[i](M); oznacStatic(i); S.dirty[i] = false; }
+    if (dt > 0) KROK[i](dt, M);
+    LV[i].dy.innerHTML = DYN[i](M);
+  }
+  transformuj(vid);
+  if (S.rovFlash) {   // pri vzniku glukózy v bunke blikne šípka v rovnici
+    S.rovFlash = false;
+    document.querySelectorAll('.op.sipka').forEach(el => { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); });
+  }
+  if (tipCas && now > tipCas) { tipCas = 0; skryTip(); }
+  dejeCas -= dtR;
+  if (dejeCas <= 0) { dejeCas = 0.2; aktualizujDeje(M); }
+  for (const id in MINI) if (VIDNO[id]) { const el = document.getElementById(id); if (el) el.innerHTML = MINI[id](realny); }
+  requestAnimationFrame(snimka);
+}
+requestAnimationFrame(snimka);
+</script>
+<script data-goatcounter="https://jasvarc.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
