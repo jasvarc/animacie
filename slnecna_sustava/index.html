@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Slnečná sústava</title>
+<link rel="icon" href="data:,">
+<style>
+:root{
+  --bg:#04060c;--panel:rgba(12,16,28,.84);--line:rgba(140,160,215,.18);
+  --text:#dfe6f5;--muted:#8a96b2;--gold:#f3b453;--gold2:#ffd88a;--blue:#6fb4ff;--red:#ff7a6b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+  font:14px/1.45 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#c.drag{cursor:grabbing}#c.hover{cursor:pointer}
+.panel{position:fixed;background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 12px 40px rgba(0,0,0,.5)}
+button{font:inherit;color:var(--text);background:rgba(255,255,255,.06);border:1px solid var(--line);
+  border-radius:9px;padding:6px 11px;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+button:hover{background:rgba(255,255,255,.12);border-color:rgba(160,180,230,.35)}
+button.on{background:rgba(243,180,83,.18);border-color:rgba(243,180,83,.55);color:var(--gold2)}
+button.primary{background:linear-gradient(135deg,#f3b453,#d9772f);color:#1a0e02;border:none;font-weight:650;
+  padding:10px 14px;width:100%;box-shadow:0 4px 18px rgba(243,140,60,.3)}
+button.primary:hover{filter:brightness(1.08)}
+input{font:inherit;color:var(--text);background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:9px;padding:5px 8px;color-scheme:dark}
+
+#top{left:16px;top:16px;padding:12px 18px 12px 16px;min-width:250px}
+#top h1{margin:0 0 2px;font-size:13px;font-weight:650;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+#date{font-size:24px;font-weight:600;letter-spacing:.01em;font-variant-numeric:tabular-nums}
+#rel{color:var(--muted);font-size:12.5px}
+#views{left:16px;top:118px;padding:6px;display:flex;gap:4px;flex-wrap:wrap;max-width:330px}
+#views button{padding:4px 9px;font-size:12.5px}
+#followChip{display:none;color:var(--blue);border-color:rgba(111,180,255,.4)}
+
+#controls{left:50%;bottom:16px;transform:translateX(-50%);padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 32px)}
+#controls .grp{display:flex;gap:6px;align-items:center}
+#controls .sep{width:1px;height:26px;background:var(--line)}
+#play{width:42px;font-size:15px}
+#speed{width:170px;accent-color:var(--gold)}
+#speedLbl{min-width:118px;font-variant-numeric:tabular-nums;font-size:13px}
+#speedLbl small{color:var(--muted)}
+.presets button{padding:4px 8px;font-size:12px}
+
+#card{left:16px;top:166px;width:320px;padding:16px;max-height:calc(100vh - 290px);overflow:auto;
+  transition:opacity .2s,transform .2s}
+#card.hidden{opacity:0;transform:translateX(-12px);pointer-events:none}
+#card .x{position:absolute;right:10px;top:10px;width:30px;height:30px;padding:0;font-size:18px;line-height:1}
+#cType{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+#cName{margin:0 0 6px;font-size:22px}
+#cArt{display:block;margin:4px auto;width:240px;height:240px}
+.tabs{display:flex;gap:6px;justify-content:center;margin:4px 0}
+.tabs button{padding:3px 12px;font-size:12.5px}
+#cCap{font-size:11.5px;color:var(--muted);text-align:center;margin-bottom:8px}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:8px 0;font-size:13px}
+dt{color:var(--muted)}dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+#cLive{border-top:1px solid var(--line);padding-top:8px}
+#cNote{font-size:13px;color:#c7d0e4;margin:10px 0}
+#cFollow{width:100%}
+
+#toast{position:fixed;left:50%;top:22px;transform:translate(-50%,-20px);opacity:0;pointer-events:none;
+  padding:10px 18px;border-radius:12px;background:rgba(243,180,83,.95);color:#1b0f02;font-weight:650;
+  transition:opacity .3s,transform .3s;box-shadow:0 8px 30px rgba(243,150,60,.35);z-index:10}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#hint{position:fixed;right:16px;bottom:18px;font-size:11.5px;color:var(--muted);text-align:right;pointer-events:none}
+@media (max-width:900px){
+  #hint{display:none}
+  #card{width:calc(100vw - 32px);max-height:calc(100vh - 340px)}
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<header id="top" class="panel">
+  <h1>Slnečná sústava</h1>
+  <div id="date">—</div>
+  <div id="rel">dnes</div>
+</header>
+
+<nav id="views" class="panel">
+  <button data-view="inner">Vnútorné planéty</button>
+  <button data-view="all">Celá sústava</button>
+  <button data-view="earth">Zem + Mesiac</button>
+  <button data-view="jupiter">Jupiter</button>
+  <button data-view="helio">Heliosféra</button>
+  <button id="followChip">Sledovanie: <span></span> ✕</button>
+</nav>
+
+<div id="card" class="panel hidden">
+  <button class="x" id="cardClose" title="Zavrieť">×</button>
+  <div id="cType"></div>
+  <h2 id="cName"></h2>
+  <canvas id="cArt" width="240" height="240"></canvas>
+  <div class="tabs" id="venusTabs"><button data-m="surface" class="on">Povrch</button><button data-m="clouds">Oblačnosť</button></div>
+  <div id="cCap"></div>
+  <dl id="cFacts"></dl>
+  <dl id="cLive"></dl>
+  <p id="cNote"></p>
+  <button id="cFollow">Sledovať</button>
+</div>
+
+<footer id="controls" class="panel">
+  <div class="grp">
+    <button id="rev" title="Smer času">⇄</button>
+    <button id="play" title="Pauza (medzerník)">❚❚</button>
+  </div>
+  <div class="grp">
+    <input type="range" id="speed" min="0" max="1000" value="0">
+    <span id="speedLbl">1 deň/s</span>
+  </div>
+  <div class="grp presets">
+    <button data-s="1">1 deň</button><button data-s="7">týždeň</button><button data-s="30.44">mesiac</button><button data-s="365.25">rok</button>
+  </div>
+  <div class="sep"></div>
+  <div class="grp">
+    <input type="date" id="jump">
+    <button id="jumpBtn">Skoč</button>
+    <button id="today">Dnes</button>
+  </div>
+</footer>
+
+<div id="toast"></div>
+<div id="hint">Koliesko: zoom (až po Oortov oblak) · Ťahanie: posun · Klik: karta telesa · Medzerník: pauza<br>Pohľad zhora na rovinu ekliptiky. Mesiace sú pri oddialení zobrazené ďalej od planét.</div>
+
+<script>
+'use strict';
+/* ============ Konstanty a čas ============ */
+const TAU = Math.PI * 2, DEG = Math.PI / 180;
+const AU_KM = 149597870.7, K_GAUSS = 0.01720209895, MU = K_GAUSS * K_GAUSS; // AU^3/den^2
+const J2000 = 2451545.0, AUD_KMS = AU_KM / 86400;
+const jdFromMs = ms => ms / 864e5 + 2440587.5;
+const msFromJd = jd => (jd - 2440587.5) * 864e5;
+const TODAY = jdFromMs(Date.now());
+const fmtDate = jd => new Date(msFromJd(jd)).toLocaleDateString('sk-SK', {day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC'});
+const fmtShort = jd => new Date(msFromJd(jd)).toLocaleDateString('sk-SK', {day: 'numeric', month: 'numeric', year: 'numeric', timeZone: 'UTC'});
+const dny = n => { n = Math.abs(n); return n === 1 ? 'deň' : (n >= 2 && n <= 4 ? 'dni' : 'dní'); };
+const nf = (x, d = 0) => x.toLocaleString('sk-SK', {minimumFractionDigits: d, maximumFractionDigits: d});
+const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
+const wrapPi = a => { a = (a + Math.PI) % TAU; if (a < 0) a += TAU; return a - Math.PI; };
+
+/* ============ Planety: JPL Keplerovy elementy (J2000, změna za století) ============
+   a [AU], e, I [°], L [°], ϖ [°], Ω [°] — Standish, platné 1800–2050 */
+const PLANETS = [
+  {id:'mercury', name:'Merkúr',  color:'#b9b2a7', icon:3.2, R:2439.7,
+   el:[0.38709927,0.00000037, 0.20563593,0.00001906, 7.00497902,-0.00594749, 252.25032350,149472.67411175, 77.45779628,0.16047689, 48.33076593,-0.12534081]},
+  {id:'venus',   name:'Venuša',  color:'#f0c674', icon:5.2, R:6051.8,
+   el:[0.72333566,0.00000390, 0.00677672,-0.00004107, 3.39467605,-0.00078890, 181.97909950,58517.81538729, 131.60246718,0.00268329, 76.67984255,-0.27769418]},
+  {id:'earth',   name:'Zem',     color:'#5aa2ff', icon:5.4, R:6371.0,
+   el:[1.00000261,0.00000562, 0.01671123,-0.00004392, -0.00001531,-0.01294668, 100.46457166,35999.37244981, 102.93768193,0.32327364, 0,0]},
+  {id:'mars',    name:'Mars',    color:'#e0714a', icon:4.3, R:3389.5,
+   el:[1.52371034,0.00001847, 0.09339410,0.00007882, 1.84969142,-0.00813131, -4.55343205,19140.30268499, -23.94362959,0.44441088, 49.55953891,-0.29257343]},
+  {id:'jupiter', name:'Jupiter', color:'#d9b48c', icon:9,   R:69911,
+   el:[5.20288700,-0.00011607, 0.04838624,-0.00013253, 1.30439695,-0.00183714, 34.39644051,3034.74612775, 14.72847983,0.21252668, 100.47390909,0.20469106]},
+  {id:'saturn',  name:'Saturn',  color:'#e6cf96', icon:8,   R:58232,
+   el:[9.53667594,-0.00125060, 0.05386179,-0.00050991, 2.48599187,0.00193609, 49.95424423,1222.49362201, 92.59887831,-0.41897216, 113.66242448,-0.28867794]},
+  {id:'uranus',  name:'Urán',    color:'#9fe3e8', icon:6.2, R:25362,
+   el:[19.18916464,-0.00196176, 0.04725744,-0.00004397, 0.77263783,-0.00242939, 313.23810451,428.48202785, 170.95427630,0.40805281, 74.01692503,0.04240589]},
+  {id:'neptune', name:'Neptún',  color:'#5b7cff', icon:6.2, R:24622,
+   el:[30.06992276,0.00026291, 0.00859048,0.00005105, 1.77004347,0.00035372, -55.12002969,218.45945325, 44.96476227,-0.32241464, 131.78422574,-0.00508664]},
+  {id:'pluto',   name:'Pluto',   color:'#d9c2a2', icon:3.6, R:1188.3, dwarf:true,
+   el:[39.48211675,-0.00031596, 0.24882730,0.00005170, 17.14001206,0.00004818, 238.92903833,145.20780515, 224.06891629,-0.04062942, 110.30393684,-0.01183482]},
+];
+const MOONS = [
+  {id:'moon',     name:'Mesiac',    parent:'earth',   a:384400,  P:27.321661, R:1737.4, color:'#cfcac2', ph:0},
+  {id:'charon',   name:'Cháron',   parent:'pluto',   a:19591,   P:6.387221,  R:606,    color:'#a9a39c', ph:2.7},
+  {id:'phobos',   name:'Phobos',   parent:'mars',    a:9376,    P:0.31891,   R:11.3,   color:'#9a8b7c', ph:1.0},
+  {id:'deimos',   name:'Deimos',   parent:'mars',    a:23463,   P:1.26244,   R:6.2,    color:'#b9a996', ph:4.0},
+  {id:'io',       name:'Io',       parent:'jupiter', a:421700,  P:1.769138,  R:1821.6, color:'#efd760', ph:0.3},
+  {id:'europa',   name:'Európa',   parent:'jupiter', a:671034,  P:3.551181,  R:1560.8, color:'#e3d6bd', ph:2.1},
+  {id:'ganymede', name:'Ganymedes', parent:'jupiter', a:1070412, P:7.154553,  R:2634.1, color:'#a99d8e', ph:4.4},
+  {id:'callisto', name:'Kallisto', parent:'jupiter', a:1882709, P:16.689018, R:2410.3, color:'#7f7569', ph:5.6},
+];
+const BY = {};
+PLANETS.forEach(p => { BY[p.id] = p; p.kind = 'planet'; p.x = p.y = p.z = 0; });
+{ const cnt = {}; MOONS.forEach(m => { BY[m.id] = m; m.kind = 'moon'; m.idx = cnt[m.parent] = (cnt[m.parent] ?? -1) + 1; }); }
+const SUN = {id:'sun', name:'Slnko', kind:'star', color:'#ffd36b', R:696340, x:0, y:0};
+BY.sun = SUN;
+const EARTH = BY.earth, VENUS = BY.venus;
+
+function elems(p, T) {
+  const e = p.el;
+  return {a:e[0]+e[1]*T, e:e[2]+e[3]*T, I:(e[4]+e[5]*T)*DEG, L:(e[6]+e[7]*T)*DEG, wb:(e[8]+e[9]*T)*DEG, O:(e[10]+e[11]*T)*DEG};
+}
+function solveKepler(M, e) {
+  M = wrapPi(M);
+  let E = e < 0.8 ? M : Math.PI;
+  for (let i = 0; i < 12; i++) {
+    const d = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+    E -= d; if (Math.abs(d) < 1e-12) break;
+  }
+  return E;
+}
+// orbitální rovina -> heliocentrická ekliptikální soustava
+function toEcl(k, xp, yp, out) {
+  const w = k.wb - k.O, cw = Math.cos(w), sw = Math.sin(w), cO = Math.cos(k.O), sO = Math.sin(k.O), cI = Math.cos(k.I), sI = Math.sin(k.I);
+  out.x = (cw*cO - sw*sO*cI) * xp + (-sw*cO - cw*sO*cI) * yp;
+  out.y = (cw*sO + sw*cO*cI) * xp + (-sw*sO + cw*cO*cI) * yp;
+  out.z = (sw*sI) * xp + (cw*sI) * yp;
+  return out;
+}
+function helio(p, jd, out = {}) {
+  const k = elems(p, (jd - J2000) / 36525);
+  const E = solveKepler(k.L - k.wb, k.e);
+  return toEcl(k, k.a * (Math.cos(E) - k.e), k.a * Math.sqrt(1 - k.e*k.e) * Math.sin(E), out);
+}
+function moonAngle(m, jd) {
+  const d = jd - J2000;
+  if (m.id === 'moon') return (218.316 + 13.176396 * d) * DEG; // střední ekliptikální délka Měsíce
+  return m.ph + TAU * d / m.P;
+}
+
+const LY = 63241.077; // AU ve světelném roce
+
+/* ============ Stav simulace ============ */
+let jd = TODAY, speed = 1, dir = 1, running = true;
+let orbitJD = -1e9;
+function buildOrbits() {
+  const T = (jd - J2000) / 36525, N = 720, o = {};
+  for (const p of PLANETS) {
+    const k = elems(p, T), path = new Path2D(), b = k.a * Math.sqrt(1 - k.e*k.e);
+    for (let i = 0; i <= N; i++) {
+      const E = i / N * TAU;
+      toEcl(k, k.a * (Math.cos(E) - k.e), b * Math.sin(E), o);
+      i ? path.lineTo(o.x, o.y) : path.moveTo(o.x, o.y);
+    }
+    path.closePath(); p.path = path;
+  }
+  orbitJD = jd;
+}
+// pás planetek (jen dekorace)
+const BELT = (() => { const r = mulberry(7), a = []; for (let i = 0; i < 1400; i++) { const ax = 2.15 + r() * 1.15 + (r() - .5) * .15; a.push({a: ax, ph: r() * TAU, n: Math.sqrt(MU / (ax*ax*ax)), e: r() * .12, w: r() * TAU}); } return a; })();
+function mulberry(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+/* ============ Plátno a kamera ============ */
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1, stars = null;
+const cam = {x:0, y:0, log:0, tlog:0, s:1};
+let anchor = null, follow = null, followTr = null, camGoal = null;
+const S_MIN = 4e-4, S_MAX = 4e6;
+
+function resize() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = innerWidth; H = innerHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  // hvězdné pozadí předkreslené do offscreen plátna
+  stars = document.createElement('canvas'); stars.width = cv.width; stars.height = cv.height;
+  const g = stars.getContext('2d'), r = mulberry(42), n = Math.round(W * H / 1400);
+  const neb = g.createRadialGradient(cv.width*.75, cv.height*.25, 0, cv.width*.75, cv.height*.25, cv.width*.7);
+  neb.addColorStop(0, 'rgba(60,50,110,.10)'); neb.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = neb; g.fillRect(0, 0, cv.width, cv.height);
+  for (let i = 0; i < n; i++) {
+    const s = r(), b = Math.pow(r(), 3);
+    g.fillStyle = `rgba(${200 + 55*s|0},${210 + 40*r()|0},255,${.15 + .75*b})`;
+    const sz = (b > .85 ? 1.6 : 1) * DPR;
+    g.fillRect(r() * cv.width, r() * cv.height, sz, sz);
+  }
+}
+addEventListener('resize', resize);
+const vmin = () => Math.max(300, Math.min(W, H));
+const fitScale = R => vmin() * 0.45 / R;
+function setView(v) {
+  camGoal = null;
+  if (v === 'inner') { setFollow(null); camGoal = {x:0, y:0}; cam.tlog = Math.log(fitScale(1.65)); }
+  else if (v === 'all') { setFollow(null); camGoal = {x:0, y:0}; cam.tlog = Math.log(fitScale(50)); }
+  else if (v === 'helio') { setFollow(null); camGoal = {x:0, y:0}; cam.tlog = Math.log(fitScale(135)); }
+  else if (v === 'earth') { setFollow(EARTH); cam.tlog = Math.log(vmin() * 0.32 / (384400 / AU_KM)); }
+  else if (v === 'jupiter') { setFollow(BY.jupiter); cam.tlog = Math.log(vmin() * 0.33 / (1882709 / AU_KM)); }
+  anchor = null;
+}
+function setFollow(o) {
+  followTr = o ? {t: 0, dur: 1.1, x: cam.x, y: cam.y, log: cam.log} : null;
+  if (o) { camGoal = null; anchor = null; }
+  follow = o;
+  const chip = document.getElementById('followChip');
+  chip.style.display = o ? 'inline-block' : 'none';
+  if (o) chip.querySelector('span').textContent = o.name;
+}
+function moonDisp(m, s) { // zobrazená vzdálenost měsíce v px (zvětšená, dokud není skutečná dost velká)
+  const par = BY[m.parent], pr = Math.max(par.icon, par.R / AU_KM * s);
+  return Math.max(m.a / AU_KM * s, pr + 7 + m.idx * 7);
+}
+function displayPos(o) {
+  if (o.kind === 'moon') { const par = BY[o.parent], d = moonDisp(o, cam.s) / cam.s; return {x: par.x + Math.cos(o.ang) * d, y: par.y + Math.sin(o.ang) * d}; }
+  return {x: o.x, y: o.y};
+}
+function zoomAt(factor, sx, sy) {
+  cam.tlog = clamp(cam.tlog + Math.log(factor), Math.log(S_MIN), Math.log(S_MAX));
+  if (follow) return;
+  camGoal = null;
+  anchor = {sx, sy, wx: cam.x + (sx - W/2) / cam.s, wy: cam.y - (sy - H/2) / cam.s};
+}
+function updateCamera(dt) {
+  const k = 1 - Math.exp(-dt * 12);
+  if (!isFinite(cam.tlog) || !isFinite(cam.log)) cam.log = cam.tlog = Math.log(fitScale(1.65));
+  if (!isFinite(cam.x) || !isFinite(cam.y)) cam.x = cam.y = 0;
+  if (follow && followTr) {
+    // přelet k sledovanému tělesu: nejdřív poloha, zoom plynule dobíhá
+    followTr.t += dt;
+    const u = Math.min(1, followTr.t / followTr.dur), ease = v => v * v * (3 - 2 * v);
+    cam.log = followTr.log + (cam.tlog - followTr.log) * ease(u); cam.s = Math.exp(cam.log);
+    const p = displayPos(follow), pu = ease(Math.min(1, u * 1.7));
+    cam.x = followTr.x + (p.x - followTr.x) * pu; cam.y = followTr.y + (p.y - followTr.y) * pu;
+    if (u >= 1) followTr = null;
+    return;
+  }
+  cam.log += (cam.tlog - cam.log) * k; cam.s = Math.exp(cam.log);
+  if (follow) {
+    const p = displayPos(follow);
+    cam.x = p.x; cam.y = p.y;
+  } else if (anchor) {
+    cam.x = anchor.wx - (anchor.sx - W/2) / cam.s; cam.y = anchor.wy + (anchor.sy - H/2) / cam.s;
+    if (Math.abs(cam.tlog - cam.log) < 1e-4) anchor = null;
+  } else if (camGoal) {
+    cam.x += (camGoal.x - cam.x) * k; cam.y += (camGoal.y - cam.y) * k;
+    if (Math.hypot(camGoal.x - cam.x, camGoal.y - cam.y) * cam.s < .3) camGoal = null;
+  }
+}
+
+/* ============ Ovládání myší / dotykem ============ */
+const pointers = new Map(); let drag = null, pinch = null;
+cv.addEventListener('wheel', e => { e.preventDefault(); const d = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY; zoomAt(Math.exp(-d * 0.0022), e.clientX, e.clientY); }, {passive: false});
+cv.addEventListener('pointerdown', e => {
+  cv.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, {x: e.clientX, y: e.clientY});
+  if (pointers.size === 1) drag = {x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false};
+  else if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = {d: Math.hypot(a.x - b.x, a.y - b.y)}; drag = null; }
+});
+cv.addEventListener('pointermove', e => {
+  if (pointers.has(e.pointerId)) pointers.set(e.pointerId, {x: e.clientX, y: e.clientY});
+  if (pinch && pointers.size === 2) {
+    const [a, b] = [...pointers.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+    zoomAt(d / pinch.d, (a.x + b.x) / 2, (a.y + b.y) / 2); cam.log = cam.tlog; pinch.d = d; return;
+  }
+  if (drag) {
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 4) { drag.moved = true; cv.classList.add('drag'); if (follow) setFollow(null); }
+    if (drag.moved) { anchor = null; camGoal = null; cam.x -= dx / cam.s; cam.y += dy / cam.s; }
+    drag.x = e.clientX; drag.y = e.clientY;
+  } else {
+    cv.classList.toggle('hover', !!hitTest(e.clientX, e.clientY));
+  }
+});
+const endPointer = e => {
+  if (drag && !drag.moved && pointers.size === 1) { const o = hitTest(e.clientX, e.clientY); if (o) openCard(o); }
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2) pinch = null;
+  drag = null; cv.classList.remove('drag');
+};
+cv.addEventListener('pointerup', endPointer);
+cv.addEventListener('pointercancel', endPointer);
+function hitTest(x, y) {
+  let best = null, bd = 1e9;
+  const test = o => { if (o.sx === undefined || o.hidden) return; const d = Math.hypot(o.sx - x, o.sy - y); if (d < Math.max(o.r + 6, 11) && d < bd) { bd = d; best = o; } };
+  MOONS.forEach(test); PLANETS.forEach(test); test(SUN);
+  return best;
+}
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  else if (e.key === '+' || e.key === '=') zoomAt(1.4, W/2, H/2);
+  else if (e.key === '-') zoomAt(1/1.4, W/2, H/2);
+  else if (e.key === 'Escape') closeCard();
+});
+
+/* ============ Vykreslování mapy ============ */
+const tmp = {};
+function computeState() {
+  if (Math.abs(jd - orbitJD) > 3650) buildOrbits();
+  for (const p of PLANETS) helio(p, jd, p);
+  for (const m of MOONS) m.ang = moonAngle(m, jd);
+}
+function sx(x) { return W/2 + (x - cam.x) * cam.s; }
+function sy(y) { return H/2 - (y - cam.y) * cam.s; }
+function onScreen(x, y, m) { return x > -m && x < W + m && y > -m && y < H + m; }
+
+function drawBody(o, x, y, r) {
+  const ang = Math.atan2(SUN.sy - y, SUN.sx - x);
+  const g = ctx.createRadialGradient(x + Math.cos(ang) * r * .45, y + Math.sin(ang) * r * .45, r * .1, x, y, r * 1.05);
+  g.addColorStop(0, o.color); g.addColorStop(.7, o.color); g.addColorStop(1, 'rgba(10,12,20,1)');
+  ctx.fillStyle = r < 2.5 ? o.color : g;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+}
+
+function draw() {
+  const s = cam.s;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#04060c'; ctx.fillRect(0, 0, cv.width, cv.height);
+  if (stars.width && stars.height) ctx.drawImage(stars, 0, 0);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  // projekce
+  SUN.sx = sx(0); SUN.sy = sy(0); SUN.r = s >= 30 ? Math.max(9, SUN.R / AU_KM * s) : (s >= .3 ? 6 : 3.7);
+  for (const p of PLANETS) { p.sx = sx(p.x); p.sy = sy(p.y); p.r = Math.max(p.R / AU_KM * s, Math.min(p.icon, 1.5 + p.el[0] * s * .25)); p.hidden = p.el[0] * s < 4; }
+  const labels = []; // obsazené obdélníky popisků (proti překrývání)
+  const placeLabel = (txt, x, y, font, col) => {
+    ctx.font = font; const w = ctx.measureText(txt).width, rc = [x, y - 7, x + w, y + 7];
+    for (const q of labels) if (rc[0] < q[2] && rc[2] > q[0] && rc[1] < q[3] && rc[3] > q[1]) return false;
+    labels.push(rc); ctx.fillStyle = col; ctx.fillText(txt, x, y); return true;
+  };
+  const sunVisible = Math.abs(SUN.sx - W/2) < 1e6 && Math.abs(SUN.sy - H/2) < 1e6;
+  const moonsOn = s > 60;
+  for (const m of MOONS) {
+    const par = BY[m.parent]; m.d = moonDisp(m, s);
+    m.sx = par.sx + Math.cos(m.ang) * m.d; m.sy = par.sy - Math.sin(m.ang) * m.d;
+    m.r = Math.max(m.R > 100 ? 2.3 : 1.6, m.R / AU_KM * s); m.hidden = !moonsOn;
+  }
+
+  // dráhy planet (ve světových souřadnicích; při velkém přiblížení zeslábnou)
+  const orbA = clamp(1 - (s - 20000) / 40000, 0, 1);
+  if (orbA > 0 && sunVisible) {
+    ctx.save();
+    ctx.setTransform(DPR * s, 0, 0, -DPR * s, DPR * (W/2 - cam.x * s), DPR * (H/2 + cam.y * s));
+    for (const p of PLANETS) {
+      if (p.el[0] * s < 2) continue;
+      const hl = p === EARTH || p === VENUS;
+      ctx.lineWidth = (hl ? 1.3 : 1) / s;
+      ctx.strokeStyle = hl ? (p === VENUS ? `rgba(243,180,83,${.55*orbA})` : `rgba(111,170,255,${.5*orbA})`) : `rgba(150,165,200,${.22*orbA})`;
+      ctx.stroke(p.path);
+    }
+    ctx.restore();
+  }
+
+  // pás planetek
+  if (s > 3 && s < 2500) {
+    const d = jd - J2000;
+    ctx.fillStyle = 'rgba(190,175,150,.38)';
+    for (const b of BELT) {
+      const M = b.ph + b.n * d, r = b.a * (1 - b.e * Math.cos(M)), a = M + b.w;
+      const X = sx(r * Math.cos(a)), Y = sy(r * Math.sin(a));
+      if (X > 0 && X < W && Y > 0 && Y < H) ctx.fillRect(X, Y, 1.1, 1.1);
+    }
+  }
+
+  // vnější oblasti: Kuiperův pás, heliopauza, Oortův oblak, vzdálenostní kružnice
+  if (sunVisible) drawOuter(s, placeLabel);
+
+  // Slunce
+  if (onScreen(SUN.sx, SUN.sy, 200)) {
+    const gr = SUN.r * (s >= .3 ? 6 : 3.2);
+    const g = ctx.createRadialGradient(SUN.sx, SUN.sy, SUN.r * .3, SUN.sx, SUN.sy, gr);
+    g.addColorStop(0, 'rgba(255,230,160,.9)'); g.addColorStop(.18, 'rgba(255,190,90,.35)'); g.addColorStop(1, 'rgba(255,150,60,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(SUN.sx, SUN.sy, gr, 0, TAU); ctx.fill();
+    const g2 = ctx.createRadialGradient(SUN.sx, SUN.sy, 0, SUN.sx, SUN.sy, SUN.r);
+    g2.addColorStop(0, '#fffbe8'); g2.addColorStop(.75, '#ffd76e'); g2.addColorStop(1, '#ffad40');
+    ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(SUN.sx, SUN.sy, SUN.r, 0, TAU); ctx.fill();
+  }
+
+  ctx.textBaseline = 'middle';
+  if (s < 30 && onScreen(SUN.sx, SUN.sy, 40)) placeLabel('Slnko', SUN.sx + SUN.r + 5, SUN.sy - SUN.r - 3, '600 12px system-ui,Segoe UI,sans-serif', '#ffd88a');
+
+  // planety
+  for (const p of PLANETS) {
+    if (p.hidden || !onScreen(p.sx, p.sy, p.r * 3 + 40)) continue;
+    if (p.id === 'saturn') drawRing(p, true);
+    drawBody(p, p.sx, p.sy, p.r);
+    if (p.id === 'saturn') drawRing(p, false);
+    if (selected === p || follow === p) { ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(p.sx, p.sy, p.r + 5, 0, TAU); ctx.stroke(); }
+    if (p.el[0] * s > 14) placeLabel(p.name, p.sx + p.r + 6, p.sy - p.r - 4, '12px system-ui,Segoe UI,sans-serif', 'rgba(220,228,245,.85)');
+  }
+  ctx.font = '12px system-ui,Segoe UI,sans-serif';
+  // měsíce
+  if (moonsOn) {
+    for (const m of MOONS) {
+      const par = BY[m.parent];
+      if (!onScreen(par.sx, par.sy, m.d + 20)) continue;
+      ctx.strokeStyle = 'rgba(150,165,200,.16)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(par.sx, par.sy, m.d, 0, TAU); ctx.stroke();
+      drawBody(m, m.sx, m.sy, m.r);
+      if (selected === m || follow === m) { ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.arc(m.sx, m.sy, m.r + 4, 0, TAU); ctx.stroke(); }
+      if (m.a / AU_KM * cam.s > 26 || selected === m || follow === m) { ctx.fillStyle = 'rgba(190,200,220,.75)'; ctx.font = '11px system-ui,Segoe UI,sans-serif'; ctx.fillText(m.name, m.sx + m.r + 4, m.sy); ctx.font = '12px system-ui,Segoe UI,sans-serif'; }
+    }
+  }
+
+  drawScale();
+}
+function drawOuter(s, placeLabel) {
+  const cx = SUN.sx, cy = SUN.sy, lim = Math.hypot(W, H) * 2, f11 = '11px system-ui,Segoe UI,sans-serif';
+  const lblAng = Math.atan2(70 - cy, W * .62 - cx); // popisky kružnic směrem k horní části obrazovky
+  const ringLbl = (r, txt, col) => { const x = cx + Math.cos(lblAng) * r, y = cy + Math.sin(lblAng) * r; if (x > 10 && x < W - 120 && y > 10 && y < H - 90) placeLabel(txt, x + 5, y, f11, col); };
+  ctx.lineWidth = 1;
+  // Oortův oblak (2 000 – 100 000 AU)
+  const oIn = 2000 * s, oOut = 100000 * s;
+  if (oOut > 25 && oIn < lim && oOut < 1e7) {
+    const g = ctx.createRadialGradient(cx, cy, oIn, cx, cy, oOut);
+    g.addColorStop(0, 'rgba(140,160,230,0)'); g.addColorStop(.25, 'rgba(140,160,230,.09)'); g.addColorStop(1, 'rgba(140,160,230,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, oOut, 0, TAU); ctx.fill();
+    if (oOut > 60) ringLbl(Math.max(oIn, 15000 * s), 'Oortov oblak', 'rgba(175,190,235,.75)');
+  }
+  // Kuiperův pás (30 – 50 AU)
+  const k1 = 30 * s, k2 = 50 * s;
+  if (k2 > 12 && k1 < lim) {
+    ctx.fillStyle = 'rgba(150,170,220,.08)'; ctx.beginPath(); ctx.arc(cx, cy, k2, 0, TAU); ctx.arc(cx, cy, k1, 0, TAU, true); ctx.fill();
+    if (k2 > 45) ringLbl((k1 + k2) / 2, 'Kuiperov pás', 'rgba(175,190,235,.75)');
+  }
+  // heliopauza (~120 AU)
+  const hp = 120 * s;
+  if (hp > 15 && hp < lim) {
+    ctx.setLineDash([5, 6]); ctx.strokeStyle = 'rgba(110,185,255,.4)';
+    ctx.beginPath(); ctx.arc(cx, cy, hp, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+    if (hp > 45) ringLbl(hp, 'Heliopauza ~120 AU', 'rgba(130,195,255,.8)');
+  }
+  // vzdálenosti ve světelných letech
+  for (const k of [1, 2]) {
+    const r = k * LY * s;
+    if (r < 30 || r > lim) continue;
+    ctx.strokeStyle = 'rgba(160,175,215,.15)'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
+    ringLbl(r, `${k} ly`, 'rgba(170,185,225,.6)');
+  }
+}
+function drawScale() {
+  const s = cam.s, target = 110 / s; // AU odpovídající ~110 px
+  let unit, f;
+  if (target < 0.01) { unit = 'km'; f = AU_KM; } else if (target < 0.3 * LY) { unit = 'AU'; f = 1; } else { unit = 'ly'; f = 1 / LY; }
+  const v = target * f, p = Math.pow(10, Math.floor(Math.log10(v))), n = v / p >= 5 ? 5 : v / p >= 2 ? 2 : 1, val = n * p;
+  const len = val / f * s, x = 18, y = H - 22;
+  ctx.strokeStyle = 'rgba(200,210,235,.75)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x, y); ctx.lineTo(x + len, y); ctx.lineTo(x + len, y - 5); ctx.stroke();
+  ctx.fillStyle = 'rgba(215,222,240,.9)'; ctx.font = '11.5px system-ui,Segoe UI,sans-serif'; ctx.textBaseline = 'bottom';
+  ctx.fillText(`${nf(val, Math.max(0, -Math.floor(Math.log10(val))))} ${unit}`, x, y - 6);
+  ctx.textBaseline = 'middle';
+}
+function drawRing(p, back) {
+  const r = p.r;
+  ctx.save(); ctx.translate(p.sx, p.sy); ctx.rotate(-0.35);
+  ctx.beginPath();
+  if (back) ctx.ellipse(0, 0, r * 2.2, r * .75, 0, Math.PI, TAU); else ctx.ellipse(0, 0, r * 2.2, r * .75, 0, 0, Math.PI);
+  ctx.strokeStyle = 'rgba(230,210,160,.75)'; ctx.lineWidth = Math.max(1.2, r * .32); ctx.stroke();
+  ctx.restore();
+}
+/* ============ UI: čas ============ */
+const $ = id => document.getElementById(id);
+const speedEl = $('speed'), playEl = $('play');
+const sliderToSpeed = v => Math.pow(365.25, v / 1000);
+const speedToSlider = s => Math.round(1000 * Math.log(s) / Math.log(365.25));
+function setSpeed(s) { speed = clamp(s, 1, 365.25); speedEl.value = speedToSlider(speed); updateSpeedLbl(); }
+function updateSpeedLbl() {
+  const n = Math.round(speed);
+  let extra = speed >= 340 ? ' ≈ 1 rok' : (speed >= 28 && speed <= 33 ? ' ≈ 1 mesiac' : (n === 7 ? ' = 1 týždeň' : ''));
+  $('speedLbl').innerHTML = `${dir < 0 ? '−' : ''}${n} ${dny(n)}/s<small>${extra}</small>`;
+  document.querySelectorAll('.presets button').forEach(b => b.classList.toggle('on', Math.abs(+b.dataset.s - speed) < .5));
+}
+speedEl.addEventListener('input', () => { speed = sliderToSpeed(+speedEl.value); updateSpeedLbl(); });
+document.querySelectorAll('.presets button').forEach(b => b.onclick = () => setSpeed(+b.dataset.s));
+function togglePlay() { running = !running; playEl.textContent = running ? '❚❚' : '▶'; playEl.classList.toggle('on', !running); }
+playEl.onclick = togglePlay;
+$('rev').onclick = () => { dir = -dir; $('rev').classList.toggle('on', dir < 0); updateSpeedLbl(); };
+function jumpTo(t) { jd = t; computeState(); }
+$('jumpBtn').onclick = () => { const v = $('jump').value; if (!v) return; const [y, mo, d] = v.split('-').map(Number); const dt = new Date(0); dt.setUTCFullYear(y, mo - 1, d); dt.setUTCHours(12); jumpTo(jdFromMs(dt.getTime())); };
+$('jump').addEventListener('keydown', e => { if (e.key === 'Enter') $('jumpBtn').click(); });
+$('today').onclick = () => jumpTo(jdFromMs(Date.now()));
+document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => setView(b.dataset.view));
+$('followChip').onclick = () => setFollow(null);
+
+let toastT = 0;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3200); }
+
+/* ============ Karta tělesa ============ */
+const FACTS = {
+  sun: {type:'Hviezda · spektrálna trieda G2V', rows:[['Priemer','1 392 700 km'],['Hmotnosť','333 000 × Zem'],['Teplota povrchu','≈ 5 500 °C'],['Teplota jadra','≈ 15 mil. °C'],['Rotácia (rovník)','≈ 25 dní'],['Vek','4,6 mld. rokov']],
+    note:'Slnko obsahuje 99,86 % hmotnosti celej Slnečnej sústavy. Svetlo z neho letí k Zemi 8 minút a 20 sekúnd.'},
+  mercury: {type:'Kamenná planéta', rows:[['Priemer','4 879 km'],['Hmotnosť','0,055 × Zem'],['Veľká polos','0,387 AU · 57,9 mil. km'],['Obežná doba','87,97 dňa'],['Rotácia','58,65 dňa'],['Teplota','−173 až +427 °C'],['Mesiace','0']],
+    note:'Najmenšia planéta a najbližšia k Slnku. Jeden slnečný deň (od poludnia do poludnia) trvá na Merkúre 176 pozemských dní – celé dva jeho roky.'},
+  venus: {type:'Kamenná planéta', rows:[['Priemer','12 104 km'],['Hmotnosť','0,815 × Zem'],['Veľká polos','0,723 AU · 108,2 mil. km'],['Obežná doba','224,70 dňa'],['Rotácia','243,02 dňa (retrográdna)'],['Teplota povrchu','≈ 464 °C'],['Tlak na povrchu','92 bar'],['Mesiace','0']],
+    note:'Najteplejšia planéta vďaka extrémnemu skleníkovému efektu – atmosféra z 96 % CO₂ a oblaky kyseliny sírovej. Rotuje opačne ako väčšina planét a jej deň je dlhší ako rok. Horná oblačnosť pritom obehne planétu za iba 4 dni.'},
+  earth: {type:'Kamenná planéta', rows:[['Priemer','12 742 km'],['Hmotnosť','5,97 × 10²⁴ kg'],['Veľká polos','1,000 AU · 149,6 mil. km'],['Obežná doba','365,256 dňa'],['Rotácia','23 h 56 min'],['Priemerná teplota','15 °C'],['Mesiace','1']],
+    note:'Jediné známe miesto so životom. Oceány pokrývajú 71 % povrchu.'},
+  mars: {type:'Kamenná planéta', rows:[['Priemer','6 779 km'],['Hmotnosť','0,107 × Zem'],['Veľká polos','1,524 AU · 227,9 mil. km'],['Obežná doba','686,98 dňa'],['Rotácia','24 h 37 min'],['Priemerná teplota','−63 °C'],['Mesiace','2 (Phobos, Deimos)']],
+    note:'Olympus Mons je najvyššia sopka Slnečnej sústavy (≈ 22 km). Hrdzavú farbu spôsobuje oxid železitý v prachu.'},
+  jupiter: {type:'Plynný obor', rows:[['Priemer','139 820 km'],['Hmotnosť','317,8 × Zem'],['Veľká polos','5,203 AU · 778,5 mil. km'],['Obežná doba','11,86 roka'],['Rotácia','9 h 56 min'],['Teplota (oblaky)','≈ −110 °C'],['Mesiace','95+']],
+    note:'Najväčšia planéta – zmestilo by sa do nej 1 300 Zemí. Veľká červená škvrna je búrka väčšia ako Zem, pozorovaná najmenej 190 rokov.'},
+  saturn: {type:'Plynný obor', rows:[['Priemer','116 460 km'],['Hmotnosť','95,2 × Zem'],['Veľká polos','9,537 AU · 1,43 mld. km'],['Obežná doba','29,46 roka'],['Rotácia','10 h 34 min'],['Teplota (oblaky)','≈ −140 °C'],['Mesiace','270+']],
+    note:'Má najmenšiu hustotu zo všetkých planét (0,69 g/cm³) – menšiu ako voda. Prstence sú široké vyše 270 000 km, ale hrubé len desiatky metrov.'},
+  uranus: {type:'Ľadový obor', rows:[['Priemer','50 724 km'],['Hmotnosť','14,5 × Zem'],['Veľká polos','19,19 AU · 2,87 mld. km'],['Obežná doba','84,0 roka'],['Rotácia','17 h 14 min (retrográdna)'],['Teplota','≈ −195 °C'],['Mesiace','28+']],
+    note:'Os rotácie je sklonená o 98° – planéta sa po dráhe „kotúľa“. Na póloch trvá deň aj noc 42 rokov.'},
+  neptune: {type:'Ľadový obor', rows:[['Priemer','49 244 km'],['Hmotnosť','17,1 × Zem'],['Veľká polos','30,07 AU · 4,50 mld. km'],['Obežná doba','164,8 roka'],['Rotácia','16 h 6 min'],['Teplota','≈ −200 °C'],['Mesiace','16']],
+    note:'Najsilnejšie vetry v Slnečnej sústave – až 2 100 km/h. Objavili ho v roku 1846 najprv výpočtom z porúch dráhy Uránu.'},
+  pluto: {type:'Trpasličia planéta', rows:[['Priemer','2 377 km'],['Hmotnosť','0,0022 × Zem'],['Veľká polos','39,48 AU · 5,91 mld. km'],['Obežná doba','247,9 roka'],['Rotácia','6,39 dňa (retrográdna)'],['Teplota','≈ −230 °C'],['Mesiace','5 (Cháron, Styx, Nix, Kerberos, Hydra)']],
+    note:'Od roku 2006 patrí medzi trpasličie planéty. Sonda New Horizons na ňom v roku 2015 objavila ľadovú planinu v tvare srdca. Dráha je taká výstredná, že sa Pluto občas dostane bližšie k Slnku ako Neptún (naposledy 1979–1999).'},
+  charon: {type:'Mesiac Pluta', rows:[['Priemer','1 212 km'],['Vzdialenosť','19 591 km'],['Obežná doba','6,39 dňa'],['Rotácia','viazaná']],
+    note:'Je taký veľký v porovnaní s Plutom, že obe telesá obiehajú spoločné ťažisko ležiace mimo Pluta – niekedy sa hovorí o dvojplanéte. Navzájom sú k sebe natrvalo otočené rovnakou stranou.'},
+  moon: {type:'Mesiac Zeme', rows:[['Priemer','3 474 km'],['Vzdialenosť','384 400 km'],['Obežná doba','27,32 dňa'],['Rotácia','viazaná']],
+    note:'Jediné cudzie teleso, na ktorom stáli ľudia (1969–1972). Od Zeme sa vzďaľuje o 3,8 cm za rok.'},
+  phobos: {type:'Mesiac Marsu', rows:[['Rozmery','27 × 22 × 18 km'],['Vzdialenosť','9 376 km'],['Obežná doba','7 h 39 min']],
+    note:'Obieha rýchlejšie, ako sa Mars otáča, takže na marťanskej oblohe vychádza na západe. O desiatky miliónov rokov sa roztrhne alebo na Mars dopadne.'},
+  deimos: {type:'Mesiac Marsu', rows:[['Rozmery','15 × 12 × 11 km'],['Vzdialenosť','23 463 km'],['Obežná doba','30,3 h']],
+    note:'Menší a vzdialenejší z marťanských mesiačikov – zrejme zachytená planétka alebo trosky po dávnom impakte.'},
+  io: {type:'Galileiho mesiac Jupitera', rows:[['Priemer','3 643 km'],['Vzdialenosť','421 700 km'],['Obežná doba','1,77 dňa']],
+    note:'Vulkanicky najaktívnejšie teleso Slnečnej sústavy – vyše 400 činných sopiek poháňaných slapovým hnetením Jupitera.'},
+  europa: {type:'Galileiho mesiac Jupitera', rows:[['Priemer','3 122 km'],['Vzdialenosť','671 034 km'],['Obežná doba','3,55 dňa']],
+    note:'Pod ľadovou kôrou sa skrýva slaný oceán s väčším množstvom vody než všetky pozemské oceány – horúci kandidát na mimozemský život.'},
+  ganymede: {type:'Galileiho mesiac Jupitera', rows:[['Priemer','5 268 km'],['Vzdialenosť','1 070 412 km'],['Obežná doba','7,15 dňa']],
+    note:'Najväčší mesiac Slnečnej sústavy, väčší ako Merkúr. Ako jediný mesiac má vlastné magnetické pole.'},
+  callisto: {type:'Galileiho mesiac Jupitera', rows:[['Priemer','4 821 km'],['Vzdialenosť','1 882 709 km'],['Obežná doba','16,69 dňa']],
+    note:'Najhustejšie krátermi posiaty povrch v Slnečnej sústave – starý približne 4 miliardy rokov.'},
+};
+let selected = null, venusMode = 'surface';
+const art = $('cArt'), actx = art.getContext('2d');
+function openCard(o) {
+  selected = o;
+  const f = FACTS[o.id];
+  $('cType').textContent = f.type; $('cName').textContent = o.name;
+  $('cFacts').innerHTML = f.rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+  $('cNote').textContent = f.note;
+  const isV = o === VENUS;
+  $('venusTabs').style.display = isV ? '' : 'none';
+  $('cCap').textContent = isV ? (venusMode === 'surface'
+    ? 'Procedurálne generovaný povrch – sopky, lávové planiny a tesery (inšpirované radarom sondy Magellan).'
+    : 'Procedurálny model oblačnosti z kyseliny sírovej s typickým tmavým „Y“.') : '';
+  $('cCap').style.display = isV ? '' : 'none';
+  if (isV) ensureVenusTex(); else drawArt(o);
+  $('cFollow').textContent = follow === o ? 'Prestať sledovať' : 'Sledovať';
+  $('cFollow').style.display = o.kind === 'star' ? 'none' : '';
+  $('cNote').style.display = $('cNote').textContent ? '' : 'none';
+  $('card').classList.remove('hidden');
+  updateLive(true);
+}
+function closeCard() { selected = null; $('card').classList.add('hidden'); }
+$('cardClose').onclick = closeCard;
+$('cFollow').onclick = () => {
+  if (!selected) return;
+  if (follow === selected) setFollow(null);
+  else {
+    setFollow(selected);
+    if (selected.kind === 'planet') {
+      const ms = MOONS.filter(m => m.parent === selected.id);
+      const want = ms.length ? vmin() * .4 / (ms[ms.length - 1].a / AU_KM) : vmin() * .08 / (selected.R / AU_KM);
+      cam.tlog = Math.log(clamp(want, cam.s, S_MAX));
+    } else if (selected.kind === 'moon') cam.tlog = Math.log(Math.max(cam.s, vmin() * .4 / (BY[selected.parent] === EARTH ? 384400 / AU_KM : MOONS.filter(m => m.parent === selected.parent).pop().a / AU_KM)));
+  }
+  $('cFollow').textContent = follow === selected ? 'Prestať sledovať' : 'Sledovať';
+};
+document.querySelectorAll('#venusTabs button').forEach(b => b.onclick = () => {
+  venusMode = b.dataset.m;
+  document.querySelectorAll('#venusTabs button').forEach(x => x.classList.toggle('on', x === b));
+  openCard(VENUS);
+});
+let lastLive = 0;
+function updateLive(force) {
+  if (!selected) return;
+  const now = performance.now(); if (!force && now - lastLive < 200) return; lastLive = now;
+  const o = selected, rows = [];
+  if (o.kind === 'planet') {
+    const r = Math.hypot(o.x, o.y, o.z);
+    rows.push(['Vzdialenosť od Slnka', `${nf(r, 3)} AU · ${nf(r * AU_KM / 1e6, 1)} mil. km`]);
+    if (o !== EARTH) rows.push(['Vzdialenosť od Zeme', `${nf(Math.hypot(o.x - EARTH.x, o.y - EARTH.y, o.z - EARTH.z) * AU_KM / 1e6, 1)} mil. km`]);
+    rows.push(['Ekliptikálna dĺžka', `${nf(((Math.atan2(o.y, o.x) / DEG) + 360) % 360, 1)}°`]);
+  } else if (o.kind === 'moon') {
+    const p = BY[o.parent];
+    rows.push(['Materská planéta', p.name]);
+    if (p !== EARTH) rows.push(['Vzdialenosť od Zeme', `${nf(Math.hypot(p.x - EARTH.x, p.y - EARTH.y, p.z - EARTH.z) * AU_KM / 1e6, 1)} mil. km`]);
+    rows.push(['Poloha na dráhe', `${nf(((o.ang / DEG) % 360 + 360) % 360, 0)}°`]);
+  } else {
+    rows.push(['Vzdialenosť od Zeme', `${nf(Math.hypot(EARTH.x, EARTH.y, EARTH.z) * AU_KM / 1e6, 2)} mil. km`]);
+  }
+  $('cLive').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+}
+
+/* ---------- Procedurální šum ---------- */
+function makeNoise3(seed) {
+  const r = mulberry(seed), perm = new Uint16Array(768), val = new Float32Array(256), p = [];
+  for (let i = 0; i < 256; i++) { p.push(i); val[i] = r() * 2 - 1; }
+  for (let i = 255; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; }
+  for (let i = 0; i < 768; i++) perm[i] = p[i & 255];
+  const fade = t => t * t * (3 - 2 * t), lerp = (a, b, t) => a + (b - a) * t;
+  return (x, y, z) => {
+    const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+    const xf = x - xi, yf = y - yi, zf = z - zi, X = xi & 255, Y = yi & 255, Z = zi & 255;
+    const u = fade(xf), v = fade(yf), w = fade(zf);
+    const A = perm[X] + Y, B = perm[X + 1] + Y;
+    const AA = perm[A] + Z, AB = perm[A + 1] + Z, BA = perm[B] + Z, BB = perm[B + 1] + Z;
+    return lerp(
+      lerp(lerp(val[perm[AA]], val[perm[BA]], u), lerp(val[perm[AB]], val[perm[BB]], u), v),
+      lerp(lerp(val[perm[AA + 1]], val[perm[BA + 1]], u), lerp(val[perm[AB + 1]], val[perm[BB + 1]], u), v), w);
+  };
+}
+function fbm(n, x, y, z, oct) { let s = 0, a = .5, f = 1, t = 0; for (let i = 0; i < oct; i++) { s += a * n(x*f, y*f, z*f); t += a; a *= .5; f *= 2.03; } return s / t; }
+function ridged(n, x, y, z, oct) { let s = 0, a = .5, f = 1, t = 0; for (let i = 0; i < oct; i++) { const v = 1 - Math.abs(n(x*f, y*f, z*f)); s += a * v * v; t += a; a *= .5; f *= 2.1; } return s / t; }
+
+/* ---------- Venuše: textury povrchu a oblačnosti ---------- */
+const TW = 512, TH = 256;
+let venusTex = null, cloudTex = null;
+function ensureVenusTex() {
+  if (venusTex) return;
+  const n = makeNoise3(1984), n2 = makeNoise3(77), r = mulberry(1990);
+  const randDir = () => { const z = r() * 2 - 1, a = r() * TAU, s = Math.sqrt(1 - z*z); return [s * Math.cos(a), z, s * Math.sin(a)]; };
+  const volc = [], crat = [];
+  for (let i = 0; i < 16; i++) volc.push({d: randDir(), size: .05 + r() * .09, h: .35 + r() * .5});
+  for (let i = 0; i < 28; i++) crat.push({d: randDir(), rc: .012 + r() * .035});
+  const hgt = new Float32Array(TW * TH), lava = new Float32Array(TW * TH);
+  for (let j = 0; j < TH; j++) {
+    const lat = (.5 - (j + .5) / TH) * Math.PI, cl = Math.cos(lat), sl = Math.sin(lat);
+    for (let i = 0; i < TW; i++) {
+      const lon = (i + .5) / TW * TAU, x = cl * Math.cos(lon), y = sl, z = cl * Math.sin(lon);
+      const base = fbm(n, x*2.2 + 5, y*2.2, z*2.2, 6);
+      const hl = clamp((base - .05) * 4, 0, 1);                       // vysočiny
+      let h = base * .9 + hl * (ridged(n2, x*7, y*7, z*7, 4) - .45) * .55; // tesery
+      let lv = 0;
+      for (const v of volc) {
+        const c = x*v.d[0] + y*v.d[1] + z*v.d[2];
+        if (c < .7) continue;
+        const ang = Math.acos(Math.min(1, c)), q = ang / v.size;
+        h += v.h * Math.exp(-q*q * 2.5);
+        if (q < 3.2) { const streak = fbm(n2, x*28, y*28, z*28, 3); lv = Math.max(lv, (1 - q / 3.2) * clamp(.55 + streak * 1.6, 0, 1)); }
+      }
+      for (const k of crat) {
+        const c = x*k.d[0] + y*k.d[1] + z*k.d[2];
+        if (c < .99) continue;
+        const ang = Math.acos(Math.min(1, c)), q = ang / k.rc;
+        if (q < 1.6) h += .22 * Math.exp(-(((q - 1) / .18) ** 2)) - (q < 1 ? .12 * (1 - q*q) : 0);
+      }
+      h += n(x*60, y*60, z*60) * .03;
+      hgt[j*TW + i] = h; lava[j*TW + i] = lv;
+    }
+  }
+  const ramp = [[-.45,[38,16,6]],[-.15,[86,38,12]],[.05,[150,72,22]],[.25,[196,112,38]],[.45,[226,160,70]],[.8,[255,226,150]]];
+  const colorOf = (h, out) => {
+    let k = 0; while (k < ramp.length - 2 && h > ramp[k+1][0]) k++;
+    const [h0, c0] = ramp[k], [h1, c1] = ramp[k+1], t = clamp((h - h0) / (h1 - h0), 0, 1);
+    out[0] = c0[0] + (c1[0]-c0[0]) * t; out[1] = c0[1] + (c1[1]-c0[1]) * t; out[2] = c0[2] + (c1[2]-c0[2]) * t;
+  };
+  venusTex = new Uint8ClampedArray(TW * TH * 3);
+  const c = [0, 0, 0];
+  for (let j = 0; j < TH; j++) for (let i = 0; i < TW; i++) {
+    const id = j*TW + i, h = hgt[id];
+    const dx = hgt[j*TW + ((i + 1) % TW)] - h, dy = hgt[Math.min(TH - 1, j + 1)*TW + i] - h;
+    const shade = clamp(1 + (dx * 9 - dy * 9), .55, 1.45);
+    colorOf(h, c);
+    const lv = lava[id];
+    const o = id * 3;
+    venusTex[o]   = (c[0] * (1 - lv*.35) + 255 * lv * .35) * shade;
+    venusTex[o+1] = (c[1] * (1 - lv*.35) + 200 * lv * .35) * shade;
+    venusTex[o+2] = (c[2] * (1 - lv*.35) + 120 * lv * .35) * shade;
+  }
+  // oblačnost
+  cloudTex = new Uint8ClampedArray(TW * TH * 3);
+  const n3 = makeNoise3(4242);
+  for (let j = 0; j < TH; j++) {
+    const lat = (.5 - (j + .5) / TH) * Math.PI, cl = Math.cos(lat), sl = Math.sin(lat);
+    for (let i = 0; i < TW; i++) {
+      const lon = (i + .5) / TW * TAU, x = cl * Math.cos(lon), y = sl, z = cl * Math.sin(lon);
+      const warp = fbm(n3, x*2, y*2, z*2, 3);
+      let v = fbm(n3, x*1.6 + 9, y*9 + warp*2.4, z*1.6, 5);
+      // tmavé „Y“: rovníkový pruh + dvě ramena do vyšších šířek
+      const dl = wrapPi(lon - 1.2), target = dl < 0 ? .55 * Math.min(1, -dl / 1.6) : 0;
+      const along = clamp(1 - Math.abs(dl + .2) / 1.9, 0, 1), q = (Math.abs(lat) - target) / .16;
+      const dark = clamp(Math.exp(-q * q) * along * .6, 0, .7);
+      const t = clamp(.55 + v * 1.4 - dark, 0, 1);
+      const o = (j*TW + i) * 3;
+      cloudTex[o] = 175 + 75 * t; cloudTex[o+1] = 140 + 92 * t; cloudTex[o+2] = 80 + 100 * t;
+    }
+  }
+}
+const ART_S = 240, artImg = actx.createImageData(ART_S, ART_S);
+let venusRot = 0, cloudRot = 0;
+function renderVenus() {
+  const tex = venusMode === 'surface' ? venusTex : cloudTex, rot = venusMode === 'surface' ? venusRot : cloudRot;
+  const d = artImg.data, c = ART_S / 2, R = ART_S * .4, R2 = R * 1.12;
+  const Lx = -.55, Ly = .35, Lz = .76;
+  const hazeR = venusMode === 'surface' ? 255 : 255, hazeG = venusMode === 'surface' ? 170 : 225, hazeB = venusMode === 'surface' ? 80 : 160;
+  for (let py = 0; py < ART_S; py++) {
+    const ny = (c - py - .5) / R;
+    for (let px = 0; px < ART_S; px++) {
+      const nx = (px + .5 - c) / R, rr = nx*nx + ny*ny, o = (py*ART_S + px) * 4;
+      if (rr > 1) {
+        const rd = Math.sqrt(rr) * R;
+        if (rd < R2) { const t = 1 - (rd - R) / (R2 - R), lit = clamp(.35 + (nx*Lx + ny*Ly) * .6, .1, 1); d[o] = hazeR; d[o+1] = hazeG; d[o+2] = hazeB; d[o+3] = t * t * 150 * lit; }
+        else d[o+3] = 0;
+        continue;
+      }
+      const nz = Math.sqrt(1 - rr);
+      const lat = Math.asin(ny), lon = Math.atan2(nx, nz) + rot;
+      let u = (lon / TAU) % 1; if (u < 0) u += 1;
+      const ti = ((Math.floor((.5 - lat / Math.PI) * TH) | 0) * TW + ((u * TW) | 0)) * 3;
+      const diff = Math.max(0, nx*Lx + ny*Ly + nz*Lz), light = .06 + diff * 1.0;
+      const rim = (1 - nz) ** 2.2 * (venusMode === 'surface' ? .55 : .35);
+      d[o]   = tex[ti] * light * (1 - rim) + hazeR * rim * (.3 + diff);
+      d[o+1] = tex[ti+1] * light * (1 - rim) + hazeG * rim * (.3 + diff);
+      d[o+2] = tex[ti+2] * light * (1 - rim) + hazeB * rim * (.3 + diff);
+      d[o+3] = 255;
+    }
+  }
+  actx.putImageData(artImg, 0, 0);
+}
+
+/* ---------- Ostatní tělesa: stylizovaný obrázek ---------- */
+function drawArt(o) {
+  const S = ART_S, c = S / 2, R = S * (o.id === 'saturn' ? .26 : .4), r = mulberry(o.id.length * 97 + o.id.charCodeAt(0));
+  actx.clearRect(0, 0, S, S);
+  if (o.id === 'saturn') ring(true);
+  // záře
+  const glow = actx.createRadialGradient(c, c, R * .9, c, c, R * 1.25);
+  glow.addColorStop(0, o.id === 'sun' ? 'rgba(255,190,80,.6)' : 'rgba(150,180,255,.12)'); glow.addColorStop(1, 'rgba(0,0,0,0)');
+  actx.fillStyle = glow; actx.beginPath(); actx.arc(c, c, R * 1.25, 0, TAU); actx.fill();
+  actx.save(); actx.beginPath(); actx.arc(c, c, R, 0, TAU); actx.clip();
+  actx.fillStyle = o.color; actx.fillRect(0, 0, S, S);
+  const blob = (x, y, rad, col) => { actx.fillStyle = col; actx.beginPath(); for (let i = 0; i <= 14; i++) { const a = i / 14 * TAU, rr = rad * (.7 + r() * .5); i ? actx.lineTo(x + Math.cos(a)*rr, y + Math.sin(a)*rr) : actx.moveTo(x + Math.cos(a)*rr, y + Math.sin(a)*rr); } actx.fill(); };
+  const crater = (n, dark) => { for (let i = 0; i < n; i++) { const x = c + (r() - .5) * 2 * R, y = c + (r() - .5) * 2 * R, rad = 2 + r() ** 2 * R * .22; actx.fillStyle = dark; actx.beginPath(); actx.arc(x, y, rad, 0, TAU); actx.fill(); actx.strokeStyle = 'rgba(255,255,255,.12)'; actx.lineWidth = 1; actx.beginPath(); actx.arc(x - .7, y - .7, rad, Math.PI*.9, Math.PI*1.8); actx.stroke(); } };
+  const bands = cols => { let y = c - R; while (y < c + R) { const h = 4 + r() * 16; actx.fillStyle = cols[(r() * cols.length) | 0]; actx.fillRect(0, y, S, h); y += h; } };
+  switch (o.id) {
+    case 'sun': { const g = actx.createRadialGradient(c, c, 0, c, c, R); g.addColorStop(0, '#fff7d6'); g.addColorStop(.7, '#ffcf5a'); g.addColorStop(1, '#ff9a2e'); actx.fillStyle = g; actx.fillRect(0, 0, S, S);
+      for (let i = 0; i < 900; i++) { actx.fillStyle = `rgba(255,${150 + r()*80|0},40,${r()*.25})`; actx.beginPath(); actx.arc(c + (r()-.5)*2*R, c + (r()-.5)*2*R, 1 + r()*3, 0, TAU); actx.fill(); }
+      for (let i = 0; i < 4; i++) blob(c + (r()-.5)*R, c + (r()-.5)*R*.6, 4 + r()*5, 'rgba(90,40,10,.6)'); break; }
+    case 'pluto': for (let i = 0; i < 6; i++) blob(c + (r()-.5)*1.6*R, c + (r()-.5)*1.4*R, R*(.1 + r()*.2), 'rgba(120,80,50,.45)');
+      actx.fillStyle = 'rgba(245,238,225,.9)'; actx.beginPath(); actx.moveTo(c + R*.15, c + R*.55);
+      actx.bezierCurveTo(c - R*.55, c + R*.05, c - R*.25, c - R*.45, c + R*.12, c - R*.12);
+      actx.bezierCurveTo(c + R*.4, c - R*.5, c + R*.75, c, c + R*.15, c + R*.55); actx.fill();
+      actx.fillStyle = 'rgba(70,40,30,.65)'; actx.beginPath(); actx.ellipse(c - R*.5, c + R*.45, R*.45, R*.18, -.2, 0, TAU); actx.fill(); break;
+    case 'charon': crater(25, 'rgba(70,66,62,.45)'); actx.fillStyle = 'rgba(120,55,40,.55)'; actx.beginPath(); actx.ellipse(c, c - R*.95, R*.45, R*.18, 0, 0, TAU); actx.fill(); break;
+    case 'mercury': crater(70, 'rgba(70,64,58,.55)'); break;
+    case 'moon': blob(c - R*.3, c - R*.2, R*.35, 'rgba(90,88,84,.6)'); blob(c + R*.15, c - R*.35, R*.25, 'rgba(90,88,84,.55)'); blob(c + R*.1, c + R*.25, R*.2, 'rgba(90,88,84,.5)'); crater(50, 'rgba(110,105,98,.5)'); break;
+    case 'earth': actx.fillStyle = '#1f5fae'; actx.fillRect(0, 0, S, S);
+      for (let i = 0; i < 9; i++) blob(c + (r()-.5)*1.8*R, c + (r()-.5)*1.4*R, R*(.12 + r()*.25), r() < .6 ? '#3f8a3a' : '#a88b55');
+      actx.fillStyle = '#eef4ff'; actx.fillRect(0, c - R, S, R*.16); actx.fillRect(0, c + R*.86, S, R*.16);
+      for (let i = 0; i < 22; i++) { actx.fillStyle = 'rgba(255,255,255,.55)'; actx.beginPath(); actx.ellipse(c + (r()-.5)*2*R, c + (r()-.5)*1.7*R, R*(.1 + r()*.3), R*(.03 + r()*.05), (r()-.5)*.6, 0, TAU); actx.fill(); } break;
+    case 'mars': for (let i = 0; i < 8; i++) blob(c + (r()-.5)*1.6*R, c + (r()-.5)*1.2*R, R*(.1 + r()*.25), 'rgba(110,40,20,.5)');
+      crater(20, 'rgba(120,50,25,.4)'); actx.fillStyle = '#f5eee8'; actx.beginPath(); actx.ellipse(c, c - R*.97, R*.35, R*.12, 0, 0, TAU); actx.fill(); break;
+    case 'jupiter': bands(['#e8d3b4', '#c99a6b', '#b77e52', '#efe2cc', '#d6b48d']); actx.fillStyle = '#c0583a'; actx.beginPath(); actx.ellipse(c + R*.3, c + R*.35, R*.2, R*.11, 0, 0, TAU); actx.fill(); break;
+    case 'saturn': bands(['#eedcae', '#d8bf86', '#e6cf96', '#c9ad74']); break;
+    case 'uranus': { const g = actx.createLinearGradient(0, c - R, 0, c + R); g.addColorStop(0, '#c4f1f2'); g.addColorStop(1, '#7ccfd8'); actx.fillStyle = g; actx.fillRect(0, 0, S, S); break; }
+    case 'neptune': bands(['#4a6cf0', '#3f5fe0', '#5b7cff', '#5677f5']); actx.fillStyle = '#1f2f8a'; actx.beginPath(); actx.ellipse(c - R*.25, c + R*.2, R*.16, R*.09, 0, 0, TAU); actx.fill();
+      actx.fillStyle = 'rgba(255,255,255,.7)'; actx.beginPath(); actx.ellipse(c - R*.1, c + R*.36, R*.12, R*.025, 0, 0, TAU); actx.fill(); break;
+    case 'io': for (let i = 0; i < 40; i++) { actx.fillStyle = ['rgba(200,90,20,.6)', 'rgba(40,25,15,.75)', 'rgba(255,250,200,.6)', 'rgba(230,140,40,.6)'][(r()*4)|0]; actx.beginPath(); actx.arc(c + (r()-.5)*2*R, c + (r()-.5)*2*R, 2 + r()*R*.1, 0, TAU); actx.fill(); } break;
+    case 'europa': actx.lineWidth = 1.5; for (let i = 0; i < 26; i++) { actx.strokeStyle = `rgba(150,80,40,${.25 + r()*.4})`; actx.beginPath(); let x = c + (r()-.5)*2*R, y = c + (r()-.5)*2*R; actx.moveTo(x, y); const a = r()*TAU; for (let k = 0; k < 6; k++) { x += Math.cos(a + (r()-.5)*.4)*R*.2; y += Math.sin(a + (r()-.5)*.4)*R*.2; actx.lineTo(x, y); } actx.stroke(); } break;
+    case 'ganymede': for (let i = 0; i < 7; i++) blob(c + (r()-.5)*1.6*R, c + (r()-.5)*1.6*R, R*(.15 + r()*.3), 'rgba(80,70,60,.55)'); crater(25, 'rgba(230,225,215,.35)'); break;
+    case 'callisto': crater(140, 'rgba(50,45,40,.5)'); crater(40, 'rgba(230,225,215,.4)'); break;
+    case 'phobos': case 'deimos': crater(o.id === 'phobos' ? 35 : 15, 'rgba(60,52,45,.55)'); break;
+  }
+  // osvětlení (terminátor)
+  if (o.id !== 'sun') {
+    const g = actx.createRadialGradient(c - R*.45, c - R*.35, R*.1, c - R*.2, c - R*.1, R*1.5);
+    g.addColorStop(0, 'rgba(255,255,255,.12)'); g.addColorStop(.5, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,8,.9)');
+    actx.fillStyle = g; actx.fillRect(0, 0, S, S);
+  }
+  actx.restore();
+  if (o.id === 'saturn') ring(false);
+  function ring(back) {
+    actx.save(); actx.translate(c, c); actx.rotate(-.35);
+    for (let i = 0; i < 26; i++) {
+      const rr = R * (1.3 + i * .035), gap = i === 15 || i === 16;
+      actx.strokeStyle = gap ? 'rgba(0,0,0,0)' : `rgba(${215 + r()*30|0},${190 + r()*30|0},${140 + r()*30|0},${back ? .35 : .8})`;
+      actx.lineWidth = R * .036; actx.beginPath();
+      actx.ellipse(0, 0, rr, rr * .32, 0, back ? Math.PI : 0, back ? TAU : Math.PI); actx.stroke();
+    }
+    actx.restore();
+  }
+}
+
+/* ============ Hlavní smyčka ============ */
+let last = performance.now(), lastDateStr = '', artT = 0;
+function updateUI() {
+  const ds = fmtDate(jd);
+  if (ds !== lastDateStr) {
+    lastDateStr = ds; $('date').textContent = ds;
+    const d = Math.round(jd - jdFromMs(Date.now()));
+    $('rel').textContent = d === 0 ? 'dnes' : (d > 0 ? `o ${nf(d)} ${dny(d)} od dneška` : `pred ${nf(-d)} ${dny(d)}`);
+  }
+  updateLive(false);
+}
+function frame(now) {
+  const dt = Math.min(.1, Math.max(0, (now - last) / 1000)); last = now;
+  if (innerWidth !== W || innerHeight !== H) resize();
+  if (running) jd += dir * speed * dt;
+  computeState();
+  updateCamera(dt);
+  draw();
+  updateUI();
+  if (selected === VENUS && venusTex) {
+    venusRot -= dt * .12; cloudRot -= dt * .5;
+    artT += dt; if (artT > 1 / 30) { artT = 0; renderVenus(); }
+  }
+  requestAnimationFrame(frame);
+}
+
+resize();
+computeState();
+cam.log = cam.tlog = Math.log(fitScale(1.65)); cam.s = Math.exp(cam.log);
+setSpeed(1);
+$('jump').value = new Date(msFromJd(jd)).toISOString().slice(0, 10);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
