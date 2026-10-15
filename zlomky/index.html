@@ -1,0 +1,1657 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zlomky</title>
+<link rel="icon" href="data:,">
+<script>
+/* =====================================================================
+   TEXTY – všetko, čo žiak číta, je na jednom mieste. Upravuj len texty v úvodzovkách.
+   HTML značky (<b>, <br>) sú povolené.
+   {x}        – sem program doplní číslo (napr. {c} = čitateľ, {m} = menovateľ).
+   [[3/4]]    – zobrazí sa ako zlomok so zlomkovou čiarou.
+   [[1 3/4]]  – zobrazí sa ako zmiešané číslo.
+   ===================================================================== */
+const TEXTY = {
+  titul: 'Zlomky',
+  podtitul: 'Zlomok je počet rovnakých častí celku. Skúmaj model, porovnávaj, sčítaj a odčítaj – a pozri sa, prečo postupy fungujú.',
+  karty: { co: 'Čo je zlomok', rk: 'Rozširovanie a krátenie', por: 'Porovnávanie', sc: 'Sčítanie a odčítanie', zc: 'Zlomok z čísla', omyly: 'Časté omyly', kviz: 'Kvíz', pozn: 'Zjednodušenia' },
+  // názvy jednej časti podľa menovateľa (index = menovateľ)
+  nazvy: ['', 'celok', 'polovica', 'tretina', 'štvrtina', 'pätina', 'šestina', 'siedmina', 'osmina', 'deviatina', 'desatina', 'jedenástina', 'dvanástina'],
+
+  ui: {
+    spustit: '▶ Spustiť', pauza: '❚❚ Pauza', znova: '⏮ Od začiatku', spat: '◀ Späť', krok: 'Krok za krokom ▶',
+    rychlost: 'Rýchlosť animácie', krokX: 'Krok {i} z {n}', nahodny: '🎲 Náhodný príklad',
+    model: 'Model:', pas: 'pás', kolac: 'koláč', mnozina: 'množina',
+    lupa: 'Lupa', zavriet: 'Zavrieť ✕',
+    tipKlik: 'Tip: klikni na čitateľa, menovateľa, zlomkovú čiaru, celok alebo číselnú os – zobrazí sa vysvetlenie.',
+    citatel: 'Čitateľ', menovatel: 'Menovateľ', os: 'Číselná os',
+    zmensitC: 'Zmenšiť čitateľa', zvacsitC: 'Zväčšiť čitateľa', zmensitM: 'Zmenšiť menovateľa', zvacsitM: 'Zväčšiť menovateľa'
+  },
+
+  /* ---------- POPISY PO KLIKNUTÍ ---------- */
+  casti: {
+    cit: { n: 'Čitateľ', t: 'Číslo <b>nad</b> zlomkovou čiarou. Hovorí, <b>koľko rovnakých častí beriem</b>. V modeli sú to vyfarbené (šrafované) a očíslované časti.' },
+    men: { n: 'Menovateľ', t: 'Číslo <b>pod</b> zlomkovou čiarou. Hovorí, <b>na koľko rovnakých častí je celok rozdelený</b>. Menovateľ dáva častiam meno: polovice, tretiny, štvrtiny… Čím je menovateľ väčší, tým sú časti <b>menšie</b>.' },
+    ciara: { n: 'Zlomková čiara', t: 'Oddeľuje čitateľa od menovateľa a znamená <b>delenie</b>: [[3/4]] = 3 : 4. Zlomok nie sú dve čísla – je to <b>jedno číslo</b>, ktoré má svoje miesto na číselnej osi.' },
+    celok: { n: 'Celok', t: 'To, čo delíme: jeden pás, jeden koláč, jedna skupina predmetov. Celok má hodnotu <b>1</b>. Všetky časti celku musia byť <b>rovnako veľké</b> – inak to nie sú tretiny ani štvrtiny.' },
+    os: { n: 'Číselná os', t: 'Zlomok je číslo, preto má miesto na číselnej osi. Úsek od 0 do 1 rozdelím na toľko rovnakých dielikov, koľko je menovateľ, a od nuly odpočítam toľko dielikov, koľko je čitateľ. Počítam <b>dieliky</b>, nie čiarky.' }
+  },
+
+  /* ---------- 1. ČO JE ZLOMOK ---------- */
+  co: {
+    nadpis: 'Čo je zlomok',
+    uvod: 'Zlomok hovorí, <b>koľko rovnakých častí celku</b> beriem. Zmeň čitateľa a menovateľa tlačidlami + a − alebo posuvníkmi.',
+    vyznam: '<b class="tCit">{c}</b> z <b class="tMen">{m}</b> rovnakých častí celku',
+    jednaCast: 'Jedna časť je <b>{nazov}</b> = [[1/{m}]].',
+    jednaCast1: 'Celok nie je rozdelený – je to jedna časť.',
+    citLbl: '<b class="tCit">čitateľ</b> = koľko častí beriem',
+    menLbl: '<b class="tMen">menovateľ</b> = na koľko rovnakých častí je celok rozdelený',
+    slCit: 'Čitateľ', slMen: 'Menovateľ',
+    celok: { pas: 'Toto je <b>celok</b> – jeden pás. Má hodnotu 1.', kolac: 'Toto je <b>celok</b> – jeden koláč. Má hodnotu 1.', mnozina: 'Toto je <b>celok</b> – všetkých {n} jabĺk spolu. Celá skupina má hodnotu 1.' },
+    delenie: { pas: 'Menovateľ <b>{m}</b>: celok rozdelím na <b>{m} rovnakých častí</b>. Každá časť je {nazov} – [[1/{m}]].', kolac: 'Menovateľ <b>{m}</b>: koláč rozkrojím na <b>{m} rovnakých dielov</b>. Každý diel je {nazov} – [[1/{m}]].', mnozina: 'Menovateľ <b>{m}</b>: jablká rozdelím na <b>{m} rovnakých skupín</b> po {g}. Každá skupina je [[1/{m}]] zo všetkých jabĺk.' },
+    delenie1: 'Menovateľ <b>1</b>: celok nedelím – celý je jedna časť.',
+    beriem: 'Čitateľ <b>{c}</b>: zoberiem (vyfarbím) <b>{c}</b> z týchto {m} častí. Sú šrafované a očíslované.',
+    beriemMn: 'Čitateľ <b>{c}</b>: zoberiem <b>{c}</b> z {m} skupín. Tieto jablká sú červené a šrafované – je ich {r} z {n}.',
+    beriem0: 'Čitateľ <b>0</b>: nezoberiem nič. [[0/{m}]] = 0.',
+    zapis: 'Zapíšem to zlomkom [[{c}/{m}]]. Na číselnej osi rozdelím úsek od 0 do 1 na {m} rovnakých dielikov a od nuly odpočítam {c}.',
+    zapisCely: 'Beriem všetky časti: [[{m}/{m}]] = 1 celok. Na číselnej osi je to bod 1.',
+    zapis0: 'Zlomok [[0/{m}]] je nula – na číselnej osi je to bod 0.'
+  },
+
+  /* ---------- 2. ROZŠIROVANIE A KRÁTENIE ---------- */
+  rk: {
+    nadpis: 'Rozširovanie a krátenie',
+    uvod: '<b>Rozšíriť</b> zlomok = čitateľa aj menovateľa vynásobiť tým istým číslom. <b>Skrátiť</b> zlomok = čitateľa aj menovateľa vydeliť tým istým číslom. <b>Hodnota zlomku sa nemení, mení sa len jeho zápis.</b>',
+    zlomok: 'Zlomok',
+    rozsirLbl: 'Rozšíriť číslom:', btnRozsir: 'Rozšíriť číslom {k}',
+    skratLbl: 'Skrátiť číslom:', btnSkrat: 'Skrátiť číslom {d}', btnZaklad: 'Skrátiť na základný tvar',
+    nedaSa: 'Tento zlomok sa skrátiť nedá – je v základnom tvare.',
+    privela: 'Rozšírením by vzniklo viac ako {max} častí a model by bol nečitateľný. Zvoľ menšie číslo.',
+    rozsir: [
+      'Začínam so zlomkom [[{c}/{m}]].',
+      'Každú z {m} častí rozdelím na <b>{k} rovnaké menšie časti</b>.',
+      'Celok má teraz {m} · {k} = <b>{M}</b> častí → nový menovateľ je <b>{M}</b>.',
+      'Vyfarbených je teraz {c} · {k} = <b>{C}</b> menších častí → nový čitateľ je <b>{C}</b>.',
+      '[[{c}/{m}]] = [[{C}/{M}]]. Vyfarbená plocha je rovnaká a bod na osi sa nepohol. <b>Hodnota sa nezmenila, zmenil sa len zápis.</b>'
+    ],
+    skrat: [
+      'Začínam so zlomkom [[{C}/{M}]]. Čitateľ {C} aj menovateľ {M} sú deliteľné číslom {d}.',
+      'Spojím vždy <b>{d} susedné časti</b> do jednej väčšej časti (zlaté hranice).',
+      'Hranice vo vnútri skupín zmiznú. Celok má teraz {M} : {d} = <b>{m}</b> častí, vyfarbené sú {C} : {d} = <b>{c}</b>.',
+      '[[{C}/{M}]] = [[{c}/{m}]]. Plocha aj bod na osi sú rovnaké. <b>Hodnota sa nezmenila, zmenil sa len zápis.</b>'
+    ],
+    zaklad0: 'Chcem skrátiť [[{C}/{M}]] na <b>základný tvar</b>. Hľadám <b>najväčšieho spoločného deliteľa</b> (NSD) čísel {C} a {M}.',
+    zaklad1: 'Delitele čísla {C}: {delC}<br>Delitele čísla {M}: {delM}<br>Spoločné delitele: {spol} → <b>NSD = {g}</b>. Skrátim číslom {g}.',
+    zakladKoniec: ' Čísla {c} a {m} už nemajú spoločného deliteľa väčšieho ako 1 – <b>toto je základný tvar</b>.',
+    uzZaklad: 'Zlomok [[{c}/{m}]] je už v <b>základnom tvare</b>: čísla {c} a {m} nemajú spoločného deliteľa väčšieho ako 1 (NSD = 1).',
+    vyber: 'Vyber zlomok a stlač niektoré tlačidlo vpravo – rozšíriť, skrátiť alebo skrátiť na základný tvar.'
+  },
+
+  /* ---------- 3. POROVNÁVANIE ---------- */
+  por: {
+    nadpis: 'Porovnávanie zlomkov',
+    uvod: 'Zlomky porovnávame len vtedy, keď ide o <b>rovnako veľký celok</b>. Preto majú oba modely rovnakú veľkosť.',
+    btn: 'Porovnať',
+    start: 'Porovnávam [[{c1}/{m1}]] (A) a [[{c2}/{m2}]] (B). Oba celky sú rovnako veľké.',
+    rovnakyMen: 'Oba zlomky majú <b>rovnaký menovateľ {m1}</b> – časti sú rovnako veľké. Stačí porovnať čitateľov: {c1} {z} {c2}.',
+    rovnakyCit: 'Oba zlomky majú <b>rovnaký čitateľ {c1}</b> – beriem rovnaký počet častí. Väčší menovateľ znamená <b>menšie časti</b>: [[1/{m1}]] {zj} [[1/{m2}]] (zlatý obrys).',
+    rozne1: 'Menovatele sú rôzne – časti nie sú rovnako veľké, nedajú sa priamo porovnať. Nájdem <b>spoločný menovateľ</b>: najmenší spoločný násobok (NSN) čísel {m1} a {m2}.',
+    rozne2: 'Násobky {m1}: {nas1}<br>Násobky {m2}: {nas2}<br>Prvý spoločný násobok: <b>NSN = {L}</b>.',
+    rozsirA: 'Zlomok A rozšírim číslom {k1}: [[{c1}/{m1}]] = [[{C1}/{L}]].',
+    rozsirB: 'Zlomok B rozšírim číslom {k2}: [[{c2}/{m2}]] = [[{C2}/{L}]].',
+    uzMaA: 'Zlomok A už má menovateľ {L}, nemusím ho rozširovať.',
+    uzMaB: 'Zlomok B už má menovateľ {L}, nemusím ho rozširovať.',
+    porovnaj: 'Teraz sú všetky časti rovnako veľké ([[1/{L}]]). Porovnám čitateľov: {C1} {z} {C2}.',
+    koniec: 'Výsledok: [[{c1}/{m1}]] <b>{z}</b> [[{c2}/{m2}]]. Bod {vacsi} leží na osi viac vpravo.',
+    koniecRovne: 'Výsledok: [[{c1}/{m1}]] <b>=</b> [[{c2}/{m2}]]. Sú to dva zápisy toho istého čísla – na osi majú ten istý bod.',
+    kontrola: 'Kontrola krížovým súčinom: {c1} · {m2} = {x1} a {c2} · {m1} = {x2}, teda {x1} {z} {x2}.'
+  },
+
+  /* ---------- 4. SČÍTANIE A ODČÍTANIE ---------- */
+  sc: {
+    nadpis: 'Sčítanie a odčítanie',
+    uvod: 'Sčítať alebo odčítať môžem len <b>rovnako veľké časti</b>. Ak sú menovatele rôzne, najprv zlomky rozšírim na spoločný menovateľ.',
+    plus: '+ Sčítanie', minus: '− Odčítanie', btn: 'Vypočítať', btnSkrat: 'Skrátiť výsledok', vymen: 'Vymeniť zlomky',
+    zaporny: 'Odčítame len vtedy, keď vyjde kladný výsledok: [[{c1}/{m1}]] nie je väčšie ako [[{c2}/{m2}]]. Vymeň zlomky alebo zväčši prvý zlomok.',
+    vysledok: 'Výsledok',
+    startP: 'Sčítam [[{c1}/{m1}]] + [[{c2}/{m2}]]. Všetky celky sú rovnako veľké.',
+    startM: 'Odčítam [[{c1}/{m1}]] − [[{c2}/{m2}]]. Všetky celky sú rovnako veľké.',
+    rovnakyMen: 'Menovatele sú rovnaké ({M}) – časti sú rovnako veľké, môžem ich priamo {co}.',
+    coP: 'spojiť', coM: 'odobrať',
+    rozne: 'Menovatele sú rôzne ({m1} a {m2}) – časti nie sú rovnako veľké. Najprv nájdem <b>spoločný menovateľ</b> – najmenší spoločný násobok:<br>Násobky {m1}: {nas1}<br>Násobky {m2}: {nas2}<br><b>NSN({m1}, {m2}) = {M}</b>.',
+    rozsirA: 'Zlomok A rozšírim číslom {k1}: [[{c1}/{m1}]] = [[{C1}/{M}]]. Každá časť sa rozdelí na {k1}.',
+    rozsirB: 'Zlomok B rozšírim číslom {k2}: [[{c2}/{m2}]] = [[{C2}/{M}]]. Každá časť sa rozdelí na {k2}.',
+    uzMaA: 'Zlomok A už má menovateľ {M}.', uzMaB: 'Zlomok B už má menovateľ {M}.',
+    prenesA: 'Do výsledku prenesiem dieliky zlomku A: <b>{C1}</b> dielikov veľkosti [[1/{M}]].',
+    pridajB: 'Pridám dieliky zlomku B: {C1} + {C2} = <b>{S}</b> dielikov. Menovateľ sa <b>nemení</b> – hovorí, aké veľké sú dieliky.',
+    odoberB: 'Odoberiem {C2} dielikov zlomku B (prečiarknuté): {C1} − {C2} = <b>{S}</b> dielikov. Menovateľ sa <b>nemení</b>.',
+    rovnica: '[[{c1}/{m1}]] {op} [[{c2}/{m2}]] = [[{C1}/{M}]] {op} [[{C2}/{M}]] = [[{S}/{M}]]',
+    rovnica1: '[[{c1}/{m1}]] {op} [[{c2}/{m2}]] = [[{S}/{M}]]',
+    vysl: 'Výsledok: [[{S}/{M}]].',
+    vacsi1: 'Výsledok je <b>väčší ako 1</b>: {S} dielikov = {M} dielikov (1 celý pás) + {Z} dielikov. Zapíšem ho ako <b>zmiešané číslo</b>: [[{S}/{M}]] = [[1 {Z}/{M}]].',
+    rovne1: 'Výsledok je presne {M} dielikov = <b>1 celok</b>.',
+    daSa: ' Výsledok sa dá skrátiť (NSD({S}, {M}) = {g}) – stlač <b>„Skrátiť výsledok“</b>.',
+    zaklad: ' Výsledok je v základnom tvare.',
+    skrat1: 'Spojím vždy {g} susedné dieliky do jedného (zlaté hranice).',
+    skrat2: '[[{S}/{M}]] = <b>[[{s}/{m}]]</b>{zm}. Hodnota sa nezmenila, zmenil sa len zápis.'
+  },
+
+  /* ---------- 5. ZLOMOK Z ČÍSLA ---------- */
+  zc: {
+    nadpis: 'Zlomok z čísla',
+    uvod: 'Koľko je [[3/4]] z 20? Celkom je 20 guľôčok. Menovateľ povie, na koľko skupín ich rozdelím, čitateľ, koľko skupín zoberiem.',
+    pocet: 'Počet guľôčok (celok)', btn: 'Vypočítať',
+    kroky: [
+      'Máme <b>{n} guľôčok</b> – to je celok.',
+      'Menovateľ <b>{m}</b>: guľôčky rozdelím na <b>{m} rovnakých skupín</b>.',
+      'V každej skupine je {n} : {m} = <b>{g}</b>. Jedna skupina je [[1/{m}]] z {n}, teda {g}.',
+      'Čitateľ <b>{c}</b>: zoberiem {c} {skupin}.',
+      '[[{c}/{m}]] z {n} = {c} · {g} = <b>{R}</b>. Najprv delím menovateľom, potom násobím čitateľom.'
+    ],
+    skupiny: ['skupinu', 'skupiny', 'skupín'],
+    rovnica: '[[{c}/{m}]] z {n} = ({n} : {m}) · {c} = {g} · {c} = <b>{R}</b>'
+  },
+
+  /* ---------- ČASTÉ OMYLY ---------- */
+  omyly: {
+    nadpis: 'Časté omyly',
+    uvod: 'Každý omyl má krátku animáciu. Stlač ▶ Spustiť alebo prechádzaj krok za krokom.',
+    omylLbl: 'Omyl', opravaLbl: 'Oprava',
+    polozky: [
+      { omyl: '[[1/3]] je väčšie ako [[1/2]], lebo 3 je väčšie ako 2.',
+        oprava: '<b>Väčší menovateľ znamená menšie časti.</b> Celok rozdelený na 3 časti má menšie časti ako celok rozdelený na 2 časti. Preto [[1/3]] &lt; [[1/2]].',
+        kroky: ['Je [[1/3]] naozaj viac ako [[1/2]]? Nakreslím oba zlomky na <b>rovnako veľkých</b> pásoch.',
+                'Prvý pás rozdelím na 2 časti, druhý na 3 časti.',
+                'Vyfarbím jednu časť z každého pásu. Tretina je kratšia ako polovica!',
+                'Preto [[1/3]] &lt; [[1/2]]. Čím viac častí, tým je každá menšia.'] },
+      { omyl: '[[1/2]] + [[1/3]] = [[2/5]] (sčítam čitateľov aj menovateľov).',
+        oprava: 'Sčítať môžem len rovnako veľké časti: [[1/2]] = [[3/6]], [[1/3]] = [[2/6]], spolu <b>[[5/6]]</b>. Výsledok [[2/5]] je dokonca <b>menší</b> ako [[1/2]] – to nemôže byť, keď k polovici niečo pridám.',
+        kroky: ['Mám [[1/2]] a [[1/3]].',
+                'Omyl: 1 + 1 = 2, 2 + 3 = 5, teda [[2/5]] (červený pás).',
+                'Pozri na zlatú čiaru pri [[1/2]]: [[2/5]] je <b>menej</b> ako [[1/2]]! K polovici pridám tretinu a mám menej? To nejde.',
+                'Správne: časti musia byť rovnako veľké. Spoločný menovateľ je 6: [[1/2]] = [[3/6]], [[1/3]] = [[2/6]].',
+                '[[3/6]] + [[2/6]] = <b>[[5/6]]</b> (zelený pás). To je viac ako [[1/2]], ako má byť.'] },
+      { omyl: 'Polovica malej pizze je menej ako štvrtina veľkej pizze, teda [[1/2]] &lt; [[1/4]].',
+        oprava: '<b>Zlomky porovnávame len pri rovnakom celku.</b> Polovica malej pizze a štvrtina veľkej sú časti rôznych celkov. Pri rovnako veľkých pizzách je [[1/2]] &gt; [[1/4]].',
+        kroky: ['Malá pizza: zjem polovicu. Veľká pizza: zjem štvrtinu.',
+                'Štvrtina veľkej pizze je naozaj viac jedla ako polovica malej. Znamená to, že [[1/4]] &gt; [[1/2]]?',
+                'Nie! Celky sú rôzne veľké. Porovnám rovnako veľké pizze…',
+                '…a pri rovnakom celku je [[1/2]] &gt; [[1/4]]. Porovnávam len časti <b>toho istého celku</b>.'] },
+      { omyl: 'Skrátený zlomok je „iné číslo“: [[2/4]] a [[1/2]] sú rôzne čísla.',
+        oprava: '[[2/4]] a [[1/2]] sú <b>dva zápisy toho istého čísla</b>. Majú rovnakú vyfarbenú plochu aj <b>rovnaký bod na číselnej osi</b>.',
+        kroky: ['Mám [[2/4]] a [[1/2]]. Vyzerajú inak – sú to rôzne čísla?',
+                'Na rovnako veľkých pásoch je vyfarbená rovnaká plocha (zlatá čiara).',
+                'Na číselnej osi ležia oba zlomky v <b>tom istom bode</b>.',
+                'Keď spojím vždy 2 štvrtiny, dostanem polovice: [[2/4]] = [[1/2]]. To isté číslo, iný zápis.'] }
+    ]
+  },
+
+  /* ---------- KVÍZ ---------- */
+  kviz: {
+    nadpis: 'Kvíz',
+    uvod: 'Otázky sa vyberajú náhodne. Nič sa neukladá ani neodosiela.',
+    uroven: 'Obtiažnosť:', u1: 'Ľahšia', u2: 'Ťažšia', sposob: 'Odpoveď:', vyber: 'výber z možností', pis: 'napíšem sám',
+    novy: '🔄 Nový kvíz', over: 'Skontrolovať', zle: 'Nesprávne.', dobre: 'Správne!', spravne: 'Správna odpoveď:',
+    vyplnZl: 'Doplň čitateľa aj menovateľa (menovateľ nesmie byť 0).', vyplnCislo: 'Napíš číslo.', vyplnZm: 'Doplň celú časť, čitateľa aj menovateľa.',
+    vysl: 'Výsledok: {b} z {n} bodov.', vyslDobre: ' Výborne!', vyslSkus: ' Pozri si vysvetlenia a skús nový kvíz.',
+    q: {
+      citaj: 'Aký zlomok celku je vyfarbený (šrafovaný)?',
+      os: 'Aký zlomok je vyznačený na číselnej osi?',
+      porovnaj: 'Ktorý znak patrí medzi zlomky?',
+      sc: 'Vypočítaj a výsledok skráť, ak sa dá:',
+      od: 'Vypočítaj a výsledok skráť, ak sa dá:',
+      skrat: 'Skráť na základný tvar:',
+      rozsir: 'Doplň chýbajúceho čitateľa:',
+      zcisla: 'Koľko je',
+      zmies: 'Zapíš ako zmiešané číslo:',
+      scZm: 'Vypočítaj a zapíš ako zmiešané číslo:'
+    },
+    v: {
+      citaj: 'Celok je rozdelený na <b>{m}</b> rovnakých častí (menovateľ) a vyfarbených je <b>{c}</b> (čitateľ): [[{c}/{m}]].',
+      citajZvysok: ' Pozor: [[{x}/{m}]] by boli nevyfarbené časti.',
+      citajPomer: ' Pozor: menovateľ je počet <b>všetkých</b> častí, nie len nevyfarbených.',
+      os: 'Úsek od 0 do 1 je rozdelený na <b>{m}</b> rovnakých dielikov (počítaj dieliky, nie čiarky – čiarok je {m1}). Bod je na {c}. dieliku: [[{c}/{m}]].',
+      porovnaj: 'Na rovnako veľkých pásoch vidno, ktorý zlomok je väčší. Spoločný menovateľ {L}: [[{c1}/{m1}]] = [[{C1}/{L}]], [[{c2}/{m2}]] = [[{C2}/{L}]], a {C1} {z} {C2}.',
+      porRovCit: ' Rovnaký čitateľ: väčší menovateľ znamená menšie časti.',
+      scZle: 'Sčítali sa čitatele aj menovatele. Výsledok [[{x}/{y}]] je ale <b>menší</b> ako [[{vc}/{vm}]] – to nemôže byť (červený pás je kratší ako zlatá čiara).',
+      odZle: 'Odčítali sa čitatele aj menovatele – tak sa to nerobí. Dieliky musia byť rovnako veľké.',
+      sc: 'Spoločný menovateľ je {M}: [[{c1}/{m1}]] = [[{C1}/{M}]], [[{c2}/{m2}]] = [[{C2}/{M}]]. {C1} {op} {C2} = {S}, teda [[{S}/{M}]]{skr}.',
+      skr: ' = [[{s}/{m}]]',
+      skrat: 'NSD({c}, {m}) = {g}. Čitateľa aj menovateľa vydelím číslom {g}: [[{c}/{m}]] = [[{s}/{t}]].',
+      nieZaklad: 'Hodnota je správna, ale zlomok sa dá ešte skrátiť – nie je v základnom tvare.',
+      daSaSkratit: 'Hodnota je správna. Výsledok sa ešte dá skrátiť na [[{s}/{t}]].',
+      rozsir: 'Menovateľ {m} som vynásobil číslom {k} ({m} · {k} = {M}), preto aj čitateľa: {c} · {k} = <b>{C}</b>.',
+      rozsirZle: ' Pozor: k menovateľu sa nepričítava, ale násobí.',
+      zcisla: '{n} : {m} = {g} (jedna skupina), {g} · {c} = <b>{R}</b>.',
+      zcislaJedna: ' Pozor: {g} je len [[1/{m}]] z {n}, treba zobrať {c} skupín.',
+      zmies: '{c} : {m} = {w}, zvyšok {r}. Preto [[{c}/{m}]] = [[{w} {r}/{m}]] – to je {w}-krát celok a ešte [[{r}/{m}]].',
+      zmiesVacsi: 'Zlomková časť zmiešaného čísla musí byť menšia ako 1 (čitateľ menší ako menovateľ).'
+    }
+  },
+
+  /* ---------- ZJEDNODUŠENIA ---------- */
+  pozn: {
+    nadpis: 'Zjednodušenia a poznámky pre učiteľa',
+    polozky: [
+      'Menovatele sú od 1 do 12 (v sekciách 2 až 5 od 2 do 12), aby boli modely čitateľné.',
+      'Rozširovanie je obmedzené tak, aby vzniklo najviac 36 častí (napr. [[3/12]] sa dá rozšíriť najviac číslom 3).',
+      'Spoločný menovateľ pri porovnávaní a sčítaní môže byť až 132 (napr. 11 a 12). Dieliky sú potom veľmi úzke a nečíslujú sa. Náhodné príklady preto volia spoločný menovateľ najviac 36.',
+      'Krátenie na základný tvar ukazujem jedným krokom cez najväčšieho spoločného deliteľa (nie postupným delením 2, 3, …).',
+      'Pri modeli „množina“ v časti 1 je počet jabĺk 12 alebo najbližší väčší násobok menovateľa (napr. pre menovateľ 5 je to 15 jabĺk).',
+      'Pri sčítaní a odčítaní pracujem len so zlomkami menšími ako 1, takže súčet je menší ako 2 (najviac dva celky). Odčítanie len s kladným výsledkom.',
+      'V časti „Zlomok z čísla“ musí byť počet guľôčok deliteľný menovateľom (6 až 48).',
+      'Pizze v omyle 3 sú kreslené tak, aby štvrtina veľkej mala naozaj väčšiu plochu ako polovica malej.',
+      'Všetky výpočty so zlomkami používajú len celé čísla (NSD, NSN, porovnávanie krížovým súčinom). Desatinné čísla slúžia len na kreslenie polohy na obrázku.',
+      'Násobenie a delenie zlomkov nie je súčasťou tejto verzie. Záporné zlomky a zlomky väčšie ako 1 (okrem výsledku sčítania) tu nie sú.'
+    ]
+  }
+};
+</script>
+<style>
+/* ===== Farby a základ – rovnaká paleta ako predošlé animácie ===== */
+:root{
+  --bg:#04060c;--panel:rgba(12,16,28,.86);--line:rgba(140,160,215,.22);
+  --text:#e2e8f5;--muted:#a3adc6;--gold:#f3b453;--gold2:#ffd88a;--blue:#6fb4ff;--red:#ff7a6b;--green:#7fdc8f;--violet:#b9a3ff;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--text);background:var(--bg);
+  background-image:radial-gradient(ellipse at 50% -10%,#14204a 0%,#070b18 50%,#04060c 100%);background-attachment:fixed;
+  font:17px/1.5 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1440px;margin:0 auto;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.45);padding:16px}
+h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+h2{margin:0 0 10px;font-size:23px;line-height:1.25}
+h3{margin:0 0 6px;font-size:16px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:650}
+p{margin:0 0 10px}
+.sub{color:var(--muted);margin:4px 0 0;font-size:17px}
+button{font:inherit;font-size:16px;color:var(--text);background:rgba(255,255,255,.07);border:1px solid var(--line);
+  border-radius:10px;padding:8px 14px;min-height:44px;cursor:pointer;transition:background .15s,border-color .15s,color .15s;touch-action:manipulation}
+button:hover{background:rgba(255,255,255,.13);border-color:rgba(160,180,230,.4)}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
+button.on{background:rgba(243,180,83,.2);border-color:rgba(243,180,83,.65);color:var(--gold2)}
+button.primary{background:linear-gradient(135deg,#f3b453,#d9772f);color:#1a0e02;border:none;font-weight:700;min-width:130px}
+button.primary:hover{filter:brightness(1.08)}
+button:disabled{cursor:default;opacity:.45}
+.mini{color:var(--muted);font-size:16px;margin:10px 0 4px}
+.tCit{color:var(--gold2)}.tMen{color:var(--blue)}
+
+/* ===== Hlavička a karty ===== */
+header.top{margin-bottom:12px}
+nav.karty{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+nav.karty button{border-radius:999px;padding:8px 15px}
+nav.karty button .cis{display:inline-block;min-width:1.4em;color:var(--muted)}
+nav.karty button.on .cis{color:var(--gold2)}
+
+/* ===== Rozloženie sekcie ===== */
+.sek{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:16px;align-items:start}
+.stlpec{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:1000px){.sek{grid-template-columns:minmax(0,1fr)}.sek>.panel{order:-1}}
+
+/* ===== Zlomok so zlomkovou čiarou ===== */
+.zl{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 .12em;font-weight:700;font-variant-numeric:tabular-nums}
+.zl>span{padding:0 .12em}
+.zl>.ciara{align-self:stretch;height:0;border-top:.09em solid currentColor;margin:.06em 0;padding:0;min-width:.8em}
+.zm{display:inline-flex;align-items:center;font-weight:700;vertical-align:middle}
+.zm>.cele{margin-right:.08em}
+
+/* ===== Editor zlomku (veľký zlomok s tlačidlami) ===== */
+.editor{display:inline-grid;grid-template-columns:50px auto 50px;align-items:center;justify-items:center;gap:4px 8px}
+.editor .cislo{font-size:46px;font-weight:800;line-height:1.1;min-width:1.6em;text-align:center;cursor:pointer;border-radius:10px;padding:0 8px;font-variant-numeric:tabular-nums;transition:background .15s}
+.editor .cislo:hover{background:rgba(255,255,255,.08)}
+.editor .cit{color:var(--gold2)}.editor .men{color:var(--blue)}
+.editor .ciaraE{grid-column:1/4;height:16px;width:100%;cursor:pointer;display:flex;align-items:center}
+.editor .ciaraE::before{content:"";display:block;height:5px;width:100%;border-radius:3px;background:var(--text)}
+.editor button{width:50px;height:50px;font-size:26px;padding:0;font-weight:700}
+.editor.male .cislo{font-size:34px}
+.editor.male button{width:46px;height:46px}
+.editor.fA .cislo{color:var(--gold2)}.editor.fB .cislo{color:var(--blue)}
+.editRow{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center}
+.editLbl{font-weight:700;font-size:20px}
+.zoomuj{animation:zoomuj 1.3s ease}
+@keyframes zoomuj{0%{transform:scale(1)}25%,70%{transform:scale(1.45);text-shadow:0 0 16px var(--gold2)}100%{transform:scale(1)}}
+.vyznam{font-size:19px;margin:12px 0 4px}
+ul.legLst{margin:8px 0;padding-left:20px}
+ul.legLst li{margin:4px 0}
+
+/* ===== Scéna ===== */
+.stageCard{padding:10px}
+.stageTop{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px}
+.stage{overflow:auto;-webkit-overflow-scrolling:touch;border-radius:10px;background:#08101c}
+.stage+.stage{margin-top:8px}
+.stage svg{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none}
+.stage svg .klik{cursor:pointer}
+.lupaBar{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:16px}
+.lupaBar button{min-width:44px;font-weight:700}
+.seg{display:inline-flex;align-items:center;flex-wrap:wrap}
+.seg button{border-radius:0;margin-left:-1px}
+.seg button:first-of-type{border-radius:10px 0 0 10px;margin-left:0}
+.seg button:last-of-type{border-radius:0 10px 10px 0}
+.seg .lbl0{color:var(--muted);margin-right:8px}
+.rovBox{font-size:20px;margin-top:10px;min-height:56px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;justify-content:center;text-align:center}
+.rovBox b{color:var(--gold2)}
+
+/* ===== Prehrávač krokov ===== */
+.krokNum{color:var(--muted);font-size:16px;letter-spacing:.06em;text-transform:uppercase}
+.krokText{font-size:18px;min-height:84px;margin:4px 0 10px;line-height:1.6}
+.tlac{display:flex;flex-wrap:wrap;gap:8px}
+.sl{display:block;margin-top:8px}
+.sl .lbl{display:flex;justify-content:space-between;gap:10px}
+.sl .lbl b{color:var(--gold2);font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:40px;background:transparent;margin:2px 0 0;cursor:pointer;touch-action:pan-y}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;margin-top:-10px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02;box-shadow:0 0 0 2px var(--gold)}
+input[type=range]::-moz-range-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02}
+.volby{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.volby .lbl0{color:var(--muted);min-width:140px}
+.hlaska{color:var(--gold2);font-size:16px;margin:8px 0 0}
+.box{margin:10px 0;padding:10px 13px;border-radius:10px;border:1px solid}
+.box b.h{display:block;font-size:16px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.box.omyl{background:rgba(255,122,107,.09);border-color:rgba(255,122,107,.45)}.box.omyl b.h{color:var(--red)}
+.box.pravda{background:rgba(127,220,143,.08);border-color:rgba(127,220,143,.4)}.box.pravda b.h{color:var(--green)}
+.box.info{background:rgba(111,180,255,.08);border-color:rgba(111,180,255,.4)}
+
+/* ===== Popis po kliknutí ===== */
+#info{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);width:min(580px,calc(100% - 24px));z-index:50;
+  background:rgba(8,12,24,.97);border:1px solid var(--gold);border-radius:14px;padding:12px 16px;box-shadow:0 10px 40px rgba(0,0,0,.7)}
+#info h4{margin:0 0 4px;font-size:20px;color:var(--gold2);padding-right:110px}
+#info button{position:absolute;right:10px;top:8px;min-height:40px}
+
+/* ===== Omyly ===== */
+.omylyGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(440px,100%),1fr));gap:16px}
+.omylyGrid .krokText{min-height:60px}
+.omylyGrid .stage{margin:8px 0}
+
+/* ===== Kvíz ===== */
+.otazka{padding:14px 0;border-bottom:1px solid var(--line)}
+.otazka .q{font-size:20px;margin-bottom:8px;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.otazka .q .por{color:var(--muted)}
+.otazka .obr{max-width:520px;margin:6px 0 10px;border-radius:10px;background:#08101c}
+.otazka .obr svg{display:block;width:100%;height:auto}
+.moznosti{display:flex;flex-wrap:wrap;gap:8px}
+.moznosti button{min-width:84px;min-height:64px;font-size:22px}
+.otazka button.ok{background:rgba(127,220,143,.2);border-color:var(--green);color:#d7ffdf;opacity:1}
+.otazka button.zle{background:rgba(255,122,107,.2);border-color:var(--red);color:#ffe0dc;opacity:1}
+.vstup{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.vstupZl{display:inline-flex;flex-direction:column;align-items:center;gap:4px}
+.vstupZl .ciara{display:block;width:100%;height:4px;background:var(--text);border-radius:2px}
+.vstup input{width:76px;height:50px;font:inherit;font-size:24px;font-weight:700;text-align:center;color:var(--text);background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:10px}
+.vstup input.cele{height:60px}
+.fb{margin-top:10px;font-size:17px}
+.fb.ok>b:first-child{color:var(--green)}.fb.zle>b:first-child{color:var(--red)}
+.fb .obr{margin-top:8px}
+#kvizVysl{font-size:21px;font-weight:700;color:var(--gold2);margin:14px 0}
+ul.poznList{margin:0;padding-left:22px}
+ul.poznList li{margin:8px 0}
+footer{color:var(--muted);text-align:center;font-size:16px;padding:20px 0 10px}
+@media (max-width:600px){
+  .wrap{padding:10px}
+  .card{padding:12px}
+  .editor .cislo{font-size:38px}
+  .krokText{font-size:17px}
+  .tlac button{flex:1 1 auto}
+  #info h4{padding-right:0;margin-top:34px}
+}
+</style>
+</head>
+<body>
+<!-- Vzory (šrafovanie) – aby sa časti nelíšili len farbou -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <pattern id="pA" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="12" height="12" fill="#f3b453"/><rect width="4" height="12" fill="#b8721f"/></pattern>
+    <pattern id="pB" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="12" height="12" fill="#6fb4ff"/><rect width="4" height="12" fill="#2f6fbf"/></pattern>
+    <pattern id="pC" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#7fdc8f"/><circle cx="6" cy="6" r="2.8" fill="#2f8a44"/></pattern>
+    <pattern id="pR" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#ff7a6b"/><rect width="10" height="3.5" fill="#b83d30"/></pattern>
+  </defs>
+</svg>
+
+<div class="wrap">
+<header class="top"><h1 data-t="titul"></h1><p class="sub" data-t="podtitul"></p></header>
+<nav class="karty" id="karty" role="tablist"></nav>
+
+<!-- ============ 1. ČO JE ZLOMOK ============ -->
+<section id="co" class="sek" data-karta hidden>
+  <div class="stlpec">
+    <div class="card stageCard">
+      <div class="stageTop"><div class="seg" id="co_model"></div></div>
+      <div class="stage"><svg id="co_svg" viewBox="0 0 640 150" role="img" aria-label="Model zlomku"></svg></div>
+      <div class="stage"><svg id="co_os" viewBox="0 0 640 120" role="img" aria-label="Číselná os"></svg></div>
+    </div>
+    <div class="card" id="co_hrac"></div>
+  </div>
+  <div class="stlpec panel">
+    <div class="card">
+      <h2 data-t="co.nadpis"></h2>
+      <p data-t="co.uvod"></p>
+      <div class="editRow"><div id="co_ed"></div><div><div class="vyznam" id="co_vyznam"></div><div id="co_cast"></div></div></div>
+      <label class="sl"><span class="lbl"><span data-t="co.slCit"></span><b id="co_vc"></b></span><input type="range" id="co_slc" min="0" max="12" step="1" aria-label="Čitateľ"></label>
+      <label class="sl"><span class="lbl"><span data-t="co.slMen"></span><b id="co_vm"></b></span><input type="range" id="co_slm" min="1" max="12" step="1" aria-label="Menovateľ"></label>
+      <ul class="legLst"><li data-t="co.citLbl"></li><li data-t="co.menLbl"></li></ul>
+      <p class="mini" data-t="ui.tipKlik"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. ROZŠIROVANIE A KRÁTENIE ============ -->
+<section id="rk" class="sek" data-karta hidden>
+  <div class="stlpec">
+    <div class="card stageCard">
+      <div class="stageTop"><div class="seg" id="rk_model"></div></div>
+      <div class="stage"><svg id="rk_svg" viewBox="0 0 640 150" role="img" aria-label="Model zlomku"></svg></div>
+      <div class="stage"><svg id="rk_os" viewBox="0 0 640 140" role="img" aria-label="Číselná os"></svg></div>
+    </div>
+    <div class="card" id="rk_hrac"></div>
+  </div>
+  <div class="stlpec panel">
+    <div class="card">
+      <h2 data-t="rk.nadpis"></h2>
+      <p data-t="rk.uvod"></p>
+      <div class="editRow"><span class="editLbl" data-t="rk.zlomok"></span><div id="rk_ed"></div></div>
+      <div class="volby"><span class="lbl0" data-t="rk.rozsirLbl"></span><div class="seg" id="rk_k"></div></div>
+      <div class="volby"><button id="rk_bRozsir" class="primary"></button></div>
+      <div class="volby"><span class="lbl0" data-t="rk.skratLbl"></span><div class="seg" id="rk_d"></div></div>
+      <div class="volby"><button id="rk_bZaklad" data-t="rk.btnZaklad"></button></div>
+      <p class="hlaska" id="rk_hlaska"></p>
+      <p class="mini" data-t="ui.tipKlik"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. POROVNÁVANIE ============ -->
+<section id="por" class="sek" data-karta hidden>
+  <div class="stlpec">
+    <div class="card stageCard">
+      <div class="stageTop"><div class="seg" id="por_model"></div></div>
+      <div class="stage"><svg id="por_svg" viewBox="0 0 640 230" role="img" aria-label="Dva zlomky na rovnakých celkoch"></svg></div>
+      <div class="stage"><svg id="por_os" viewBox="0 0 640 170" role="img" aria-label="Číselná os"></svg></div>
+      <div class="rovBox" id="por_vysl"></div>
+    </div>
+    <div class="card" id="por_hrac"></div>
+  </div>
+  <div class="stlpec panel">
+    <div class="card">
+      <h2 data-t="por.nadpis"></h2>
+      <p data-t="por.uvod"></p>
+      <div class="editRow"><span class="editLbl tCit">A</span><div id="por_edA"></div><span class="editLbl tMen">B</span><div id="por_edB"></div></div>
+      <div class="volby"><button id="por_btn" class="primary" data-t="por.btn"></button></div>
+      <p class="mini" data-t="ui.tipKlik"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. SČÍTANIE A ODČÍTANIE ============ -->
+<section id="sc" class="sek" data-karta hidden>
+  <div class="stlpec">
+    <div class="card stageCard">
+      <div class="stage"><svg id="sc_svg" viewBox="0 0 640 300" role="img" aria-label="Sčítanie a odčítanie na pásoch"></svg></div>
+      <div class="rovBox" id="sc_rov"></div>
+    </div>
+    <div class="card" id="sc_hrac"></div>
+  </div>
+  <div class="stlpec panel">
+    <div class="card">
+      <h2 data-t="sc.nadpis"></h2>
+      <p data-t="sc.uvod"></p>
+      <div class="volby"><div class="seg" id="sc_op"></div></div>
+      <div class="editRow" style="margin-top:12px"><span class="editLbl tCit">A</span><div id="sc_edA"></div><span class="editLbl" id="sc_opZn">+</span><span class="editLbl tMen">B</span><div id="sc_edB"></div></div>
+      <div class="volby"><button id="sc_btn" class="primary" data-t="sc.btn"></button><button id="sc_btnSkrat" data-t="sc.btnSkrat" hidden></button><button id="sc_vymen" data-t="sc.vymen" hidden></button></div>
+      <p class="hlaska" id="sc_hlaska"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. ZLOMOK Z ČÍSLA ============ -->
+<section id="zc" class="sek" data-karta hidden>
+  <div class="stlpec">
+    <div class="card stageCard">
+      <div class="stage"><svg id="zc_svg" viewBox="0 0 640 340" role="img" aria-label="Zlomok z čísla"></svg></div>
+      <div class="rovBox" id="zc_rov"></div>
+    </div>
+    <div class="card" id="zc_hrac"></div>
+  </div>
+  <div class="stlpec panel">
+    <div class="card">
+      <h2 data-t="zc.nadpis"></h2>
+      <p data-t="zc.uvod"></p>
+      <div class="editRow"><div id="zc_ed"></div><span class="editLbl">z</span>
+        <div class="editor male"><button id="zc_n-" aria-label="Menej guľôčok">−</button><span class="cislo" id="zc_n" data-cast="celok" tabindex="0"></span><button id="zc_n+" aria-label="Viac guľôčok">+</button></div></div>
+      <p class="mini" data-t="zc.pocet"></p>
+      <div class="volby"><button id="zc_btn" class="primary" data-t="zc.btn"></button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ČASTÉ OMYLY ============ -->
+<section id="omyly" data-karta hidden>
+  <div class="card" style="margin-bottom:16px"><h2 data-t="omyly.nadpis"></h2><p data-t="omyly.uvod"></p></div>
+  <div class="omylyGrid" id="omylyGrid"></div>
+</section>
+
+<!-- ============ KVÍZ ============ -->
+<section id="kviz" data-karta hidden>
+  <div class="card">
+    <h2 data-t="kviz.nadpis"></h2>
+    <p class="mini" data-t="kviz.uvod"></p>
+    <div class="volby"><span class="lbl0" data-t="kviz.uroven"></span><div class="seg" id="kv_uroven"></div></div>
+    <div class="volby"><span class="lbl0" data-t="kviz.sposob"></span><div class="seg" id="kv_sposob"></div></div>
+    <div id="kv_otazky"></div>
+    <div id="kvizVysl" aria-live="polite"></div>
+    <button id="kv_novy" class="primary" data-t="kviz.novy"></button>
+  </div>
+</section>
+
+<!-- ============ ZJEDNODUŠENIA ============ -->
+<section id="pozn" data-karta hidden>
+  <div class="card"><h2 data-t="pozn.nadpis"></h2><ul class="poznList" id="poznList"></ul></div>
+</section>
+
+<footer>Zlomky · interaktívna animácia pre 6. ročník ZŠ · funguje aj offline</footer>
+</div>
+
+<div id="info" hidden role="dialog" aria-live="polite"><h4 id="infoN"></h4><div id="infoT"></div><button id="infoX"></button></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   MATEMATIKA – len celé čísla. Zlomok je objekt {c: čitateľ, m: menovateľ}.
+   Desatinné čísla sa nikde nepoužívajú na porovnávanie ani výpočty,
+   len na kreslenie polohy na obrázku.
+   ===================================================================== */
+/* MATEMATIKA START */
+// najväčší spoločný deliteľ (Euklidov algoritmus)
+function nsd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { const t = a % b; a = b; b = t; } return a; }
+// najmenší spoločný násobok
+function nsn(a, b) { return (a / nsd(a, b)) * b; }
+// skrátenie na základný tvar
+function skrat(z) { const g = nsd(z.c, z.m) || 1; return { c: z.c / g, m: z.m / g }; }
+// porovnanie krížovým súčinom: 1 (a > b), -1 (a < b), 0 (rovnaké)
+function porovnaj(a, b) { const x = a.c * b.m, y = b.c * a.m; return x > y ? 1 : x < y ? -1 : 0; }
+function znak(r) { return r > 0 ? '>' : r < 0 ? '<' : '='; }
+// sčítanie a odčítanie cez najmenší spoločný menovateľ (výsledok ešte nie je skrátený)
+function scitaj(a, b) { const M = nsn(a.m, b.m); return { c: a.c * (M / a.m) + b.c * (M / b.m), m: M }; }
+function odcitaj(a, b) { const M = nsn(a.m, b.m); return { c: a.c * (M / a.m) - b.c * (M / b.m), m: M }; }
+// nepravý zlomok → zmiešané číslo {cele, c, m}
+function zmiesane(z) { const r = z.c % z.m; return { cele: (z.c - r) / z.m, c: r, m: z.m }; }
+// zmiešané číslo → zlomok
+function zoZmiesaneho(w) { return { c: w.cele * w.m + w.c, m: w.m }; }
+// zlomok z čísla – n musí byť deliteľné menovateľom, inak null
+function zCisla(z, n) { return n % z.m === 0 ? (n / z.m) * z.c : null; }
+function delitele(n) { const d = []; for (let i = 1; i <= n; i++) if (n % i === 0) d.push(i); return d; }
+function nasobky(n, kolko) { const r = []; for (let i = 1; i <= kolko; i++) r.push(n * i); return r; }
+/* MATEMATIKA KONIEC */
+
+/* ===== Pomocné funkcie ===== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const U = TEXTY.ui;
+const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
+const r1 = x => Math.round(x * 10) / 10;          // zaokrúhlenie súradníc pre SVG (len grafika)
+const r2 = x => Math.round(x * 100) / 100;
+const nahoda = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+function zamiesaj(p) { const a = p.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function tvar(n, t) { return n === 1 ? t[0] : (n >= 2 && n <= 4) ? t[1] : t[2]; }   // 1 skupinu, 2 skupiny, 5 skupín
+function cesta(o, p) { return p.split('.').reduce((x, k) => x == null ? x : x[k], o); }
+
+// doplnenie {x} v texte
+function vypln(t, o) { return String(t).replace(/\{(\w+)\}/g, (x, k) => (o && o[k] !== undefined) ? o[k] : x); }
+// zlomok a zmiešané číslo ako HTML so zlomkovou čiarou
+function zlHTML(c, m) { return `<span class="zl"><span>${c}</span><span class="ciara"></span><span>${m}</span></span>`; }
+function zmHTML(w, c, m) { return `<span class="zm"><span class="cele">${w}</span>${zlHTML(c, m)}</span>`; }
+function formatuj(t) { return String(t).replace(/\[\[(?:(\d+) )?(\d+)\/(\d+)\]\]/g, (x, w, c, m) => w ? zmHTML(w, c, m) : zlHTML(c, m)); }
+function T(t, o) { return formatuj(vypln(t, o)); }
+function zlT(z) { return `[[${z.c}/${z.m}]]`; }
+
+/* =====================================================================
+   PREHRÁVAČ KROKOV
+   Každý krok má text, trvanie prechodu (dur, v sekundách) a cieľový stav (s).
+   Číselné hodnoty v s.n sa medzi krokmi plynule prelínajú, ostatné sa menia naraz.
+   Časovanie podľa skutočného času (requestAnimationFrame + performance.now).
+   ===================================================================== */
+let RYCHLOST = 1;
+let AKT = 'co';            // práve otvorená karta
+const HRACI = [];
+function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+function cistyStav(s) { const x = Object.assign({}, s); delete x._od; delete x._e; return x; }
+function lerpStav(a, b, e) {
+  const n = {};
+  for (const k in b.n) { const y = b.n[k], x = (a && a.n && typeof a.n[k] === 'number') ? a.n[k] : y; n[k] = x + (y - x) * e; }
+  return Object.assign({}, b, { n, _od: a || b, _e: e });
+}
+// postupné spustenie viacerých objektov za sebou (i-ty z N)
+function stag(p, i, N) { return clamp(p * 1.6 - .6 * (N > 1 ? i / (N - 1) : 0), 0, 1); }
+
+class Hrac {
+  constructor(o) {
+    this.o = o; this.kroky = []; this.i = 0; this.t = 1; this.hold = 0;
+    this.hraje = false; this.manual = false; this.od = null; this.akt = null; this.spina = true;
+    HRACI.push(this);
+    if (o.ui) this.vytvorUI();
+  }
+  vytvorUI() {
+    const el = this.o.ui;
+    el.innerHTML = `<div class="krokNum"></div><div class="krokText" aria-live="polite"></div>
+      <div class="tlac"><button class="primary bPlay"></button><button class="bKrok">${U.krok}</button><button class="bSpat">${U.spat}</button><button class="bZac">${U.znova}</button>${this.o.nahodny ? `<button class="bNah">${U.nahodny}</button>` : ''}</div>
+      ${this.o.bezRychlosti ? '' : `<label class="sl"><span class="lbl"><span>${U.rychlost}</span><b class="vR"></b></span><input type="range" class="rychl" min="0.25" max="3" step="0.25" aria-label="${U.rychlost}"></label>`}`;
+    this.e = { num: $('.krokNum', el), txt: $('.krokText', el), play: $('.bPlay', el), krok: $('.bKrok', el), spat: $('.bSpat', el) };
+    this.e.play.onclick = () => this.prepni();
+    this.e.krok.onclick = () => {   // krok za krokom: dokonči rozbehnutý krok, inak prejdi na ďalší
+      this.hraje = false;
+      if (this.t < 1) { this.t = 1; this.manual = false; this.spina = true; this.ui(); } else this.dalsi(true);
+    };
+    this.e.spat.onclick = () => this.spat();
+    $('.bZac', el).onclick = () => { this.hraje = false; this.odZac(); };
+    if (this.o.nahodny) $('.bNah', el).onclick = () => this.o.nahodny();
+    const r = $('.rychl', el); if (r) r.oninput = () => nastavRychlost(+r.value);
+    nastavRychlost(RYCHLOST);
+  }
+  // nové kroky; opt.koniec = zobraz posledný krok, opt.plynulo = prejdi doň plynulo, opt.hraj = spusti
+  nastav(kroky, opt = {}) {
+    const pred = this.akt;
+    this.kroky = kroky; this.i = opt.koniec ? kroky.length - 1 : 0; this.hold = 0;
+    if (opt.plynulo && pred) { this.od = cistyStav(pred); this.t = 0; this.manual = true; }
+    else { this.od = kroky[this.i].s; this.t = 1; this.manual = false; }
+    this.hraje = !!opt.hraj; this.spina = true; this.ui();
+  }
+  pridaj(kroky) { this.kroky = this.kroky.concat(kroky); this.i = this.kroky.length - kroky.length - 1; this.t = 1; this.dalsi(true); this.hraje = true; this.ui(); }
+  dalsi(manual) {
+    if (this.i >= this.kroky.length - 1) return;
+    this.od = cistyStav(this.akt || this.kroky[this.i].s); this.i++; this.t = 0; this.hold = 0;
+    if (manual) this.manual = true;
+    this.spina = true; this.ui();
+  }
+  spat() { if (this.i <= 0) return; this.hraje = false; this.i--; this.t = 1; this.od = this.kroky[this.i].s; this.manual = false; this.spina = true; this.ui(); }
+  odZac() { this.i = 0; this.t = 1; this.hold = 0; this.od = this.kroky[0].s; this.manual = false; this.spina = true; this.ui(); }
+  prepni() {
+    if (this.hraje) this.hraje = false;
+    else { if (this.i >= this.kroky.length - 1 && this.t >= 1) this.odZac(); this.hraje = true; }
+    this.ui();
+  }
+  drz() { const t = (this.kroky[this.i].text || '').replace(/<[^>]+>|\[\[|\]\]/g, ''); return Math.max(2.4, t.length / 20); }   // čas na prečítanie
+  tick(dt) {
+    if (!this.kroky.length) return;
+    if (this.t < 1 && (this.hraje || this.manual)) {
+      const d = this.kroky[this.i].dur ?? 1.2;
+      this.t = d <= 0 ? 1 : Math.min(1, this.t + dt * RYCHLOST / d);
+      this.spina = true;
+      if (this.t >= 1) { this.manual = false; this.hold = 0; this.ui(); }
+    } else if (this.t >= 1 && this.hraje) {
+      this.hold += dt * RYCHLOST;
+      if (this.hold >= this.drz()) { if (this.i < this.kroky.length - 1) this.dalsi(); else { this.hraje = false; this.ui(); } }
+    }
+    const vzdy = this.o.vzdy && this.o.vzdy();
+    if (this.spina || vzdy) { this.akt = lerpStav(this.od, this.kroky[this.i].s, ease(this.t)); this.o.kresli(this.akt, this); this.spina = false; }
+  }
+  ui() {
+    if (this.e) {
+      const n = this.kroky.length, k = this.kroky[this.i];
+      this.e.num.textContent = n ? vypln(U.krokX, { i: this.i + 1, n }) : '';
+      const html = k ? formatuj(k.text) : '';
+      if (this.e.txt.innerHTML !== html) this.e.txt.innerHTML = html;
+      this.e.play.textContent = this.hraje ? U.pauza : U.spustit;
+      this.e.spat.disabled = this.i <= 0;
+      this.e.krok.disabled = this.i >= n - 1 && this.t >= 1;
+    }
+    if (this.o.poZmene) this.o.poZmene(this);
+  }
+  naKonci() { return this.i >= this.kroky.length - 1; }
+}
+function nastavRychlost(v) {
+  RYCHLOST = v;
+  $$('.rychl').forEach(r => { r.value = v; });
+  $$('.vR').forEach(b => { b.textContent = String(v).replace('.', ',') + '×'; });
+}
+
+/* =====================================================================
+   KRESLENIE (SVG) – pás, koláč, číselná os, zlomok, množina
+   ===================================================================== */
+const FARBY = { A: '#ffd88a', B: '#6fb4ff', C: '#7fdc8f', R: '#ff7a6b' };
+// deliaca čiara: tmavý okraj + svetlá čiara, aby bola viditeľná na vyfarbenej aj prázdnej časti
+function carL(p, hr, a, farba) {
+  return `<path d="${p}" stroke="#04060c" stroke-width="${r1(hr + 3)}" opacity="${r2(a)}" fill="none"/><path d="${p}" stroke="${farba || '#e2e8f5'}" stroke-width="${r1(hr)}" opacity="${r2(a)}" fill="none"/>`;
+}
+// číslo časti: vo vyfarbenej časti tmavé so svetlým lemom, v prázdnej svetlé
+function cisloT(x, y, t, fs, tmave, a) {
+  return `<text x="${r1(x)}" y="${r1(y + fs * .36)}" font-size="${r1(fs)}" text-anchor="middle" font-weight="700" opacity="${r2(a)}" ${tmave ? 'fill="#0b0f1a" stroke="#fff" stroke-opacity=".85" stroke-width="3.5" paint-order="stroke"' : 'fill="#a3adc6"'}>${t}</text>`;
+}
+/* Pás: o = {x,y,w,h, vypln:[{od,do,vzor,a}] (podiely celku), del:[{m,a,hr,rast,farba}] (delenia na m častí),
+   cisla:{m,do,tm,off,a} (očísluj prvých "do" častí, "tm" z nich je vyfarbených), obrys, obrysHr, attr} */
+function pas(o) {
+  const { x, y, w, h } = o;
+  let s = `<g${o.attr || ''}><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="#122038"/>`;
+  for (const v of o.vypln || []) {
+    const a = v.a ?? 1; if (a <= .005 || v.do - v.od <= .0005) continue;
+    s += `<rect x="${r1(x + w * v.od)}" y="${y}" width="${r1(w * (v.do - v.od))}" height="${h}" fill="url(#p${v.vzor})" opacity="${r2(a)}"/>`;
+  }
+  for (const d of o.del || []) {
+    const a = d.a ?? 1, rast = d.rast ?? 1; if (a <= .01 || d.m < 2 || rast <= .01) continue;
+    let p = ''; for (let k = 1; k < d.m; k++) p += `M${r1(x + w * k / d.m)} ${y}V${r1(y + h * rast)}`;
+    s += carL(p, d.hr || 2, a, d.farba);
+  }
+  const c = o.cisla;
+  if (c && (c.a ?? 1) > .02 && w / c.m >= 15) {
+    const sir = w / c.m, fs = Math.min(24, sir * .6, h * .42);
+    for (let k = 0; k < c.do; k++) s += cisloT(x + sir * (k + .5), y + h / 2, k + 1 + (c.off || 0), fs, k < c.tm, c.a ?? 1);
+  }
+  s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="none" stroke="${o.obrys || '#a3adc6'}" stroke-width="${r1(o.obrysHr || 2)}"/>`;
+  return s + '</g>';
+}
+// výsek kruhu od podielu a0 po a1 (0 = hore, v smere hodinových ručičiek)
+function sektor(cx, cy, r, a0, a1) {
+  if (a1 - a0 >= .9999) return `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
+  const p = t => [r1(cx + r * Math.sin(2 * Math.PI * t)), r1(cy - r * Math.cos(2 * Math.PI * t))];
+  const [x0, y0] = p(a0), [x1, y1] = p(a1);
+  return `M${cx} ${cy}L${x0} ${y0}A${r} ${r} 0 ${a1 - a0 > .5 ? 1 : 0} 1 ${x1} ${y1}Z`;
+}
+/* Koláč: rovnaké parametre ako pás, len cx, cy, r */
+function kolac(o) {
+  const { cx, cy, r } = o;
+  let s = `<g${o.attr || ''}><circle cx="${cx}" cy="${cy}" r="${r}" fill="#122038"/>`;
+  for (const v of o.vypln || []) {
+    const a = v.a ?? 1; if (a <= .005 || v.do - v.od <= .0005) continue;
+    s += `<path d="${sektor(cx, cy, r, v.od, v.do)}" fill="url(#p${v.vzor})" opacity="${r2(a)}"/>`;
+  }
+  for (const d of o.del || []) {
+    const a = d.a ?? 1, rast = d.rast ?? 1; if (a <= .01 || d.m < 2 || rast <= .01) continue;
+    let p = ''; for (let k = 0; k < d.m; k++) { const u = 2 * Math.PI * k / d.m; p += `M${cx} ${cy}L${r1(cx + r * rast * Math.sin(u))} ${r1(cy - r * rast * Math.cos(u))}`; }
+    s += carL(p, d.hr || 2, a, d.farba);
+  }
+  const c = o.cisla;
+  if (c && (c.a ?? 1) > .02 && 2 * Math.PI * r * .66 / c.m >= 17) {
+    const fs = Math.min(24, 2 * Math.PI * r * .66 / c.m * .55);
+    for (let k = 0; k < c.do; k++) { const u = 2 * Math.PI * (k + .5) / c.m; s += cisloT(cx + r * .66 * Math.sin(u), cy - r * .66 * Math.cos(u), k + 1, fs, k < c.tm, c.a ?? 1); }
+  }
+  s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${o.obrys || '#a3adc6'}" stroke-width="${r1(o.obrysHr || 2)}"/>`;
+  return s + '</g>';
+}
+// zlomok v SVG so zlomkovou čiarou, (x, y) = stred čiary
+function sirZl(c, m, fs) { return Math.max(String(c).length, String(m).length) * fs * .62 + 8; }
+function svgZl(x, y, c, m, fs, farba, a) {
+  const sir = sirZl(c, m, fs);
+  return `<g fill="${farba || '#e2e8f5'}" font-size="${fs}" font-weight="700" text-anchor="middle"${a !== undefined ? ` opacity="${r2(a)}"` : ''}><text x="${r1(x)}" y="${r1(y - fs * .24)}">${c}</text><rect x="${r1(x - sir / 2)}" y="${r1(y - 1.5)}" width="${r1(sir)}" height="3"/><text x="${r1(x)}" y="${r1(y + fs * .9)}">${m}</text></g>`;
+}
+// rad zlomkov spojených znamienkom „=“, vycentrovaný okolo cx (a udržaný v hraniciach)
+function radZl(cx, cy, list, fs, farba, minX, maxX) {
+  const sir = list.map(([c, m]) => sirZl(c, m, fs)), med = fs * 1.1;
+  const spolu = sir.reduce((s, x) => s + x, 0) + med * (list.length - 1);
+  let x = clamp(cx - spolu / 2, minX, maxX - spolu), s = '';
+  list.forEach(([c, m], i) => {
+    s += svgZl(x + sir[i] / 2, cy, c, m, fs, farba); x += sir[i];
+    if (i < list.length - 1) { s += `<text x="${r1(x + med / 2)}" y="${r1(cy + fs * .35)}" font-size="${fs}" font-weight="700" text-anchor="middle" fill="${farba || '#e2e8f5'}">=</text>`; x += med; }
+  });
+  return s;
+}
+function textS(x, y, t, fs, farba, a, kotva) { return `<text x="${r1(x)}" y="${r1(y)}" font-size="${fs}" font-weight="700" text-anchor="${kotva || 'middle'}" fill="${farba || '#e2e8f5'}"${a !== undefined ? ` opacity="${r2(a)}"` : ''}>${t}</text>`; }
+/* Číselná os od 0 po max: del = dieliky [{m,a,smer(-1 hore, 1 dole),farba}], body = [{v,a,tvar,vzor,lab:[[c,m],...],hore}] */
+function os(o) {
+  const { x, y, w } = o, max = o.max || 1;
+  let s = `<g${o.attr || ''}><rect x="${x - 25}" y="${y - 60}" width="${w + 60}" height="120" fill="transparent"/>`;
+  s += `<path d="M${x - 10} ${y}H${x + w + 16}" stroke="${o.farba || '#a3adc6'}" stroke-width="3"/><path d="M${x + w + 16} ${y - 7}l12 7l-12 7z" fill="${o.farba || '#a3adc6'}"/>`;
+  for (const d of o.del || []) {
+    const a = d.a ?? 1; if (a <= .01 || d.m < 2) continue;
+    const sm = d.smer || 0; let p = '';
+    for (let k = 1; k < d.m * max; k++) { if (k % d.m === 0) continue; const xx = r1(x + w * k / (d.m * max)); p += `M${xx} ${sm > 0 ? y : y - 11}V${sm < 0 ? y : y + 11}`; }
+    s += `<path d="${p}" stroke="${d.farba || '#e2e8f5'}" stroke-width="2.5" opacity="${r2(a)}"/>`;
+  }
+  for (let k = 0; k <= max; k++) { const xx = x + w * k / max; s += `<path d="M${xx} ${y - 17}V${y + 17}" stroke="#e2e8f5" stroke-width="3"/>` + textS(xx, y + 42, k, 24); }
+  for (const b of o.body || []) {
+    const a = b.a ?? 1; if (a <= .01) continue;
+    const xx = x + w * b.v / max;
+    s += `<g opacity="${r2(a)}">`;
+    if (b.tvar === 'koso') s += `<path d="M${r1(xx)} ${y - 14}l14 14l-14 14l-14 -14z" fill="url(#p${b.vzor || 'B'})" stroke="#fff" stroke-width="2"/>`;
+    else s += `<circle cx="${r1(xx)}" cy="${y}" r="12" fill="url(#p${b.vzor || 'A'})" stroke="#fff" stroke-width="2"/>`;
+    if (b.lab) s += radZl(xx, b.hore === false ? y + 72 : y - 46, b.lab, 24, b.farba || FARBY[b.vzor || 'A'], x - 20, x + w + 20);
+    s += '</g>';
+  }
+  return s + '</g>';
+}
+/* Rozloženie m skupín po g predmetoch do obdĺžnika (X, Y, W, H): vráti rámčeky skupín a polohy predmetov */
+function rozlozSkupiny(m, g, X, Y, W, H, maxD) {
+  const gc = Math.min(g, Math.ceil(Math.sqrt(g))), gr = Math.ceil(g / gc), pad = .5, med = .35;
+  let naj = null;
+  for (let cols = 1; cols <= m; cols++) {
+    const rows = Math.ceil(m / cols);
+    const d = Math.min(W / (cols * (gc + pad) + (cols - 1) * med), H / (rows * (gr + pad) + (rows - 1) * med));
+    if (!naj || d > naj.d) naj = { cols, rows, d };
+  }
+  const d = Math.min(naj.d, maxD || 48), bw = d * (gc + pad), bh = d * (gr + pad);
+  const ox = X + (W - (naj.cols * bw + (naj.cols - 1) * med * d)) / 2, oy = Y + (H - (naj.rows * bh + (naj.rows - 1) * med * d)) / 2;
+  const boxy = [], poz = [];
+  for (let j = 0; j < m; j++) {
+    const bx = ox + (j % naj.cols) * (bw + med * d), by = oy + Math.floor(j / naj.cols) * (bh + med * d);
+    boxy.push({ x: bx, y: by, w: bw, h: bh });
+    for (let k = 0; k < g; k++) poz.push([bx + d * pad / 2 + d * (k % gc + .5), by + d * pad / 2 + d * (Math.floor(k / gc) + .5)]);
+  }
+  return { boxy, poz, d };
+}
+function ramSkupiny(b, j, a, hl) {   // čiarkovaný rámček skupiny s číslom
+  const rr = clamp(b.w * .14, 9, 13);
+  return `<g opacity="${r2(a)}"><rect x="${r1(b.x)}" y="${r1(b.y)}" width="${r1(b.w)}" height="${r1(b.h)}" rx="8" fill="${hl ? 'rgba(255,216,138,.12)' : 'none'}" stroke="${hl ? '#ffd88a' : '#a3adc6'}" stroke-width="${hl ? 4 : 2}" stroke-dasharray="${hl ? '' : '7 5'}"/>` +
+    `<circle cx="${r1(b.x + 2)}" cy="${r1(b.y + 2)}" r="${r1(rr)}" fill="#0b1426" stroke="#a3adc6" stroke-width="1.5"/>${textS(b.x + 2, b.y + 2 + rr * .4, j + 1, r1(rr * 1.15), '#e2e8f5')}</g>`;
+}
+function jablko(x, y, r, cervene, a) {
+  let s = `<g opacity="${r2(a)}"><path d="M${r1(x)} ${r1(y - r * .8)}l${r1(r * .12)} ${r1(-r * .5)}" stroke="#a0703b" stroke-width="${r1(Math.max(1.5, r * .13))}" fill="none"/>` +
+    `<ellipse cx="${r1(x + r * .4)}" cy="${r1(y - r * 1.02)}" rx="${r1(r * .32)}" ry="${r1(r * .15)}" fill="#3f9a52"/>` +
+    `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r)}" fill="#7fdc8f" stroke="#04060c" stroke-width="1.5"/>`;
+  if (cervene > .01) s += `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r)}" fill="url(#pR)" opacity="${r2(cervene)}" stroke="#04060c" stroke-width="1.5"/>`;
+  return s + '</g>';
+}
+
+/* =====================================================================
+   OVLÁDACIE PRVKY – editor zlomku, prepínač, lupa, popis po kliknutí, karty
+   ===================================================================== */
+/* Editor zlomku: veľký zlomok s tlačidlami + a −.
+   o = {c, m, minC, maxC(m), minM, maxM, trieda, zmena(c, m)} */
+function editor(el, o) {
+  el.innerHTML = `<div class="editor ${o.trieda || ''}">
+    <button data-a="c-" aria-label="${U.zmensitC}">−</button><span class="cislo cit" data-cast="cit" tabindex="0" role="button"></span><button data-a="c+" aria-label="${U.zvacsitC}">+</button>
+    <span class="ciaraE" data-cast="ciara" tabindex="0" role="button" aria-label="zlomková čiara"></span>
+    <button data-a="m-" aria-label="${U.zmensitM}">−</button><span class="cislo men" data-cast="men" tabindex="0" role="button"></span><button data-a="m+" aria-label="${U.zvacsitM}">+</button></div>`;
+  const minC = o.minC ?? 0, minM = o.minM ?? 1, maxM = o.maxM ?? 12, maxC = m => o.maxC ? o.maxC(m) : m;
+  const ed = { c: o.c, m: o.m };
+  ed.kresli = () => {
+    $('.cit', el).textContent = ed.c; $('.men', el).textContent = ed.m;
+    $('[data-a="c-"]', el).disabled = ed.c <= minC;
+    $('[data-a="c+"]', el).disabled = ed.c >= maxC(ed.m);
+    $('[data-a="m-"]', el).disabled = ed.m <= minM || maxC(ed.m - 1) < minC;
+    $('[data-a="m+"]', el).disabled = ed.m >= maxM;
+  };
+  ed.nastav = (c, m) => { ed.c = c; ed.m = m; ed.kresli(); };
+  el.addEventListener('click', ev => {
+    const b = ev.target.closest('button[data-a]'); if (!b || b.disabled) return;
+    let { c, m } = ed; const a = b.dataset.a;
+    if (a === 'c-') c--; if (a === 'c+') c++; if (a === 'm-') m--; if (a === 'm+') m++;
+    m = clamp(m, minM, Math.max(maxM, ed.m)); c = clamp(c, minC, maxC(m));
+    ed.nastav(c, m); o.zmena(c, m);
+  });
+  ed.kresli();
+  return ed;
+}
+// prepínač (segment tlačidiel)
+function segment(el, volby, akt, zmena, lbl) {
+  el.innerHTML = (lbl ? `<span class="lbl0">${lbl}</span>` : '') + volby.map(([k, t]) => `<button data-k="${k}" class="${String(k) === String(akt) ? 'on' : ''}">${t}</button>`).join('');
+  el.onclick = ev => {
+    const b = ev.target.closest('button'); if (!b || b.disabled) return;
+    $$('button', el).forEach(x => x.classList.toggle('on', x === b)); zmena(b.dataset.k);
+  };
+}
+// lupa – zväčší obrázky v karte (dá sa posúvať prstom)
+function pridajLupu(card) {
+  let top = $('.stageTop', card);
+  if (!top) { top = document.createElement('div'); top.className = 'stageTop'; card.prepend(top); }
+  const bar = document.createElement('div'); bar.className = 'lupaBar'; bar.style.marginLeft = 'auto';
+  bar.innerHTML = `<span>${U.lupa}</span><button aria-label="Oddialiť">−</button><b>1×</b><button aria-label="Priblížiť">+</button>`;
+  top.appendChild(bar);
+  const ZL = [1, 1.5, 2, 3]; let z = 0;
+  const [bm, bp] = $$('button', bar), lbl = $('b', bar);
+  const nastav = () => { $$('.stage svg', card).forEach(s => { s.style.width = ZL[z] * 100 + '%'; }); lbl.textContent = String(ZL[z]).replace('.', ',') + '×'; bm.disabled = z === 0; bp.disabled = z === ZL.length - 1; };
+  bm.onclick = () => { z = Math.max(0, z - 1); nastav(); };
+  bp.onclick = () => { z = Math.min(ZL.length - 1, z + 1); nastav(); };
+  nastav();
+}
+// popis po kliknutí na čitateľa, menovateľa, zlomkovú čiaru, celok, číselnú os
+function ukazInfo(cast, el) {
+  const p = TEXTY.casti[cast]; if (!p) return;
+  $('#infoN').textContent = p.n; $('#infoT').innerHTML = formatuj(p.t); $('#info').hidden = false;
+  if (el && !(el instanceof SVGElement)) { el.classList.remove('zoomuj'); void el.offsetWidth; el.classList.add('zoomuj'); }
+  if (AKT === 'co') { S1.hl = cast; S1.hlT = performance.now(); }
+}
+document.addEventListener('click', ev => { const el = ev.target.closest('[data-cast]'); if (el) ukazInfo(el.dataset.cast, el); });
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape') $('#info').hidden = true;
+  if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches && ev.target.matches('[data-cast][tabindex]')) { ev.preventDefault(); ukazInfo(ev.target.dataset.cast, ev.target); }
+});
+function ukazKartu(id) {
+  AKT = id;
+  $$('[data-karta]').forEach(s => { s.hidden = s.id !== id; });
+  $$('#karty button').forEach(b => { const on = b.dataset.k === id; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  HRACI.forEach(h => { h.spina = true; });
+  $('#info').hidden = true;
+  try { history.replaceState(null, '', '#' + id); } catch (e) { /* napr. pri otvorení zo súboru */ }
+}
+
+/* =====================================================================
+   1. ČO JE ZLOMOK
+   ===================================================================== */
+const S1 = { c: 3, m: 4, model: 'pas', hl: null, hlT: 0 };
+let ed1, h1;
+const CELOK = ' class="klik" data-cast="celok"';
+function g1(m) { return Math.ceil(12 / m); }      // počet jabĺk v jednej skupine (spolu 12 alebo najbližší väčší násobok menovateľa)
+function kroky1() {
+  const { c, m, model } = S1, K = TEXTY.co, g = g1(m), n = m * g;
+  const o = { c, m, g, n, r: c * g, nazov: TEXTY.nazvy[m] };
+  const st = (fill, dA, osA, celA, cA) => ({ model, m, c, g, n: { fill, dA, osA, osV: osA > 0 ? c / m : 0, celA, cA } });
+  return [
+    { text: vypln(K.celok[model], o), dur: .8, s: st(0, 0, 0, 1, 0) },
+    { text: vypln(m === 1 ? K.delenie1 : K.delenie[model], o), dur: 1.5, s: st(0, 1, 0, 0, 1) },
+    { text: vypln(c === 0 ? K.beriem0 : model === 'mnozina' ? K.beriemMn : K.beriem, o), dur: .5 + .25 * c, s: st(c / m, 1, 0, 0, 0) },
+    { text: vypln(c === 0 ? K.zapis0 : c === m ? K.zapisCely : K.zapis, o), dur: 1.4, s: st(c / m, 1, 1, 0, 0) }
+  ];
+}
+// zvýraznenie po kliknutí na časť zlomku (bliká 6 sekúnd)
+function aktHL() {
+  if (!S1.hl) return null;
+  const t = performance.now() - S1.hlT;
+  if (t > 6000) { S1.hl = null; return null; }
+  return { cast: S1.hl, puls: .5 + .5 * Math.sin(t / 160) };
+}
+function mnozina1(s, n, od, e, celokFarba, celokHr) {
+  const lay = (m, g) => rozlozSkupiny(m, g, 24, 24, 592, 252, 48);
+  const set = (m, g, fill, dA, alfa) => {
+    const L = lay(m, g); let r = '';
+    if (m > 1) L.boxy.forEach((b, j) => { if (dA > .02) r += ramSkupiny(b, j, dA * alfa); });
+    L.poz.forEach(([x, y], i) => { const j = Math.floor(i / g); r += jablko(x, y, L.d * .36, clamp(fill * m - j, 0, 1), alfa); });
+    return r;
+  };
+  let out = `<rect x="6" y="6" width="628" height="288" rx="12" fill="transparent" stroke="${celokFarba || 'none'}" stroke-width="${r1(celokHr)}"${CELOK}/>`;
+  if (od.m !== s.m && od.model === s.model) out += set(od.m, od.g, od.n.fill, od.n.dA, 1 - e) + set(s.m, s.g, n.fill, n.dA, e);
+  else out += set(s.m, s.g, n.fill, n.dA, 1);
+  return out;
+}
+function kresli1(s) {
+  const n = s.n, od = s._od || s, e = s._e ?? 1, m = s.m, c = s.c, hl = aktHL(), puls = hl ? hl.puls : 0;
+  const zmenaM = od.m !== m && od.model === s.model;
+  const delHL = hl && (hl.cast === 'men' || hl.cast === 'ciara');
+  const vyz = Math.min(m, Math.floor(n.fill * m + .35));     // koľko častí je (takmer) vyfarbených – len na čísla
+  const del = zmenaM ? [{ m: od.m, a: 1 - e }, { m, a: e }] : [{ m, a: 1, rast: n.dA }];
+  if (delHL) del.forEach(d => { d.farba = '#ffd88a'; d.hr = 2.5 + 2.5 * puls; });
+  const celokHL = hl && hl.cast === 'celok';
+  const obrys = celokHL || n.celA > .05 ? '#ffd88a' : null, obrysHr = celokHL ? 3 + 4 * puls : 2 + 4 * n.celA;
+  const cisla = { m, do: (n.cA > .5 || delHL) ? m : vyz, tm: vyz, a: zmenaM ? e : 1 };
+  const citHL = hl && hl.cast === 'cit' && n.fill > .001;
+  const svg = $('#co_svg'); let out = '';
+  if (s.model === 'pas') {
+    svg.setAttribute('viewBox', '0 0 640 150');
+    out += pas({ x: 30, y: 30, w: 580, h: 90, vypln: [{ od: 0, do: n.fill, vzor: 'A' }], del, cisla, obrys, obrysHr, attr: CELOK });
+    if (citHL) out += `<rect x="30" y="30" width="${r1(580 * n.fill)}" height="90" fill="none" stroke="#ffd88a" stroke-width="${r1(3 + 4 * puls)}" pointer-events="none"/>`;
+  } else if (s.model === 'kolac') {
+    svg.setAttribute('viewBox', '0 0 640 300');
+    out += kolac({ cx: 320, cy: 150, r: 130, vypln: [{ od: 0, do: n.fill, vzor: 'A' }], del, cisla, obrys, obrysHr, attr: CELOK });
+    if (citHL) out += `<path d="${sektor(320, 150, 130, 0, n.fill)}" fill="none" stroke="#ffd88a" stroke-width="${r1(3 + 4 * puls)}" pointer-events="none"/>`;
+  } else {
+    svg.setAttribute('viewBox', '0 0 640 300');
+    out += mnozina1(s, n, od, e, obrys || (citHL ? null : null), obrysHr);
+    if (citHL || delHL) {   // zvýrazni vybrané skupiny / všetky skupiny
+      const L = rozlozSkupiny(m, s.g, 24, 24, 592, 252, 48);
+      L.boxy.forEach((b, j) => { if (delHL || j < c) out += `<rect x="${r1(b.x)}" y="${r1(b.y)}" width="${r1(b.w)}" height="${r1(b.h)}" rx="8" fill="none" stroke="#ffd88a" stroke-width="${r1(2 + 3 * puls)}" pointer-events="none"/>`; });
+    }
+  }
+  svg.innerHTML = out;
+  // číselná os
+  const osHL = hl && hl.cast === 'os';
+  const delO = zmenaM ? [{ m: od.m, a: (1 - e) * od.n.osA }, { m, a: e * n.osA }] : [{ m, a: n.osA }];
+  if (osHL || delHL) delO.forEach(d => { d.farba = '#ffd88a'; d.a = Math.max(d.a, puls); });
+  $('#co_os').innerHTML = os({ x: 40, y: 80, w: 560, del: delO, farba: osHL ? '#ffd88a' : null, body: [{ v: n.osV, a: n.osA, lab: [[c, m]], vzor: 'A' }], attr: ' class="klik" data-cast="os"' });
+}
+function nastav1(c, m, plynulo) {
+  S1.c = c; S1.m = m;
+  ed1.nastav(c, m);
+  const sc = $('#co_slc'); sc.max = m; sc.value = c; $('#co_slm').value = m;
+  $('#co_vc').textContent = c; $('#co_vm').textContent = m;
+  $('#co_vyznam').innerHTML = T(TEXTY.co.vyznam, { c, m });
+  $('#co_cast').innerHTML = m === 1 ? T(TEXTY.co.jednaCast1) : T(TEXTY.co.jednaCast, { m, nazov: TEXTY.nazvy[m] });
+  h1.nastav(kroky1(), { koniec: true, plynulo });
+}
+function init1() {
+  $('#co_os').setAttribute('viewBox', '0 0 640 130');
+  ed1 = editor($('#co_ed'), { c: S1.c, m: S1.m, minC: 0, minM: 1, maxM: 12, zmena: (c, m) => nastav1(c, m, true) });
+  h1 = new Hrac({ sek: 'co', ui: $('#co_hrac'), kresli: kresli1, vzdy: () => !!S1.hl,
+    nahodny: () => { const m = nahoda(2, 12); nastav1(nahoda(1, m - 1), m, true); } });
+  segment($('#co_model'), [['pas', U.pas], ['kolac', U.kolac], ['mnozina', U.mnozina]], S1.model, k => { S1.model = k; h1.akt = null; nastav1(S1.c, S1.m, false); }, U.model);
+  $('#co_slc').oninput = e => nastav1(clamp(+e.target.value, 0, S1.m), S1.m, true);
+  $('#co_slm').oninput = e => { const m = +e.target.value; nastav1(Math.min(S1.c, m), m, true); };
+  nastav1(S1.c, S1.m, false);
+}
+
+/* =====================================================================
+   2. ROZŠIROVANIE A KRÁTENIE
+   ===================================================================== */
+const S2 = { c: 3, m: 4, k: 2, model: 'pas' };
+const MAXCASTI = 36;       // najviac častí po rozšírení (inak by bol model nečitateľný)
+let ed2, h2;
+// stav modelu: mH = hrubé (pôvodné) delenie, mJ = jemné delenie, aJ = viditeľnosť jemných čiar, rastJ = ako ďaleko narástli, aH = zvýraznenie hrubých čiar
+function stav2(o) {
+  return { model: S2.model, mH: o.mH, mJ: o.mJ, hrJ: o.hrJ || 2, cis: o.cis, labs: o.labs, n: { fill: o.fill, aJ: o.aJ ?? 1, rastJ: o.rastJ ?? 1, aH: o.aH ?? 0 } };
+}
+function krokyStart2() {
+  const { c, m } = S2;
+  return [{ text: TEXTY.rk.vyber, dur: 0, s: stav2({ mH: m, mJ: m, fill: c / m, cis: { m, do: c, tm: c }, labs: [[c, m]] }) }];
+}
+function krokyRozsir(c, m, k) {
+  const C = c * k, M = m * k, R = TEXTY.rk.rozsir, o = { c, m, k, C, M }, f = c / m;
+  const st = x => stav2({ mH: m, mJ: M, hrJ: 1.4, fill: f, ...x });
+  return [
+    { text: vypln(R[0], o), dur: .4, s: st({ rastJ: 0, cis: { m, do: c, tm: c }, labs: [[c, m]] }) },
+    { text: vypln(R[1], o), dur: 1.8, s: st({ cis: { m, do: c, tm: c }, labs: [[c, m]] }) },
+    { text: vypln(R[2], o), dur: .6, s: st({ cis: { m: M, do: M, tm: C }, labs: [[c, m]] }) },
+    { text: vypln(R[3], o), dur: .6, s: st({ cis: { m: M, do: C, tm: C }, labs: [[c, m]] }) },
+    { text: vypln(R[4], o), dur: 1, s: st({ cis: { m: M, do: C, tm: C }, labs: [[c, m], [C, M]] }) }
+  ];
+}
+// krátenie zlomku C/M číslom d; uvod = voliteľné úvodné kroky (hľadanie NSD)
+function krokySkrat(C, M, d, uvod) {
+  const c = C / d, m = M / d, R = TEXTY.rk.skrat, o = { c, m, d, C, M }, f = C / M;
+  const zac = stav2({ mH: m, mJ: M, fill: f, cis: { m: M, do: C, tm: C }, labs: [[C, M]] });
+  const k = (uvod || [{ text: vypln(R[0], o), dur: .4 }]).map(x => ({ ...x, s: zac }));
+  k.push({ text: vypln(R[1], o), dur: 1.2, s: stav2({ mH: m, mJ: M, fill: f, aH: 1, cis: { m: M, do: C, tm: C }, labs: [[C, M]] }) });
+  k.push({ text: vypln(R[2], o), dur: 1.8, s: stav2({ mH: m, mJ: M, fill: f, aJ: 0, cis: { m, do: c, tm: c }, labs: [[C, M]] }) });
+  k.push({ text: vypln(R[3], o), dur: 1, s: stav2({ mH: m, mJ: M, fill: f, aJ: 0, cis: { m, do: c, tm: c }, labs: [[C, M], [c, m]] }) });
+  return k;
+}
+function krokyZaklad(C, M) {
+  const g = nsd(C, M), Z = TEXTY.rk;
+  if (g === 1) return [{ text: vypln(Z.uzZaklad, { c: C, m: M }), dur: 0, s: stav2({ mH: M, mJ: M, fill: C / M, cis: { m: M, do: C, tm: C }, labs: [[C, M]] }) }];
+  const dC = delitele(C), dM = delitele(M), sp = dC.filter(x => M % x === 0);
+  const tuc = x => sp.includes(x) ? `<b>${x}</b>` : x;     // spoločné delitele tučne
+  const o = { C, M, g, delC: dC.map(tuc).join(', '), delM: dM.map(tuc).join(', '), spol: sp.join(', ') };
+  const k = krokySkrat(C, M, g, [{ text: vypln(Z.zaklad0, o), dur: .3 }, { text: vypln(Z.zaklad1, o), dur: .3 }]);
+  k[k.length - 1].text += vypln(Z.zakladKoniec, { c: C / g, m: M / g });
+  return k;
+}
+function kresli2(s) {
+  const n = s.n, svg = $('#rk_svg');
+  const del = [{ m: s.mJ, a: n.aJ, hr: s.hrJ, rast: n.rastJ }, { m: s.mH, a: 1, hr: 2 + 2.5 * n.aH, farba: n.aH > .05 ? '#ffd88a' : null }];
+  const vyp = [{ od: 0, do: n.fill, vzor: 'A' }];
+  if (s.model === 'pas') { svg.setAttribute('viewBox', '0 0 640 150'); svg.innerHTML = pas({ x: 30, y: 30, w: 580, h: 90, vypln: vyp, del, cisla: s.cis, attr: CELOK }); }
+  else { svg.setAttribute('viewBox', '0 0 640 300'); svg.innerHTML = kolac({ cx: 320, cy: 150, r: 130, vypln: vyp, del, cisla: s.cis, attr: CELOK }); }
+  $('#rk_os').innerHTML = os({ x: 40, y: 80, w: 560, del: [{ m: s.mJ, a: n.aJ * n.rastJ, farba: '#a3adc6' }, { m: s.mH, a: 1 }], body: [{ v: n.fill, lab: s.labs, vzor: 'A' }], attr: ' class="klik" data-cast="os"' });
+}
+// obnoví tlačidlá podľa aktuálneho zlomku
+function obnov2() {
+  const { c, m } = S2, R = TEXTY.rk;
+  ed2.nastav(c, m);
+  const kOk = k => m * k <= MAXCASTI;
+  if (!kOk(S2.k)) S2.k = [2, 3, 4, 5, 6].filter(kOk)[0] || 2;
+  segment($('#rk_k'), [2, 3, 4, 5, 6].map(k => [k, k]), S2.k, k => { S2.k = +k; obnov2(); });
+  $$('#rk_k button').forEach(b => { b.disabled = !kOk(+b.dataset.k); });
+  const bR = $('#rk_bRozsir'); bR.textContent = vypln(R.btnRozsir, { k: S2.k }); bR.disabled = !kOk(S2.k);
+  const dd = delitele(nsd(c, m)).filter(d => d > 1);
+  const elD = $('#rk_d');
+  if (dd.length) segment(elD, dd.map(d => [d, d]), -1, d => spusti2('skrat', +d));
+  else elD.innerHTML = `<span class="mini" style="margin:0">${R.nedaSa}</span>`;
+  $('#rk_hlaska').textContent = kOk(S2.k) ? '' : vypln(R.privela, { max: MAXCASTI });
+}
+function spusti2(typ, x) {
+  const { c, m } = S2; let kroky;
+  if (typ === 'rozsir') { kroky = krokyRozsir(c, m, x); S2.c = c * x; S2.m = m * x; }
+  else if (typ === 'skrat') { kroky = krokySkrat(c, m, x); S2.c = c / x; S2.m = m / x; }
+  else { const g = nsd(c, m); kroky = krokyZaklad(c, m); S2.c = c / g; S2.m = m / g; }
+  h2.nastav(kroky, { hraj: true });
+  obnov2();
+}
+function init2() {
+  ed2 = editor($('#rk_ed'), { c: S2.c, m: S2.m, minC: 1, minM: 2, maxM: 12, zmena: (c, m) => { S2.c = c; S2.m = m; obnov2(); h2.nastav(krokyStart2(), { plynulo: true }); } });
+  h2 = new Hrac({ sek: 'rk', ui: $('#rk_hrac'), kresli: kresli2,
+    nahodny: () => {
+      if (Math.random() < .5) {                     // rozšírenie
+        const m = nahoda(2, 9); S2.c = nahoda(1, m - 1); S2.m = m;
+        const ks = [2, 3, 4, 5, 6].filter(k => m * k <= MAXCASTI); S2.k = ks[nahoda(0, ks.length - 1)];
+        obnov2(); spusti2('rozsir', S2.k);
+      } else {                                      // krátenie na základný tvar
+        const q = nahoda(2, 6); let p; do { p = nahoda(1, q - 1); } while (nsd(p, q) !== 1);
+        const k = nahoda(2, Math.floor(12 / q)); S2.c = p * k; S2.m = q * k; obnov2(); spusti2('zaklad');
+      }
+    } });
+  segment($('#rk_model'), [['pas', U.pas], ['kolac', U.kolac]], S2.model, k => {
+    S2.model = k; h2.kroky.forEach(x => { x.s.model = k; }); h2.spina = true;
+  }, U.model);
+  $('#rk_bRozsir').onclick = () => spusti2('rozsir', S2.k);
+  $('#rk_bZaklad').onclick = () => spusti2('zaklad');
+  obnov2();
+  h2.nastav(krokyStart2());
+}
+
+/* =====================================================================
+   3. POROVNÁVANIE
+   ===================================================================== */
+const S3 = { a: { c: 3, m: 5 }, b: { c: 4, m: 7 }, model: 'pas' };
+let h3, ed3a, ed3b;
+function nasobkyDo(n, L) { return nasobky(n, L / n).map(x => x === L ? `<b>${x}</b>` : x).join(', '); }
+function krokyPor() {
+  const a = { ...S3.a }, b = { ...S3.b }, P = TEXTY.por, r = porovnaj(a, b), z = znak(r);
+  const L = nsn(a.m, b.m), k1 = L / a.m, k2 = L / b.m;
+  const o = { c1: a.c, m1: a.m, c2: b.c, m2: b.m, z, L, k1, k2, C1: a.c * k1, C2: b.c * k2, x1: a.c * b.m, x2: b.c * a.m, vacsi: r > 0 ? 'A' : 'B',
+    zj: znak(porovnaj({ c: 1, m: a.m }, { c: 1, m: b.m })), nas1: nasobkyDo(a.m, L), nas2: nasobkyDo(b.m, L) };
+  const st = x => ({ a, b, L, model: S3.model, cisA: { m: a.m, do: a.c, tm: a.c }, cisB: { m: b.m, do: b.c, tm: b.c }, koniec: false, ...x, n: { rA: 0, rB: 0, hl: 0, ...(x.n || {}) } });
+  const kroky = [{ text: vypln(P.start, o), dur: .5, s: st({}) }];
+  if (a.m === b.m) kroky.push({ text: vypln(P.rovnakyMen, o), dur: .6, s: st({}) });
+  else if (a.c === b.c) kroky.push({ text: vypln(P.rovnakyCit, o), dur: 1, s: st({ n: { hl: 1 } }) });
+  else {
+    const cA = { m: L, do: o.C1, tm: o.C1 }, cB = { m: L, do: o.C2, tm: o.C2 };
+    kroky.push({ text: vypln(P.rozne1, o), dur: .3, s: st({}) });
+    kroky.push({ text: vypln(P.rozne2, o), dur: .3, s: st({}) });
+    kroky.push({ text: vypln(k1 === 1 ? P.uzMaA : P.rozsirA, o), dur: 1.5, s: st({ n: { rA: 1 } }) });
+    kroky.push({ text: vypln(k2 === 1 ? P.uzMaB : P.rozsirB, o), dur: 1.5, s: st({ cisA: cA, n: { rA: 1, rB: 1 } }) });
+    kroky.push({ text: vypln(P.porovnaj, o), dur: .6, s: st({ cisA: cA, cisB: cB, n: { rA: 1, rB: 1 } }) });
+  }
+  const posl = kroky[kroky.length - 1].s;
+  kroky.push({ text: vypln(r === 0 ? P.koniecRovne : P.koniec, o) + '<br>' + vypln(P.kontrola, o), dur: .6, s: { ...posl, koniec: true, n: { ...posl.n } } });
+  return kroky;
+}
+function kresli3(s) {
+  const { a, b, L } = s, n = s.n, svg = $('#por_svg'); let out = '';
+  const delA = [{ m: a.m, a: 1 }, { m: L, a: 1, hr: 1.4, rast: n.rA }], delB = [{ m: b.m, a: 1 }, { m: L, a: 1, hr: 1.4, rast: n.rB }];
+  const vA = [{ od: 0, do: a.c / a.m, vzor: 'A' }], vB = [{ od: 0, do: b.c / b.m, vzor: 'B' }];
+  if (s.model === 'pas') {
+    svg.setAttribute('viewBox', '0 0 640 230');
+    const X = 110, W = 510;
+    out += textS(20, 78, 'A', 24, FARBY.A) + svgZl(68, 70, a.c, a.m, 24, FARBY.A) + pas({ x: X, y: 30, w: W, h: 80, vypln: vA, del: delA, cisla: s.cisA, attr: CELOK });
+    out += textS(20, 178, 'B', 24, FARBY.B) + svgZl(68, 170, b.c, b.m, 24, FARBY.B) + pas({ x: X, y: 130, w: W, h: 80, vypln: vB, del: delB, cisla: s.cisB, attr: CELOK });
+    if (n.hl > .01) {    // jedna časť z každého celku
+      const wa = W / a.m, wb = W / b.m;
+      out += `<g opacity="${r2(n.hl)}" pointer-events="none"><rect x="${X}" y="30" width="${r1(wa)}" height="80" fill="none" stroke="#ffd88a" stroke-width="5"/><rect x="${X}" y="130" width="${r1(wb)}" height="80" fill="none" stroke="#ffd88a" stroke-width="5"/>` +
+        `<path d="M${r1(X + wa)} 20V220M${r1(X + wb)} 20V220" stroke="#ffd88a" stroke-width="2.5" stroke-dasharray="7 5"/></g>`;
+    }
+  } else {
+    svg.setAttribute('viewBox', '0 0 640 320');
+    out += kolac({ cx: 170, cy: 135, r: 115, vypln: vA, del: delA, cisla: s.cisA, attr: CELOK }) + textS(130, 300, 'A', 24, FARBY.A) + svgZl(175, 292, a.c, a.m, 24, FARBY.A);
+    out += kolac({ cx: 470, cy: 135, r: 115, vypln: vB, del: delB, cisla: s.cisB, attr: CELOK }) + textS(430, 300, 'B', 24, FARBY.B) + svgZl(475, 292, b.c, b.m, 24, FARBY.B);
+    if (n.hl > .01) out += `<g opacity="${r2(n.hl)}" fill="none" stroke="#ffd88a" stroke-width="5" pointer-events="none"><path d="${sektor(170, 135, 115, 0, 1 / a.m)}"/><path d="${sektor(470, 135, 115, 0, 1 / b.m)}"/></g>`;
+  }
+  svg.innerHTML = out;
+  $('#por_os').innerHTML = os({ x: 40, y: 70, w: 560,
+    del: [{ m: n.rA > .5 ? L : a.m, a: 1, smer: -1, farba: FARBY.A }, { m: n.rB > .5 ? L : b.m, a: 1, smer: 1, farba: FARBY.B }],
+    body: [{ v: a.c / a.m, vzor: 'A', lab: [[a.c, a.m]] }, { v: b.c / b.m, vzor: 'B', tvar: 'koso', hore: false, lab: [[b.c, b.m]] }], attr: ' class="klik" data-cast="os"' });
+  const html = `<span class="tCit">A</span> ${zlHTML(a.c, a.m)} <b style="font-size:34px;min-width:1.2em">${s.koniec ? znak(porovnaj(a, b)).replace('<', '&lt;').replace('>', '&gt;') : '?'}</b> ${zlHTML(b.c, b.m)} <span class="tMen">B</span>`;
+  const el = $('#por_vysl'); if (el.dataset.h !== html) { el.dataset.h = html; el.innerHTML = html; }
+}
+function zmena3() { h3.nastav(krokyPor()); }
+function init3() {
+  ed3a = editor($('#por_edA'), { c: S3.a.c, m: S3.a.m, minC: 1, minM: 2, maxM: 12, trieda: 'male fA', zmena: (c, m) => { S3.a = { c, m }; zmena3(); } });
+  ed3b = editor($('#por_edB'), { c: S3.b.c, m: S3.b.m, minC: 1, minM: 2, maxM: 12, trieda: 'male fB', zmena: (c, m) => { S3.b = { c, m }; zmena3(); } });
+  h3 = new Hrac({ sek: 'por', ui: $('#por_hrac'), kresli: kresli3,
+    nahodny: () => {
+      const typ = nahoda(0, 3); let a, b;
+      if (typ === 0) { const m = nahoda(3, 12); let c1 = nahoda(1, m - 1), c2; do { c2 = nahoda(1, m - 1); } while (c2 === c1); a = { c: c1, m }; b = { c: c2, m }; }
+      else if (typ === 1) { const c = nahoda(1, 4); const m1 = nahoda(c + 1, 12); let m2; do { m2 = nahoda(c + 1, 12); } while (m2 === m1); a = { c, m: m1 }; b = { c, m: m2 }; }
+      else if (typ === 2) { do { const m1 = nahoda(2, 12), m2 = nahoda(2, 12); a = { c: nahoda(1, m1 - 1), m: m1 }; b = { c: nahoda(1, m2 - 1), m: m2 }; } while (a.m === b.m || a.c === b.c || nsn(a.m, b.m) > 36); }
+      else { const q = nahoda(2, 4); let p; do { p = nahoda(1, q - 1); } while (nsd(p, q) !== 1); const k1 = nahoda(1, Math.floor(12 / q)); let k2; do { k2 = nahoda(1, Math.floor(12 / q)); } while (k2 === k1); a = { c: p * k1, m: q * k1 }; b = { c: p * k2, m: q * k2 }; }
+      S3.a = a; S3.b = b; ed3a.nastav(a.c, a.m); ed3b.nastav(b.c, b.m); h3.nastav(krokyPor(), { hraj: true });
+    } });
+  segment($('#por_model'), [['pas', U.pas], ['kolac', U.kolac]], S3.model, k => { S3.model = k; h3.kroky.forEach(x => { x.s.model = k; }); h3.spina = true; }, U.model);
+  $('#por_btn').onclick = () => h3.nastav(krokyPor(), { hraj: true });
+  zmena3();
+}
+
+/* =====================================================================
+   4. SČÍTANIE A ODČÍTANIE
+   ===================================================================== */
+const S4 = { a: { c: 1, m: 2 }, b: { c: 1, m: 3 }, op: '+' };
+let h4, ed4a, ed4b;
+function data4() {
+  const a = { ...S4.a }, b = { ...S4.b }, op = S4.op, M = nsn(a.m, b.m), k1 = M / a.m, k2 = M / b.m, C1 = a.c * k1, C2 = b.c * k2;
+  const S = op === '+' ? C1 + C2 : C1 - C2;
+  return { a, b, op, M, k1, k2, C1, C2, S, g: nsd(S, M), riadky: S > M ? 2 : 1 };
+}
+function platne4() { return S4.op === '+' || porovnaj(S4.a, S4.b) > 0; }
+function krokySc() {
+  const d = data4(), P = TEXTY.sc, { a, b, op, M, k1, k2, C1, C2, S, g } = d;
+  const opZ = op === '+' ? '+' : '−';
+  const o = { c1: a.c, m1: a.m, c2: b.c, m2: b.m, M, k1, k2, C1, C2, S, g, op: opZ, co: op === '+' ? P.coP : P.coM, Z: S - M, nas1: nasobkyDo(a.m, M), nas2: nasobkyDo(b.m, M) };
+  let n = { rA: 0, rB: 0, pA: 0, pB: 0, zrus: 0, rR: 0, vysl: 0, celA: 0, aH: 0, aJ: 1 }, rov = `${zlT(a)} ${opZ} ${zlT(b)} = ?`;
+  const kroky = [], pridaj = (text, dur, zmena) => { n = { ...n, ...zmena }; kroky.push({ text, dur, s: { d, rov, red: false, n: { ...n } } }); };
+  pridaj(vypln(op === '+' ? P.startP : P.startM, o), .4, {});
+  if (a.m === b.m) pridaj(vypln(P.rovnakyMen, o), .6, { rR: 1 });
+  else {
+    pridaj(vypln(P.rozne, o), .4, {});
+    pridaj(vypln(k1 === 1 ? P.uzMaA : P.rozsirA, o), 1.5, { rA: 1 });
+    rov = `${zlT(a)} ${opZ} ${zlT(b)} = [[${C1}/${M}]] ${opZ} [[${C2}/${M}]] = ?`;
+    pridaj(vypln(k2 === 1 ? P.uzMaB : P.rozsirB, o), 1.5, { rB: 1, rR: 1 });
+  }
+  pridaj(vypln(P.prenesA, o), 1.6, { pA: 1, rR: 1 });
+  if (op === '+') pridaj(vypln(P.pridajB, o), 1.6, { pB: 1 });
+  else pridaj(vypln(P.odoberB, o), 2.4, { pB: 1, zrus: 1 });
+  rov = rov.replace('?', `[[${S}/${M}]]`);
+  d.rovZaklad = rov;
+  const koniec = vypln(g > 1 ? P.daSa : P.zaklad, o);
+  if (S > M) {
+    pridaj(vypln(P.vysl, o), .8, { vysl: 1 });
+    rov += ` = [[1 ${S - M}/${M}]]`;
+    pridaj(vypln(P.vacsi1, o) + koniec, 1, { celA: 1 });
+  } else pridaj(vypln(P.vysl, o) + (S === M ? ' ' + vypln(P.rovne1, o) : '') + koniec, .8, { vysl: 1 });
+  return kroky;
+}
+function krokySkratSc() {
+  const posl = h4.kroky[h4.kroky.length - 1].s, d = posl.d, { S, M, g } = d, s = S / g, m = M / g, P = TEXTY.sc;
+  const zm = s > m && s % m ? ` = [[1 ${s - m}/${m}]]` : s === m ? ' = 1' : '';
+  const o = { S, M, g, s, m, zm };
+  const rov = d.rovZaklad + ` = [[${s}/${m}]]` + zm;
+  return [
+    { text: vypln(P.skrat1, o), dur: 1.2, s: { ...posl, n: { ...posl.n, aH: 1 } } },
+    { text: vypln(P.skrat2, o), dur: 1.8, s: { ...posl, rov, red: true, n: { ...posl.n, aH: 0, aJ: 0 } } }
+  ];
+}
+function kresli4(s) {
+  const { d, n } = s, { a, b, op, M, C1, C2, S, g, riadky } = d;
+  const X = 110, W = 510, H = 56, yA = 20, yB = 100, yR1 = 210, yR2 = 286, wc = W / M;
+  const svg = $('#sc_svg'); svg.setAttribute('viewBox', `0 0 640 ${riadky === 2 ? 356 : 280}`);
+  const pa = n.pA, pb = op === '-' ? clamp(n.pB / .6, 0, 1) : n.pB, zr = op === '-' ? clamp((n.zrus - .6) / .4, 0, 1) : 0;
+  let out = '';
+  out += textS(18, yA + H / 2 + 8, 'A', 22, FARBY.A) + svgZl(66, yA + H / 2, a.c, a.m, 22, FARBY.A);
+  out += pas({ x: X, y: yA, w: W, h: H, vypln: [{ od: 0, do: a.c / a.m, vzor: 'A', a: 1 - .65 * pa }], del: [{ m: a.m }, { m: M, hr: 1.4, rast: n.rA }], attr: CELOK });
+  out += textS(18, yB + H / 2 + 8, 'B', 22, FARBY.B) + svgZl(66, yB + H / 2, b.c, b.m, 22, FARBY.B);
+  out += pas({ x: X, y: yB, w: W, h: H, vypln: [{ od: 0, do: b.c / b.m, vzor: 'B', a: 1 - .65 * pb }], del: [{ m: b.m }, { m: M, hr: 1.4, rast: n.rB }], attr: CELOK });
+  out += `<path d="M10 ${yR1 - 20}H630" stroke="#a3adc6" stroke-dasharray="6 6" opacity=".5"/>` + textS(12, yR1 - 28, TEXTY.sc.vysledok, 17, '#a3adc6', 1, 'start');
+  // riadky výsledku (1 alebo 2 celky)
+  const mR = M / g, red = !!s.red;
+  for (let r = 0; r < riadky; r++) {
+    const y = r ? yR2 : yR1, vRiadku = clamp(S - r * M, 0, M);
+    const cis = n.vysl > .5 ? (red ? { m: mR, do: vRiadku / g, tm: vRiadku / g, off: r * mR } : { m: M, do: vRiadku, tm: vRiadku, off: r * M }) : null;
+    out += pas({ x: X, y, w: W, h: H, vypln: n.vysl > .01 ? [{ od: 0, do: vRiadku / M, vzor: 'C', a: n.vysl }] : [],
+      del: [{ m: M, a: n.rR * n.aJ, hr: 1.4 }, { m: mR, a: n.rR, hr: 1.4 + 2.5 * n.aH, farba: n.aH > .05 ? '#ffd88a' : null }],
+      cisla: cis, obrys: r === 0 && n.celA > .05 ? '#ffd88a' : null, obrysHr: 2 + 3 * n.celA, attr: CELOK });
+  }
+  if (riadky === 2 && n.celA > .01) {
+    out += textS(60, yR1 + 26, '1', 24, '#ffd88a', n.celA) + textS(60, yR1 + 48, 'celok', 16, '#ffd88a', n.celA);
+    const z = red ? skrat({ c: S - M, m: M }) : { c: S - M, m: M };
+    out += svgZl(60, yR2 + H / 2, z.c, z.m, 22, FARBY.C, n.celA);
+  } else if (n.vysl > .01) {
+    const z = red ? skrat({ c: S, m: M }) : { c: S, m: M };
+    out += svgZl(60, yR1 + H / 2, z.c, z.m, 22, FARBY.C, n.vysl);
+  }
+  // presúvané dieliky
+  const poz = t => ({ x: X + (t % M) * wc, y: t < M ? yR1 : yR2 });
+  const chip = (x, y, vzor, al, kriz) => {
+    if (al <= .01) return '';
+    let c = `<rect x="${r1(x + 1)}" y="${r1(y + 1)}" width="${r1(Math.max(1, wc - 2))}" height="${H - 2}" fill="url(#p${vzor})" stroke="#04060c" stroke-width="1.5" opacity="${r2(al)}" pointer-events="none"/>`;
+    if (kriz > .01) c += `<path d="M${r1(x + 3)} ${r1(y + 4)}L${r1(x + wc - 3)} ${r1(y + H - 4)}M${r1(x + wc - 3)} ${r1(y + 4)}L${r1(x + 3)} ${r1(y + H - 4)}" stroke="#ff7a6b" stroke-width="3" opacity="${r2(kriz)}" pointer-events="none"/>`;
+    return c;
+  };
+  if (pa > .001) for (let i = 0; i < C1; i++) {
+    const p = ease(stag(pa, i, C1)), t = poz(i), x0 = X + i * wc;
+    const zrus = op === '-' && i >= S;
+    out += chip(x0 + (t.x - x0) * p, yA + (t.y - yA) * p, 'A', zrus ? 1 - .7 * zr : 1 - n.vysl, zrus ? zr : 0);
+  }
+  if (pb > .001) for (let j = 0; j < C2; j++) {
+    const p = ease(stag(pb, j, C2)), t = poz(op === '+' ? C1 + j : S + j), x0 = X + j * wc;
+    out += chip(x0 + (t.x - x0) * p, yB + (t.y - yB) * p, 'B', op === '-' ? 1 - .7 * zr : 1 - n.vysl, op === '-' ? zr : 0);
+  }
+  svg.innerHTML = out;
+  const el = $('#sc_rov'), html = formatuj(s.rov);
+  if (el.dataset.h !== s.rov) { el.dataset.h = s.rov; el.innerHTML = html; }
+}
+function zmena4() {
+  const ok = platne4(), P = TEXTY.sc;
+  $('#sc_opZn').textContent = S4.op === '+' ? '+' : '−';
+  $('#sc_hlaska').innerHTML = ok ? '' : T(P.zaporny, { c1: S4.a.c, m1: S4.a.m, c2: S4.b.c, m2: S4.b.m });
+  $('#sc_btn').disabled = !ok;
+  $('#sc_vymen').hidden = ok || porovnaj(S4.a, S4.b) === 0;
+  $('#sc_btnSkrat').hidden = true;
+  if (ok) h4.nastav(krokySc());
+}
+function init4() {
+  const opt = { minC: 1, minM: 2, maxM: 12, maxC: m => m - 1 };
+  ed4a = editor($('#sc_edA'), { ...opt, c: S4.a.c, m: S4.a.m, trieda: 'male fA', zmena: (c, m) => { S4.a = { c, m }; zmena4(); } });
+  ed4b = editor($('#sc_edB'), { ...opt, c: S4.b.c, m: S4.b.m, trieda: 'male fB', zmena: (c, m) => { S4.b = { c, m }; zmena4(); } });
+  h4 = new Hrac({ sek: 'sc', ui: $('#sc_hrac'), kresli: kresli4,
+    poZmene: h => {   // tlačidlo „Skrátiť výsledok“ sa ukáže na konci, ak sa výsledok dá skrátiť
+      const s = h.kroky.length ? h.kroky[h.kroky.length - 1].s : null;
+      $('#sc_btnSkrat').hidden = !(s && h.naKonci() && s.d && s.d.g > 1 && !s.red);
+    },
+    nahodny: () => {
+      S4.op = Math.random() < .5 ? '+' : '-';
+      segment($('#sc_op'), [['+', TEXTY.sc.plus], ['-', TEXTY.sc.minus]], S4.op, zmenOp);
+      do {
+        const m1 = nahoda(2, 12), m2 = nahoda(2, 12);
+        S4.a = { c: nahoda(1, m1 - 1), m: m1 }; S4.b = { c: nahoda(1, m2 - 1), m: m2 };
+      } while (nsn(S4.a.m, S4.b.m) > 24 || !platne4());
+      ed4a.nastav(S4.a.c, S4.a.m); ed4b.nastav(S4.b.c, S4.b.m); zmena4(); h4.nastav(krokySc(), { hraj: true });
+    } });
+  const zmenOp = k => { S4.op = k; zmena4(); };
+  segment($('#sc_op'), [['+', TEXTY.sc.plus], ['-', TEXTY.sc.minus]], S4.op, zmenOp);
+  $('#sc_btn').onclick = () => { if (platne4()) h4.nastav(krokySc(), { hraj: true }); };
+  $('#sc_btnSkrat').onclick = () => { h4.pridaj(krokySkratSc()); };
+  $('#sc_vymen').onclick = () => { const x = S4.a; S4.a = S4.b; S4.b = x; ed4a.nastav(S4.a.c, S4.a.m); ed4b.nastav(S4.b.c, S4.b.m); zmena4(); };
+  zmena4();
+}
+
+/* =====================================================================
+   5. ZLOMOK Z ČÍSLA
+   ===================================================================== */
+const S5 = { c: 3, m: 4, n: 20 };
+let h5, ed5;
+function pocty5(m) { const r = []; for (let n = m; n <= 48; n += m) if (n >= 6) r.push(n); return r; }   // povolené počty guľôčok
+function krokyZc() {
+  const { c, m, n } = S5, g = n / m, R = zCisla({ c, m }, n), K = TEXTY.zc.kroky;
+  const o = { c, m, n, g, R, skupin: tvar(c, TEXTY.zc.skupiny) };
+  const st = (x, rov) => ({ c, m, nn: n, g, rov, n: { p: 0, boxA: 0, hl1: 0, farba: 0, ...x } });
+  return [
+    { text: vypln(K[0], o), dur: .5, s: st({}, '') },
+    { text: vypln(K[1], o), dur: 2, s: st({ p: 1, boxA: 1 }, '') },
+    { text: vypln(K[2], o), dur: .8, s: st({ p: 1, boxA: 1, hl1: 1 }, `${n} : ${m} = <b>${g}</b>`) },
+    { text: vypln(K[3], o), dur: .5 + .35 * c, s: st({ p: 1, boxA: 1, farba: c }, `${n} : ${m} = ${g}`) },
+    { text: vypln(K[4], o), dur: .6, s: st({ p: 1, boxA: 1, farba: c }, vypln(TEXTY.zc.rovnica, o)) }
+  ];
+}
+function kresli5(s) {
+  const { m, g, nn } = s, n = s.n, svg = $('#zc_svg');
+  const L0 = rozlozSkupiny(1, nn, 20, 20, 600, 300, 40), L1 = rozlozSkupiny(m, g, 20, 20, 600, 300, 40);
+  let out = `<rect x="4" y="4" width="632" height="332" rx="12" fill="transparent" stroke="#a3adc6" stroke-opacity="${r2(.6 * (1 - n.boxA))}" stroke-width="2"${CELOK}/>`;
+  L1.boxy.forEach((b, j) => { if (n.boxA > .02) out += ramSkupiny(b, j, n.boxA, j === 0 && n.hl1 > .5); });
+  for (let i = 0; i < nn; i++) {
+    const j = Math.floor(i / g), p = ease(stag(n.p, i, nn));
+    const x = L0.poz[i][0] + (L1.poz[i][0] - L0.poz[i][0]) * p, y = L0.poz[i][1] + (L1.poz[i][1] - L0.poz[i][1]) * p;
+    const r = (L0.d + (L1.d - L0.d) * p) * .36, f = clamp(n.farba - j, 0, 1);
+    out += `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r)}" fill="#8fa0c4" stroke="#04060c" stroke-width="1.5"/>`;
+    if (f > .01) out += `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r)}" fill="url(#pA)" opacity="${r2(f)}" stroke="#04060c" stroke-width="1.5"/>`;
+  }
+  svg.innerHTML = out;
+  const el = $('#zc_rov'); if (el.dataset.h !== s.rov) { el.dataset.h = s.rov; el.innerHTML = formatuj(s.rov); }
+}
+function obnov5() { ed5.nastav(S5.c, S5.m); $('#zc_n').textContent = S5.n; const p = pocty5(S5.m); $('#zc_n-').disabled = S5.n <= p[0]; $('#zc_n+').disabled = S5.n >= p[p.length - 1]; }
+function zmena5(hraj) { obnov5(); h5.nastav(krokyZc(), { hraj }); }
+function init5() {
+  ed5 = editor($('#zc_ed'), { c: S5.c, m: S5.m, minC: 1, minM: 2, maxM: 12, trieda: 'male', zmena: (c, m) => {
+    S5.c = c; S5.m = m;
+    const p = pocty5(m); S5.n = p.reduce((naj, x) => Math.abs(x - S5.n) < Math.abs(naj - S5.n) ? x : naj, p[0]);   // najbližší násobok
+    zmena5(false);
+  } });
+  $('#zc_n-').onclick = () => { S5.n -= S5.m; if (S5.n < pocty5(S5.m)[0]) S5.n += S5.m; zmena5(false); };
+  $('#zc_n+').onclick = () => { if (S5.n + S5.m <= 48) S5.n += S5.m; zmena5(false); };
+  h5 = new Hrac({ sek: 'zc', ui: $('#zc_hrac'), kresli: kresli5,
+    nahodny: () => { const m = nahoda(2, 10); S5.m = m; S5.c = nahoda(1, m - 1); const p = pocty5(m).filter(x => x <= 40); S5.n = p[nahoda(0, p.length - 1)]; zmena5(true); } });
+  $('#zc_btn').onclick = () => h5.nastav(krokyZc(), { hraj: true });
+  zmena5(false);
+}
+
+/* =====================================================================
+   ČASTÉ OMYLY – každý omyl má vlastný malý prehrávač
+   ===================================================================== */
+const OMYLY = [
+  { vb: '0 0 640 230', kroky: [{}, { a: 1 }, { a: 1, f: 1, hl: 1 }, { a: 1, f: 1, hl: 1 }],
+    kresli(n) {
+      const X = 100, W = 520;
+      let o = svgZl(50, 65, 1, 2, 24, FARBY.A) + pas({ x: X, y: 30, w: W, h: 70, vypln: [{ od: 0, do: n.f / 2, vzor: 'A' }], del: [{ m: 2, rast: n.a }], cisla: n.f > .9 ? { m: 2, do: 1, tm: 1 } : null });
+      o += svgZl(50, 165, 1, 3, 24, FARBY.B) + pas({ x: X, y: 130, w: W, h: 70, vypln: [{ od: 0, do: n.f / 3, vzor: 'B' }], del: [{ m: 3, rast: n.a }], cisla: n.f > .9 ? { m: 3, do: 1, tm: 1 } : null });
+      if (n.hl > .01) o += `<path d="M${X + W / 2} 18V212M${r1(X + W / 3)} 18V212" stroke="#ffd88a" stroke-width="3" stroke-dasharray="7 5" opacity="${r2(n.hl)}"/>`;
+      return o;
+    } },
+  { vb: '0 0 640 350', kroky: [{}, { zle: 1 }, { zle: 1, ciara: 1 }, { zle: 1, ciara: 1, r6: 1 }, { zle: 1, ciara: 1, r6: 1, dobre: 1 }],
+    kresli(n) {
+      const X = 100, W = 520, H = 62;
+      let o = svgZl(50, 14 + H / 2, 1, 2, 22, FARBY.A) + pas({ x: X, y: 14, w: W, h: H, vypln: [{ od: 0, do: .5, vzor: 'A' }], del: [{ m: 2 }, { m: 6, hr: 1.4, rast: n.r6 }] });
+      o += svgZl(50, 100 + H / 2, 1, 3, 22, FARBY.B) + pas({ x: X, y: 100, w: W, h: H, vypln: [{ od: 0, do: 1 / 3, vzor: 'B' }], del: [{ m: 3 }, { m: 6, hr: 1.4, rast: n.r6 }] });
+      o += `<g opacity="${r2(n.zle)}">${svgZl(50, 186 + H / 2, 2, 5, 22, FARBY.R)}${pas({ x: X, y: 186, w: W, h: H, vypln: [{ od: 0, do: .4, vzor: 'R' }], del: [{ m: 5 }] })}</g>`;
+      o += `<g opacity="${r2(n.dobre)}">${svgZl(50, 272 + H / 2, 5, 6, 22, FARBY.C)}${pas({ x: X, y: 272, w: W, h: H, vypln: [{ od: 0, do: .5, vzor: 'A' }, { od: .5, do: 5 / 6, vzor: 'B' }], del: [{ m: 6 }], cisla: { m: 6, do: 5, tm: 5 }, obrys: FARBY.C, obrysHr: 3 })}</g>`;
+      if (n.ciara > .01) o += `<path d="M${X + W / 2} 6V342" stroke="#ffd88a" stroke-width="3.5" stroke-dasharray="8 5" opacity="${r2(n.ciara)}"/>`;
+      return o;
+    } },
+  { vb: '0 0 640 320', kroky: [{}, { hl: 1 }, { hl: 1, rov: 1 }, { hl: 1, rov: 1 }],
+    kresli(n) {
+      const rv = n.rov, cy = 132;
+      const r1m = 62 + 48 * rv, r2v = 125 - 15 * rv, x1 = 150 + 20 * rv, x2 = 440 + 30 * rv;
+      let o = kolac({ cx: x1, cy, r: r1m, vypln: [{ od: 0, do: .5, vzor: 'A' }], del: [{ m: 2 }], obrys: '#d9a066', obrysHr: 7 });
+      o += kolac({ cx: x2, cy, r: r2v, vypln: [{ od: 0, do: .25, vzor: 'B' }], del: [{ m: 4 }], obrys: '#d9a066', obrysHr: 7 });
+      if (n.hl > .01) o += `<path d="${sektor(x2, cy, r2v, 0, .25)}" fill="none" stroke="#ffd88a" stroke-width="5" opacity="${r2(n.hl * (1 - rv))}"/>`;
+      o += svgZl(x1, 292, 1, 2, 24, FARBY.A) + svgZl(x2, 292, 1, 4, 24, FARBY.B);
+      if (rv > .95) o += textS(320, 300, '&gt;', 40, '#ffd88a', (rv - .95) * 20);
+      return o;
+    } },
+  { vb: '0 0 640 360', kroky: [{}, { ciara: 1 }, { ciara: 1, osA: 1 }, { ciara: 1, osA: 1, spoj: 1 }],
+    kresli(n) {
+      const X = 100, W = 520, H = 64;
+      let o = svgZl(50, 20 + H / 2, 2, 4, 22, FARBY.A) + pas({ x: X, y: 20, w: W, h: H, vypln: [{ od: 0, do: .5, vzor: 'A' }], del: [{ m: 4, a: 1 - n.spoj }, { m: 2, hr: 2 + 2.5 * n.spoj, farba: n.spoj > .05 ? '#ffd88a' : null }], cisla: { m: n.spoj > .5 ? 2 : 4, do: n.spoj > .5 ? 1 : 2, tm: n.spoj > .5 ? 1 : 2 } });
+      o += svgZl(50, 110 + H / 2, 1, 2, 22, FARBY.B) + pas({ x: X, y: 110, w: W, h: H, vypln: [{ od: 0, do: .5, vzor: 'B' }], del: [{ m: 2 }], cisla: { m: 2, do: 1, tm: 1 } });
+      o += `<g opacity="${r2(n.osA)}">${os({ x: X, y: 255, w: W, del: [{ m: 4, smer: -1, farba: FARBY.A }, { m: 2, smer: 1, farba: FARBY.B }], body: [{ v: .5, vzor: 'A', lab: [[2, 4]] }, { v: .5, vzor: 'B', tvar: 'koso', hore: false, lab: [[1, 2]] }] })}</g>`;
+      if (n.ciara > .01) o += `<path d="M${X + W / 2} 10V${n.osA > .5 ? 255 : 184}" stroke="#ffd88a" stroke-width="3.5" stroke-dasharray="8 5" opacity="${r2(n.ciara)}"/>`;
+      return o;
+    } }
+];
+function initOmyly() {
+  const grid = $('#omylyGrid'), O = TEXTY.omyly;
+  OMYLY.forEach((def, i) => {
+    const t = O.polozky[i], card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<div class="box omyl"><b class="h">${O.omylLbl} ${i + 1}</b>${formatuj(t.omyl)}</div>
+      <div class="stage"><svg viewBox="${def.vb}" role="img" aria-label="${O.omylLbl} ${i + 1}"></svg></div><div class="hracO"></div>
+      <div class="box pravda" hidden><b class="h">${O.opravaLbl}</b>${formatuj(t.oprava)}</div>`;
+    grid.appendChild(card);
+    const svg = $('svg', card), pravda = $('.pravda', card);
+    const kluce = ['a', 'f', 'hl', 'zle', 'ciara', 'r6', 'dobre', 'rov', 'osA', 'spoj'];
+    const kroky = def.kroky.map((x, k) => { const n = {}; kluce.forEach(q => { n[q] = x[q] || 0; }); return { text: t.kroky[k], dur: 1.3, s: { n } }; });
+    const h = new Hrac({ sek: 'omyly', ui: $('.hracO', card), bezRychlosti: true, kresli: s => { svg.innerHTML = def.kresli(s.n); },
+      poZmene: h => { if (h.naKonci()) pravda.hidden = false; } });
+    h.nastav(kroky);
+  });
+}
+
+/* =====================================================================
+   KVÍZ – otázky sa generujú náhodne, správna odpoveď sa vždy vypočíta
+   ===================================================================== */
+const KV = { u: 1, sposob: 'vyber', otazky: [] };
+const KZ = TEXTY.kviz;
+function rovnake(x, y) { return porovnaj(x, y) === 0; }
+function nesudelitelne(q) { let p; do { p = nahoda(1, q - 1); } while (nsd(p, q) !== 1); return p; }
+function obrPas(z) { return `<svg viewBox="0 0 640 130">${pas({ x: 30, y: 20, w: 580, h: 90, vypln: [{ od: 0, do: z.c / z.m, vzor: 'A' }], del: [{ m: z.m }] })}</svg>`; }
+function obrKolac(z) { return `<svg viewBox="0 0 640 250">${kolac({ cx: 320, cy: 125, r: 112, vypln: [{ od: 0, do: z.c / z.m, vzor: 'A' }], del: [{ m: z.m }] })}</svg>`; }
+// pásy na vysvetlenie (rovnako veľké celky), ciary = zlaté zvislé čiary v polohe zlomkov
+function pasy(list, ciary) {
+  const H = 46, kr = 60, vys = list.length * kr + 12;
+  let s = `<svg viewBox="0 0 640 ${vys}">`;
+  list.forEach((p, i) => {
+    const y = 8 + i * kr;
+    s += svgZl(50, y + H / 2, p.z.c, p.z.m, 20, FARBY[p.vzor]) + pas({ x: 100, y, w: 520, h: H, vypln: [{ od: 0, do: Math.min(1, p.z.c / p.z.m), vzor: p.vzor }], del: [{ m: p.z.m, hr: 1.6 }] });
+  });
+  (ciary || []).forEach(z => { const x = r1(100 + 520 * z.c / z.m); s += `<path d="M${x} 3V${vys - 3}" stroke="#ffd88a" stroke-width="3" stroke-dasharray="7 5"/>`; });
+  return `<div class="obr">${s}</svg></div>`;
+}
+function porQ(a, b) {
+  const r = porovnaj(a, b), L = nsn(a.m, b.m), zh = hodnotaHTML(znak(r), 'znak');
+  return { typ: 'znak', text: `${KZ.q.porovnaj}&nbsp; ${zlT(a)} <b>☐</b> ${zlT(b)}`, spravna: znak(r),
+    vysv: () => pasy([{ z: a, vzor: 'A' }, { z: b, vzor: 'B' }]) + T(KZ.v.porovnaj, { c1: a.c, m1: a.m, c2: b.c, m2: b.m, L, C1: a.c * L / a.m, C2: b.c * L / b.m, z: zh }) + (a.c === b.c && a.m !== b.m ? KZ.v.porRovCit : '') };
+}
+function scQ(a, b, op) {
+  const vys = op === '+' ? scitaj(a, b) : odcitaj(a, b), sp = skrat(vys), M = vys.m, C1 = a.c * M / a.m, C2 = b.c * M / b.m, opZ = op === '+' ? '+' : '−';
+  const zle = op === '+' ? { c: a.c + b.c, m: a.m + b.m } : { c: a.c - b.c, m: Math.abs(a.m - b.m) };
+  const kand = op === '+' ? [zle, { c: a.c + b.c, m: M }, { c: sp.c + 1, m: sp.m }, { c: C1 + C2 + 1, m: M }] : [zle, { c: a.c - b.c, m: M }, { c: C1 + C2, m: M }, { c: sp.c + 1, m: sp.m }];
+  return { typ: 'zlomok', poznSkrat: true, text: `${op === '+' ? KZ.q.sc : KZ.q.od}&nbsp; ${zlT(a)} ${opZ} ${zlT(b)} = ?`, spravna: sp, kand,
+    vysv: odp => {
+      const o = { c1: a.c, m1: a.m, c2: b.c, m2: b.m, M, C1, C2, S: vys.c, op: opZ, skr: sp.m !== M ? vypln(KZ.v.skr, { s: sp.c, m: sp.m }) : '' };
+      const typicka = odp && odp.c === zle.c && odp.m === zle.m;
+      if (typicka && op === '+') { const v = porovnaj(a, b) >= 0 ? a : b; return T(KZ.v.scZle, { x: zle.c, y: zle.m, vc: v.c, vm: v.m }) + pasy([{ z: a, vzor: 'A' }, { z: b, vzor: 'B' }, { z: zle, vzor: 'R' }, { z: sp, vzor: 'C' }], [v]) + T(KZ.v.sc, o); }
+      return (typicka ? KZ.v.odZle + ' ' : '') + T(KZ.v.sc, o) + pasy([{ z: a, vzor: 'A' }, { z: b, vzor: 'B' }, { z: sp, vzor: 'C' }]);
+    } };
+}
+function skratQ(q, kMax) {
+  const p = nesudelitelne(q); let k; do { k = nahoda(2, kMax); } while (q * k > 48);
+  const z = { c: p * k, m: q * k }, sp = { c: p, m: q }, kand = [];
+  if (k === 4) kand.push({ c: 2 * p, m: 2 * q });       // čiastočne skrátený zlomok
+  kand.push({ c: p, m: q * k }, { c: p * k, m: q }, { c: p + 1, m: q }, { c: p, m: q + 1 });
+  return { typ: 'zlomok', zaklad: true, text: `${KZ.q.skrat}&nbsp; ${zlT(z)}`, spravna: sp, kand,
+    vysv: () => T(KZ.v.skrat, { c: z.c, m: z.m, g: k, s: p, t: q }) + pasy([{ z, vzor: 'A' }, { z: sp, vzor: 'C' }]) };
+}
+function zCislaQ(mMax, gMax) {
+  const m = nahoda(2, mMax), g = nahoda(2, gMax), n = m * g, c = nahoda(1, m - 1), R = zCisla({ c, m }, n);
+  return { typ: 'cislo', text: `${KZ.q.zcisla}&nbsp; [[${c}/${m}]] z ${n}?`, spravna: R, kand: [g, n - R, R + g, c * m, n + c],
+    vysv: odp => T(KZ.v.zcisla, { n, m, g, c, R }) + (odp === g && c > 1 ? T(KZ.v.zcislaJedna, { g, m, n, c }) : '') };
+}
+const GEN = {
+  citaj() {
+    const m = nahoda(2, 8), c = nahoda(1, m - 1), z = { c, m };
+    return { typ: 'zlomok', text: KZ.q.citaj, obr: Math.random() < .5 ? obrPas(z) : obrKolac(z), spravna: z,
+      kand: [{ c: m - c, m }, { c, m: m - c }, { c: c + 1, m }, { c, m: m + 1 }],
+      vysv: odp => T(KZ.v.citaj, { c, m }) + (odp && m - c !== c && odp.c === m - c && odp.m === m ? T(KZ.v.citajZvysok, { x: m - c, m }) : '') + (odp && odp.c === c && odp.m === m - c ? KZ.v.citajPomer : '') };
+  },
+  os() {
+    const m = nahoda(3, 10), c = nahoda(1, m - 1);
+    return { typ: 'zlomok', text: KZ.q.os, obr: `<svg viewBox="0 0 640 110">${os({ x: 40, y: 45, w: 560, del: [{ m }], body: [{ v: c / m, vzor: 'A' }] })}</svg>`, spravna: { c, m },
+      kand: [{ c, m: m + 1 }, { c: c + 1, m }, { c: m - c, m }, { c, m: m - 1 }], vysv: () => T(KZ.v.os, { m, m1: m + 1, c }) };
+  },
+  porRovMen() { const m = nahoda(3, 10), c1 = nahoda(1, m - 1); let c2; do { c2 = nahoda(1, m - 1); } while (c2 === c1); return porQ({ c: c1, m }, { c: c2, m }); },
+  porRovCit() { const c = nahoda(1, 5), m1 = nahoda(c + 1, 12); let m2; do { m2 = nahoda(c + 1, 12); } while (m2 === m1); return porQ({ c, m: m1 }, { c, m: m2 }); },
+  porRoz() {
+    if (Math.random() < .25) { const q = nahoda(2, 4), p = nesudelitelne(q), k1 = nahoda(1, 3); let k2; do { k2 = nahoda(1, 3); } while (k2 === k1); return porQ({ c: p * k1, m: q * k1 }, { c: p * k2, m: q * k2 }); }
+    let a, b; do { a = { c: 0, m: nahoda(2, 12) }; b = { c: 0, m: nahoda(2, 12) }; a.c = nahoda(1, a.m - 1); b.c = nahoda(1, b.m - 1); } while (a.m === b.m || a.c === b.c || nsn(a.m, b.m) > 36);
+    return porQ(a, b);
+  },
+  scRov() { const m = nahoda(3, 12), c1 = nahoda(1, m - 2), c2 = nahoda(1, m - 1 - c1); return scQ({ c: c1, m }, { c: c2, m }, '+'); },
+  odRov() { const m = nahoda(3, 12), c1 = nahoda(2, m - 1), c2 = nahoda(1, c1 - 1); return scQ({ c: c1, m }, { c: c2, m }, '-'); },
+  scRoz() { let a, b; do { a = { c: 0, m: nahoda(2, 12) }; b = { c: 0, m: nahoda(2, 12) }; a.c = nahoda(1, a.m - 1); b.c = nahoda(1, b.m - 1); } while (a.m === b.m || nsn(a.m, b.m) > 24 || porovnaj(scitaj(a, b), { c: 1, m: 1 }) >= 0); return scQ(a, b, '+'); },
+  odRoz() { let a, b; do { a = { c: 0, m: nahoda(2, 12) }; b = { c: 0, m: nahoda(2, 12) }; a.c = nahoda(1, a.m - 1); b.c = nahoda(1, b.m - 1); } while (a.m === b.m || nsn(a.m, b.m) > 24 || porovnaj(a, b) <= 0); return scQ(a, b, '-'); },
+  skrat1() { return skratQ(nahoda(2, 6), 3); },
+  skrat2() { return skratQ(nahoda(2, 12), 4); },
+  rozsir() {
+    const m = nahoda(2, 6), c = nahoda(1, m - 1), k = nahoda(2, 4), M = m * k, C = c * k;
+    return { typ: 'cislo', text: `${KZ.q.rozsir}&nbsp; [[${c}/${m}]] = ${zlHTML('?', M)}`, spravna: C, kand: [c + M - m, C + 1, C - 1, M - C, C + k],
+      vysv: odp => T(KZ.v.rozsir, { m, k, M, c, C }) + (odp === c + M - m ? KZ.v.rozsirZle : '') };
+  },
+  zCisla1() { return zCislaQ(5, 6); },
+  zCisla2() { return zCislaQ(12, 5); },
+  zmies() {
+    const m = nahoda(2, 9), w = nahoda(1, 3), r = nahoda(1, m - 1), c = w * m + r;
+    const kand = [{ cele: w, c: m - r, m }, { cele: w + 1, c: r, m }, { cele: Math.max(1, w - 1), c: r, m }];
+    if (w < m) kand.push({ cele: r, c: w, m });
+    return { typ: 'zmiesane', text: `${KZ.q.zmies}&nbsp; [[${c}/${m}]]`, spravna: { cele: w, c: r, m }, kand, vysv: () => T(KZ.v.zmies, { c, m, w, r }) };
+  },
+  scZm() {
+    let a, b, v; do { a = { c: 0, m: nahoda(2, 12) }; b = { c: 0, m: nahoda(2, 12) }; a.c = nahoda(1, a.m - 1); b.c = nahoda(1, b.m - 1); v = scitaj(a, b); } while (nsn(a.m, b.m) > 24 || v.c <= v.m || v.c % v.m === 0);
+    const sp = zmiesane(skrat(v)), M = v.m, C1 = a.c * M / a.m, C2 = b.c * M / b.m;
+    const kand = [{ cele: 1, c: sp.c + 1, m: sp.m }, { cele: 2, c: sp.c, m: sp.m }, { cele: 1, c: sp.m - sp.c, m: sp.m }, { cele: 1, c: sp.c, m: sp.m + 1 }];
+    return { typ: 'zmiesane', text: `${KZ.q.scZm}&nbsp; ${zlT(a)} + ${zlT(b)}`, spravna: sp, kand,
+      vysv: () => T(KZ.v.sc, { c1: a.c, m1: a.m, c2: b.c, m2: b.m, M, C1, C2, S: v.c, op: '+', skr: '' }) + ' ' + T(KZ.v.zmies, { c: v.c, m: M, w: (v.c - v.c % M) / M, r: v.c % M }) };
+  }
+};
+const ZOSTAVY = { 1: ['citaj', 'porRovMen', 'porRovCit', 'scRov', 'odRov', 'skrat1', 'rozsir', 'zCisla1'],
+                  2: ['os', 'porRoz', 'scRoz', 'odRoz', 'skrat2', 'zmies', 'scZm', 'zCisla2'] };
+function hodnotaHTML(v, typ) {
+  if (typ === 'znak') return v === '<' ? '&lt;' : v === '>' ? '&gt;' : '=';
+  if (typ === 'cislo') return String(v);
+  if (typ === 'zmiesane') return zmHTML(v.cele, v.c, v.m);
+  return zlHTML(v.c, v.m);
+}
+function platne(v, typ) {
+  if (typ === 'cislo') return Number.isInteger(v) && v >= 0;
+  if (typ === 'zmiesane') return v.cele >= 1 && v.c >= 1 && v.c < v.m;
+  return v.c >= 1 && v.m >= 1 && v.c <= v.m;
+}
+function kluc(q, v) {      // kľúč na odstránenie rovnakých možností (podľa hodnoty, pri krátení podľa zápisu)
+  if (q.typ === 'cislo' || q.typ === 'znak') return String(v);
+  const z = q.typ === 'zmiesane' ? zoZmiesaneho(v) : v;
+  if (q.zaklad) return z.c + '/' + z.m;
+  const s = skrat(z); return s.c + '/' + s.m;
+}
+function nahodnyDistraktor(q) {
+  const s = q.spravna;
+  if (q.typ === 'cislo') return s + nahoda(-4, 4);
+  if (q.typ === 'zmiesane') return { cele: Math.max(1, s.cele + nahoda(-1, 1)), c: nahoda(1, Math.max(1, s.m - 1)), m: s.m + nahoda(0, 2) };
+  return { c: Math.max(1, s.c + nahoda(-2, 2)), m: Math.max(2, s.m + nahoda(0, 3)) };
+}
+function moznosti(q) {
+  const mn = [q.spravna], kl = new Set([kluc(q, q.spravna)]);
+  const skus = v => { if (mn.length >= 4 || !platne(v, q.typ)) return; const k = kluc(q, v); if (kl.has(k)) return; kl.add(k); mn.push(v); };
+  q.kand.forEach(skus);
+  for (let i = 0; i < 80 && mn.length < 4; i++) skus(nahodnyDistraktor(q));
+  return zamiesaj(mn);
+}
+function vyhodnot(q, odp) {
+  const V = KZ.v;
+  if (q.typ === 'znak' || q.typ === 'cislo') return { ok: odp === q.spravna };
+  if (q.typ === 'zlomok') {
+    if (!rovnake(odp, q.spravna)) return { ok: false };
+    if (nsd(odp.c, odp.m) !== 1) {
+      const s = skrat(odp);
+      if (q.zaklad) return { ok: false, pozn: V.nieZaklad };
+      if (q.poznSkrat) return { ok: true, pozn: T(V.daSaSkratit, { s: s.c, t: s.m }) };
+    }
+    return { ok: true };
+  }
+  // zmiešané číslo
+  if (odp.c >= odp.m) return { ok: false, pozn: V.zmiesVacsi };
+  if (!rovnake(zoZmiesaneho(odp), zoZmiesaneho(q.spravna))) return { ok: false };
+  if (odp.c && nsd(odp.c, odp.m) !== 1) { const s = skrat({ c: odp.c, m: odp.m }); return { ok: true, pozn: T(V.daSaSkratit, { s: s.c, t: s.m }) }; }
+  return { ok: true };
+}
+function noveOtazky() {
+  KV.otazky = zamiesaj(ZOSTAVY[KV.u]).map(t => { const q = GEN[t](); if (q.typ !== 'znak') q.mozn = moznosti(q); return q; });
+  $('#kvizVysl').textContent = '';
+  const box = $('#kv_otazky'); box.innerHTML = '';
+  KV.otazky.forEach((q, i) => {
+    const d = document.createElement('div'); d.className = 'otazka';
+    d.innerHTML = `<div class="q"><span class="por">${i + 1}.</span> ${formatuj(q.text)}</div>${q.obr ? `<div class="obr">${q.obr}</div>` : ''}<div class="odp"></div><div class="fb" aria-live="polite"></div>`;
+    box.appendChild(d); q.el = d; kresliOdpoved(q);
+  });
+}
+const cele = s => /^\s*\d{1,4}\s*$/.test(s) ? parseInt(s, 10) : NaN;
+function kresliOdpoved(q) {
+  if (q.hotovo) return;
+  const el = $('.odp', q.el);
+  if (q.typ === 'znak' || KV.sposob === 'vyber') {
+    const mo = q.typ === 'znak' ? ['<', '=', '>'] : q.mozn;
+    el.innerHTML = `<div class="moznosti">${mo.map((v, j) => `<button data-j="${j}">${hodnotaHTML(v, q.typ)}</button>`).join('')}</div>`;
+    $$('button', el).forEach(b => { b.onclick = () => odpovedz(q, mo[+b.dataset.j], b); });
+    return;
+  }
+  const zlI = `<span class="vstupZl"><input class="vc" inputmode="numeric" maxlength="3" aria-label="čitateľ"><span class="ciara"></span><input class="vm" inputmode="numeric" maxlength="3" aria-label="menovateľ"></span>`;
+  const pole = q.typ === 'cislo' ? `<input class="vn" inputmode="numeric" maxlength="4" aria-label="odpoveď">` : q.typ === 'zmiesane' ? `<input class="vw cele" inputmode="numeric" maxlength="2" aria-label="celá časť">${zlI}` : zlI;
+  el.innerHTML = `<div class="vstup">${pole}<button class="primary bOver">${KZ.over}</button></div><p class="mini chyba"></p>`;
+  const over = () => {
+    const v = c => { const i = $(c, el); return i ? cele(i.value) : NaN; };
+    let odp, chyba = '';
+    if (q.typ === 'cislo') { odp = v('.vn'); if (isNaN(odp)) chyba = KZ.vyplnCislo; }
+    else if (q.typ === 'zlomok') { odp = { c: v('.vc'), m: v('.vm') }; if (isNaN(odp.c) || isNaN(odp.m) || odp.m === 0) chyba = KZ.vyplnZl; }
+    else { odp = { cele: v('.vw'), c: v('.vc'), m: v('.vm') }; if (isNaN(odp.cele) || isNaN(odp.c) || isNaN(odp.m) || odp.m === 0) chyba = KZ.vyplnZm; }
+    $('.chyba', el).textContent = chyba;
+    if (!chyba) odpovedz(q, odp, null);
+  };
+  $('.bOver', el).onclick = over;
+  $$('input', el).forEach(i => { i.onkeydown = e => { if (e.key === 'Enter') over(); }; });
+}
+function odpovedz(q, odp, btn) {
+  if (q.hotovo) return;
+  q.hotovo = true;
+  const v = vyhodnot(q, odp); q.ok = v.ok;
+  $$('.odp button, .odp input', q.el).forEach(x => { x.disabled = true; });
+  if (btn) {
+    btn.classList.add(v.ok ? 'ok' : 'zle');
+    const mo = q.typ === 'znak' ? ['<', '=', '>'] : q.mozn;
+    $$('.odp button', q.el).forEach(b => { if (mo[+b.dataset.j] === q.spravna) b.classList.add('ok'); });
+  }
+  const fb = $('.fb', q.el);
+  fb.className = 'fb ' + (v.ok ? 'ok' : 'zle');
+  fb.innerHTML = v.ok ? `<b>✔ ${KZ.dobre}</b> ${v.pozn || ''}`
+    : `<b>✘ ${KZ.zle}</b> ${v.pozn ? v.pozn + ' ' : ''}${KZ.spravne} ${hodnotaHTML(q.spravna, q.typ)}<div style="margin-top:6px">${q.vysv(odp)}</div>`;
+  if (KV.otazky.every(x => x.hotovo)) {
+    const b = KV.otazky.filter(x => x.ok).length, n = KV.otazky.length;
+    $('#kvizVysl').textContent = vypln(KZ.vysl, { b, n }) + (b >= n - 1 ? KZ.vyslDobre : KZ.vyslSkus);
+  }
+}
+function initKviz() {
+  segment($('#kv_uroven'), [[1, KZ.u1], [2, KZ.u2]], KV.u, k => { KV.u = +k; noveOtazky(); });
+  segment($('#kv_sposob'), [['vyber', KZ.vyber], ['pis', KZ.pis]], KV.sposob, k => { KV.sposob = k; KV.otazky.forEach(kresliOdpoved); });
+  $('#kv_novy').onclick = noveOtazky;
+  noveOtazky();
+}
+
+/* =====================================================================
+   ŠTART
+   ===================================================================== */
+function init() {
+  $$('[data-t]').forEach(el => { const v = cesta(TEXTY, el.dataset.t); if (typeof v === 'string') el.innerHTML = formatuj(v); });
+  const nav = $('#karty'); let i = 0;
+  for (const k in TEXTY.karty) {
+    const b = document.createElement('button'); b.dataset.k = k; b.setAttribute('role', 'tab');
+    b.innerHTML = (i < 5 ? `<span class="cis">${i + 1}.</span> ` : '') + TEXTY.karty[k];
+    b.onclick = () => ukazKartu(k); nav.appendChild(b); i++;
+  }
+  $('#infoX').textContent = U.zavriet; $('#infoX').onclick = () => { $('#info').hidden = true; };
+  $('#poznList').innerHTML = TEXTY.pozn.polozky.map(t => `<li>${formatuj(t)}</li>`).join('');
+  $$('.stageCard').forEach(pridajLupu);
+  init1(); init2(); init3(); init4(); init5(); initOmyly(); initKviz();
+  const h = (location.hash || '').slice(1);
+  ukazKartu(TEXTY.karty[h] ? h : 'co');
+  let posl = performance.now();
+  const snimka = now => {   // jedna slučka pre všetky animácie, časovanie podľa skutočného času
+    const dt = Math.min(.1, Math.max(0, (now - posl) / 1000)); posl = now;
+    for (const hr of HRACI) if (hr.o.sek === AKT) hr.tick(dt);
+    requestAnimationFrame(snimka);
+  };
+  requestAnimationFrame(snimka);
+}
+init();
+</script>
+<script data-goatcounter="https://jasvarc.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
