@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Premena hmyzu</title>
+<link rel="icon" href="data:,">
+<script>
+/* =====================================================================
+   TEXTY A ÚDAJE – všetko, čo sa dá ľahko upraviť, je na jednom mieste.
+   Upravuj len hodnoty v úvodzovkách. HTML značky (<b>, <i>, <br>) sú povolené.
+   "dur" pri fázach = dĺžka fázy v ANIMÁCII v sekundách (pri rýchlosti 1×),
+   nie skutočná dĺžka vývinu. Skutočné dĺžky sú v poli "trvanie" pri štádiách.
+   ===================================================================== */
+const DATA = {
+  titul: 'Premena hmyzu',
+  podtitul: 'Ako sa z vajíčka stane dospelý hmyz – úplná a neúplná premena',
+  nav: { anim: 'Animácia', preco: 'Prečo to hmyz robí', omyly: 'Časté omyly', kviz: 'Kvíz', pozn: 'Zjednodušenia' },
+
+  ui: {
+    spustit: '▶ Spustiť', pauza: '❚❚ Pauza', krok: '⏭ Krok za krokom',
+    rychlost: 'Rýchlosť:',
+    porovnat: '⇆ Porovnať úplnú a neúplnú premenu', porovnatVyp: '✕ Zrušiť porovnanie',
+    druh: 'Príklad:', osa: 'Časová os – klikni na štádium alebo na úsek osi:',
+    deje: 'Čo sa práve deje', krokX: 'Krok {i} z {n}', stadium: 'Štádium',
+    mierka: 'Nie je v mierke · zrýchlené',
+    spolocne: 'SPOLOČNÉ', navyse: 'NAVYŠE: KUKLA', chybaKukla: 'TOTO ŠTÁDIUM CHÝBA',
+    chyba: 'Neúplná premena <b>nemá kuklu</b>. Nymfa sa pri poslednom zvliekaní mení priamo na dospelca.',
+    tip: 'Tip: klikni na živočícha v animácii alebo na štádium na časovej osi a zobrazí sa jeho popis.',
+    polia: { co: 'Čo je to', potrava: 'Potrava', pohyb: 'Pohyb', kde: 'Kde žije', trvanie: 'Ako dlho trvá (typicky)', deje: 'Čo sa v ňom deje' },
+    orientacne: 'Údaje o trvaní sú len <b>príklad pre tento druh</b> a sú orientačné – líšia sa podľa teploty, potravy a ročného obdobia.',
+    uplna: 'Úplná', neuplna: 'Neúplná', zivocich: 'Klikni na živočícha'
+  },
+
+  typy: {
+    uplna: { nazov: 'Úplná premena', schema: 'vajíčko → larva → <b>kukla</b> → dospelec (imágo)', druhy: ['motyl', 'lienka', 'vcela'] },
+    neuplna: { nazov: 'Neúplná premena', schema: 'vajíčko → nymfa → dospelec (imágo) · <i>bez kukly</i>', druhy: ['kobylka', 'vazka'] }
+  },
+
+  /* ---------- DRUHY ----------
+     stadia: rola = vaj | mlad | kuk | dosp (určuje farbu na časovej osi)
+     fazy:   id musí byť jedno z: vajicko, liahnutie, rast, zvliekanie, rast2,
+             zakuklenie, kukla, vylahnutie, kridla, dospelec (podľa nich sa kreslí animácia) */
+  druhy: {
+    motyl: {
+      nazov: 'Motýľ', priklad: 'mlynárik kapustový', typ: 'uplna',
+      stadia: [
+        { rola: 'vaj', nazov: 'Vajíčko',
+          co: 'Drobné žlté vajíčko v tvare fľaštičky s pozdĺžnymi ryhami. Samička ich kladie v skupinkách.',
+          potrava: 'Nežerie – zárodok sa vyvíja zo zásob živín vo vajíčku.',
+          pohyb: 'Nehýbe sa, je prilepené k listu.',
+          kde: 'Na listoch kapusty a iných kapustovitých rastlín.',
+          trvanie: 'typicky niekoľko dní až asi 2 týždne (v teple rýchlejšie)',
+          deje: 'Vyvíja sa zárodok – budúca húsenica. Pred vyliahnutím vajíčko stmavne.' },
+        { rola: 'mlad', nazov: 'Húsenica', odb: 'larva',
+          co: 'Larva motýľa. Má hlavu s hryzadlami, článkované telo, na hrudi <b>3 páry pravých nôh</b> a na bruchu mäsité panôžky. Na dospelého motýľa sa vôbec nepodobá.',
+          potrava: 'Žerie listy (kapusta, kel, reďkovka…). Po vyliahnutí často zje obal vajíčka.',
+          pohyb: 'Lezie – telom jej prebieha vlna od konca tela k hlave.',
+          kde: 'Na listoch živnej rastliny.',
+          trvanie: 'typicky asi 3–4 týždne',
+          deje: 'Takmer stále žerie a rastie. Krunier nerastie, preto sa zvlieka – mlynárik kapustový <b>4-krát</b>. Po poslednom zvlečení sa zakuklí.' },
+        { rola: 'kuk', nazov: 'Kukla',
+          co: 'Štádium medzi larvou a dospelcom. Kukla mlynárika je voľná – nie je v zámotku, k podkladu ju drží len hodvábne vlákno a pásik okolo tela.',
+          potrava: 'Nežerie.',
+          pohyb: 'Navonok sa takmer nehýbe.',
+          kde: 'Pripevnená na stonke, kôre, plote alebo múre.',
+          trvanie: 'v lete typicky 1–2 týždne; kukly z jesene prezimujú a motýľ sa vyliahne až na jar',
+          deje: 'Vnútri sa telo húsenice rozloží a z neho vznikajú orgány motýľa – krídla, dlhé nohy, tykadlá, cicavka. Ku koncu cez obal presvitajú krídla.' },
+        { rola: 'dosp', nazov: 'Motýľ', odb: 'dospelec – imágo',
+          co: 'Dospelý motýľ s dvoma pármi krídel pokrytých šupinkami, 3 pármi nôh a tykadlami.',
+          potrava: 'Saje nektár z kvetov cicavkou (dlhým stočeným cicavým ústrojenstvom).',
+          pohyb: 'Lieta.',
+          kde: 'Lúky, záhrady, polia – všade, kde sú kvety a kapustovité rastliny.',
+          trvanie: 'typicky niekoľko týždňov',
+          deje: 'Už nerastie. Hľadá partnera, samička kladie vajíčka na živné rastliny – cyklus sa začína znova.' }
+      ],
+      fazy: [
+        { id: 'vajicko', dur: 4, nazov: 'Vajíčka na liste', text: 'Samička nakládla vajíčka na list kapusty. Vo vnútri sa vyvíja zárodok.' },
+        { id: 'liahnutie', dur: 5, nazov: 'Vyliahnutie', text: 'Húsenica prehryzie obal vajíčka a vylezie. Prázdny obal často zje – je v ňom veľa živín.' },
+        { id: 'rast', dur: 5, nazov: 'Húsenica žerie a rastie', text: 'Húsenica žerie listy a rýchlo rastie. Jej telo však kryje krunier, ktorý nerastie.' },
+        { id: 'zvliekanie', dur: 6, nazov: 'Zvliekanie', text: 'Starý krunier je tesný. Praskne za hlavou a húsenica z neho vylezie. Nový krunier je spočiatku mäkký, preto sa telo môže zväčšiť. <i>(Húsenica sa zvlieka 4-krát, ukazujeme jedno zvliekanie.)</i>' },
+        { id: 'rast2', dur: 5, nazov: 'Rast po zvliekaní', text: 'Húsenica znova žerie a rastie, až kým nedosiahne plnú veľkosť.' },
+        { id: 'zakuklenie', dur: 8, nazov: 'Zakuklenie', text: 'Húsenica prestane žrať a vylezie na stonku. Prichytí sa hodvábnym vláknom a pásikom, skráti sa a naposledy sa zvlečie – pod starou kožou je <b>kukla</b>.' },
+        { id: 'kukla', dur: 9, nazov: 'Kukla – prestavba tela', text: 'Kukla vyzerá nehybne, no vnútri sa deje veľká prestavba: tkanivá húsenice sa rozkladajú a zo skupiniek buniek rastú orgány motýľa. <i>(Pozri lupu.)</i>' },
+        { id: 'vylahnutie', dur: 6, nazov: 'Vyliahnutie dospelca', text: 'Obal kukly praskne a vylezie motýľ. Krídla má zatiaľ malé, mäkké a pokrčené.' },
+        { id: 'kridla', dur: 7, nazov: 'Rozprestretie a sušenie krídel', text: 'Motýľ visí a do žiliek v krídlach pumpuje telesnú tekutinu. Krídla sa narovnajú. Kým môže letieť, musia vyschnúť a stvrdnúť.' },
+        { id: 'dospelec', dur: 10, nazov: 'Dospelý motýľ', text: 'Motýľ lieta a saje nektár z kvetov. Samička potom nakladie vajíčka na list – cyklus sa opakuje.' }
+      ]
+    },
+
+    lienka: {
+      nazov: 'Lienka', priklad: 'lienka sedmobodková', typ: 'uplna',
+      stadia: [
+        { rola: 'vaj', nazov: 'Vajíčko',
+          co: 'Podlhovasté žlté až oranžové vajíčko. Samička ich kladie v skupinkách, postavené na liste.',
+          potrava: 'Nežerie.',
+          pohyb: 'Nehýbe sa.',
+          kde: 'Na listoch rastlín blízko kolónií vošiek – larvy tak majú hneď potravu.',
+          trvanie: 'typicky niekoľko dní (asi 3–5)',
+          deje: 'Vyvíja sa larva. Pred vyliahnutím vajíčka stmavnú.' },
+        { rola: 'mlad', nazov: 'Larva',
+          co: 'Pretiahnutá tmavá larva s oranžovými škvrnami a bradavkami. Má 3 páry dlhých nôh. Na lienku sa vôbec nepodobá.',
+          potrava: 'Vošky – za celý vývin ich zje stovky.',
+          pohyb: 'Rýchlo behá po rastlinách.',
+          kde: 'Na rastlinách s voškami.',
+          trvanie: 'typicky 2–3 týždne',
+          deje: 'Žerie a rastie. Zvlieka sa <b>3-krát</b> (má 4 larválne štádiá), potom sa zakuklí.' },
+        { rola: 'kuk', nazov: 'Kukla',
+          co: 'Oranžovo-čierna kukla prichytená zadným koncom k listu. Na jej konci býva vidieť zhrnutú zvlečenú kožu larvy.',
+          potrava: 'Nežerie.',
+          pohyb: 'Takmer nehybná.',
+          kde: 'Na liste alebo stonke.',
+          trvanie: 'typicky asi 1 týždeň',
+          deje: 'Telo larvy sa prestavuje na chrobáka: vznikajú krovky, blanité krídla, nové nohy aj ústne ústrojenstvo.' },
+        { rola: 'dosp', nazov: 'Lienka', odb: 'dospelec – imágo',
+          co: 'Chrobák s červenými krovkami a 7 čiernymi bodkami. Krovky sú tvrdé predné krídla, pod nimi sú poskladané blanité zadné krídla, ktorými lieta.',
+          potrava: 'Tiež vošky. Lienka je výnimka – larva aj dospelec jedia rovnakú potravu.',
+          pohyb: 'Behá aj lieta.',
+          kde: 'Záhrady, lúky, polia. Prezimuje v úkrytoch, často vo väčších skupinách.',
+          trvanie: 'často do 1 roka; prezimuje ako dospelec',
+          deje: 'Žerie vošky, pári sa, samička kladie vajíčka k voškám.' }
+      ],
+      fazy: [
+        { id: 'vajicko', dur: 4, nazov: 'Vajíčka pri voškách', text: 'Samička nakládla skupinku žltých vajíčok na list, blízko kolónie vošiek.' },
+        { id: 'liahnutie', dur: 5, nazov: 'Vyliahnutie', text: 'Z vajíčok sa liahnu drobné larvy. Prázdne obaly zostanú na liste.' },
+        { id: 'rast', dur: 5, nazov: 'Larva žerie vošky', text: 'Larva behá po liste a žerie vošky. Rýchlo rastie.' },
+        { id: 'zvliekanie', dur: 6, nazov: 'Zvliekanie', text: 'Starý krunier praskne na chrbte a vylezie väčšia larva. <i>(Lienka sa ako larva zvlieka 3-krát, ukazujeme jedno zvliekanie.)</i>' },
+        { id: 'rast2', dur: 5, nazov: 'Rast po zvliekaní', text: 'Larva ďalej žerie vošky, kým nedorastie.' },
+        { id: 'zakuklenie', dur: 8, nazov: 'Zakuklenie', text: 'Larva sa prichytí zadným koncom k listu, skrčí sa a znehybnie. Kryt larvy sa zhrnie dozadu a objaví sa <b>kukla</b>.' },
+        { id: 'kukla', dur: 9, nazov: 'Kukla – prestavba tela', text: 'V kukle sa telo larvy prestavuje na chrobáka. <i>(Pozri lupu.)</i>' },
+        { id: 'vylahnutie', dur: 6, nazov: 'Vyliahnutie dospelca', text: 'Z kukly vylezie mladá lienka. Je mäkká, svetložltá a ešte <b>nemá bodky</b>!' },
+        { id: 'kridla', dur: 7, nazov: 'Sušenie krídel a sfarbenie', text: 'Lienka vystrie blanité krídla, aby vyschli, a potom ich poskladá pod krovky. Krovky postupne stvrdnú, sčervenejú a objavia sa bodky.' },
+        { id: 'dospelec', dur: 10, nazov: 'Dospelá lienka', text: 'Lienka žerie vošky a lieta. Samička nakladie vajíčka k ďalšej kolónii vošiek.' }
+      ]
+    },
+
+    vcela: {
+      nazov: 'Včela', priklad: 'včela medonosná – robotnica', typ: 'uplna',
+      stadia: [
+        { rola: 'vaj', nazov: 'Vajíčko',
+          co: 'Biele podlhovasté vajíčko, ktoré kráľovná (matka) nakladie na dno bunky plástu.',
+          potrava: 'Nežerie.',
+          pohyb: 'Nehýbe sa. Prvý deň stojí, potom sa postupne nakláňa a na 3. deň leží na dne bunky.',
+          kde: 'V šesťhrannej bunke plástu v úli.',
+          trvanie: '3 dni',
+          deje: 'Vyvíja sa larva.' },
+        { rola: 'mlad', nazov: 'Larva',
+          co: 'Biela larva stočená do tvaru písmena C. Nemá nohy ani oči.',
+          potrava: 'Kŕmia ju robotnice (kŕmičky): najprv materskou kašičkou, neskôr zmesou peľu a medu.',
+          pohyb: 'Z bunky sa nedostane, väčšinu času leží stočená na dne.',
+          kde: 'V otvorenej bunke plástu.',
+          trvanie: 'asi 6 dní (približne od 4. do 9. dňa)',
+          deje: 'Veľmi rýchlo rastie a niekoľkokrát sa zvlieka. Na konci robotnice bunku zaviečkujú voskom.' },
+        { rola: 'kuk', nazov: 'Kukla',
+          co: 'Biela kukla už má tvar včely – hlavu, oči, tykadlá, nohy a základy krídel.',
+          potrava: 'Nežerie.',
+          pohyb: 'Nehýbe sa.',
+          kde: 'V zaviečkovanej (voskom uzavretej) bunke.',
+          trvanie: 'asi 12 dní aj s predkuklou (približne od 9. do 21. dňa)',
+          deje: 'Larva si najprv utká tenký zámotok a zmení sa na predkuklu, potom na kuklu. Postupne sa sfarbujú oči (ružové → fialové → tmavé), nakoniec celé telo.' },
+        { rola: 'dosp', nazov: 'Včela', odb: 'dospelec – robotnica',
+          co: 'Dospelá včela so 4 blanitými krídlami, 3 pármi nôh a žihadlom.',
+          potrava: 'Nektár (med) a peľ.',
+          pohyb: 'Lezie po plástoch a lieta.',
+          kde: 'V úli a na kvetoch v okolí.',
+          trvanie: 'v lete typicky asi 4–6 týždňov; robotnice vyliahnuté na jeseň prežijú zimu (niekoľko mesiacov)',
+          deje: 'Mladá včela najprv pracuje v úli (čistí bunky, kŕmi larvy, stavia plásty), až neskôr lieta na kvety. Vajíčka robotnice nekladú – to robí kráľovná.' }
+      ],
+      fazy: [
+        { id: 'vajicko', dur: 5, nazov: 'Vajíčko v bunke', text: 'Kráľovná nakladie vajíčko na dno bunky. Vajíčko najprv stojí, postupne sa nakláňa a na 3. deň leží.' },
+        { id: 'liahnutie', dur: 5, nazov: 'Vyliahnutie', text: 'Z vajíčka sa vyliahne drobná larva. Kŕmička jej do bunky dá materskú kašičku.' },
+        { id: 'rast', dur: 5, nazov: 'Larvu kŕmia robotnice', text: 'Robotnice-kŕmičky nosia larve potravu mnohokrát za deň. Larva rýchlo rastie.' },
+        { id: 'zvliekanie', dur: 5, nazov: 'Zvliekanie', text: 'Larva je pre svoj kryt priveľká a zvlečie sa. Počas niekoľkých dní sa to opakuje viackrát.' },
+        { id: 'rast2', dur: 5, nazov: 'Larva dorastá', text: 'Larva dorastie takmer na celú šírku bunky.' },
+        { id: 'zakuklenie', dur: 8, nazov: 'Zaviečkovanie a zakuklenie', text: 'Robotnice zaviečkujú bunku voskom (asi 9. deň). Larva sa vo vnútri natiahne, utká tenký zámotok a zmení sa na predkuklu, potom na <b>kuklu</b>.' },
+        { id: 'kukla', dur: 9, nazov: 'Kukla v bunke', text: 'V kukle sa tvorí telo včely. Oči sa sfarbujú najprv do ružova, potom do fialova, nakoniec stmavne celé telo.' },
+        { id: 'vylahnutie', dur: 7, nazov: 'Vyliahnutie dospelca', text: 'Kukla sa naposledy zvlečie na dospelú včelu. Tá prehryzie voskové viečko a asi 21. deň vylezie z bunky.' },
+        { id: 'dospelec', dur: 9, nazov: 'Dospelá robotnica', text: 'Mladá robotnica opustí bunku. Robotnice bunku vyčistia a kráľovná do nej nakladie nové vajíčko.' }
+      ]
+    },
+
+    kobylka: {
+      nazov: 'Kobylka', priklad: 'kobylka zelená', typ: 'neuplna',
+      stadia: [
+        { rola: 'vaj', nazov: 'Vajíčko',
+          co: 'Podlhovasté vajíčko, ktoré samička nakladie kladielkom do pôdy.',
+          potrava: 'Nežerie.',
+          pohyb: 'Nehýbe sa.',
+          kde: 'V pôde.',
+          trvanie: 'prezimuje – niekoľko mesiacov; niekedy prečká aj viac zím',
+          deje: 'Vyvíja sa nymfa, ktorá sa vyliahne na jar.' },
+        { rola: 'mlad', nazov: 'Nymfa',
+          co: 'Mladá kobylka. <b>Je podobná dospelcovi</b> – má hlavu, dlhé tykadlá, 6 nôh so skokanskými zadnými nohami – ale <b>nemá krídla</b> (len ich základy) a <b>nemá vyvinuté pohlavné orgány</b>.',
+          potrava: 'Rastliny aj drobný hmyz – podobne ako dospelec.',
+          pohyb: 'Skáče a lezie, nelieta.',
+          kde: 'V tráve a na kríkoch – na rovnakých miestach ako dospelce.',
+          trvanie: 'typicky asi 2–3 mesiace (od jari do leta)',
+          deje: 'Rastie a niekoľkokrát sa zvlieka. Po každom zvlečení je väčšia a základy krídel sú dlhšie.' },
+        { rola: 'dosp', nazov: 'Kobylka', odb: 'dospelec – imágo',
+          co: 'Veľká zelená kobylka s dlhými krídlami a tykadlami dlhšími ako telo. Samička má na konci brucha šabľovité kladielko.',
+          potrava: 'Hlavne drobný hmyz (napr. húsenice, muchy), aj rastliny.',
+          pohyb: 'Skáče, lezie aj lieta.',
+          kde: 'Lúky, kríky, okraje lesov, záhrady.',
+          trvanie: 'od leta do jesene (typicky asi 2–3 mesiace); s príchodom mrazov hynie',
+          deje: 'Už nerastie. Samce cvrlikajú – trú o seba prednými krídlami. Samička nakladie vajíčka do pôdy.' }
+      ],
+      fazy: [
+        { id: 'vajicko', dur: 5, nazov: 'Vajíčka v pôde', sezona: '❄ zima → jar', text: 'Vajíčka sú uložené v pôde a prečkajú zimu. <i>(Kobylka nemá štádium kukly.)</i>' },
+        { id: 'liahnutie', dur: 5, nazov: 'Vyliahnutie nymfy', sezona: '🌱 jar', text: 'Na jar sa z vajíčka vyliahne drobná nymfa a vyhrabe sa na povrch. Už teraz vyzerá ako malá kobylka bez krídel.' },
+        { id: 'rast', dur: 5, nazov: 'Nymfa žerie a rastie', sezona: '🌱 jar', text: 'Nymfa žerie, skáče a rastie. Žije na rovnakom mieste a žerie podobnú potravu ako dospelec.' },
+        { id: 'zvliekanie', dur: 6, nazov: 'Zvliekanie', sezona: '🌱 jar', text: 'Krunier praskne na chrbte, nymfa sa z neho vysúka a je väčšia. Zvlečená kožka zostane ako prázdna „kópia“ kobylky. <i>(Kobylka sa zvlieka viackrát, ukazujeme jedno zvliekanie.)</i>' },
+        { id: 'rast2', dur: 6, nazov: 'Staršia nymfa', sezona: '☀ začiatok leta', text: 'Staršia nymfa má už viditeľné základy krídel. Pred posledným zvliekaním vylezie na stonku.' },
+        { id: 'vylahnutie', dur: 7, nazov: 'Posledné zvliekanie', sezona: '☀ leto', text: 'Z kože nymfy vylezie dospelá kobylka. <b>Nie je tu žiadna kukla</b> – nymfa sa mení priamo na dospelca.' },
+        { id: 'kridla', dur: 6, nazov: 'Rozprestretie a sušenie krídel', sezona: '☀ leto', text: 'Mäkké pokrčené krídla sa narovnajú, vyschnú a stvrdnú. Kobylka sa postupne sfarbí do zelena.' },
+        { id: 'dospelec', dur: 10, nazov: 'Dospelá kobylka', sezona: '☀ leto → 🍂 jeseň', text: 'Kobylka skáče a žerie, samce cvrlikajú. Samička kladielkom nakladie vajíčka do pôdy. Na jeseň dospelce hynú.' }
+      ]
+    },
+
+    vazka: {
+      nazov: 'Vážka', priklad: 'šidlo modré', typ: 'neuplna',
+      stadia: [
+        { rola: 'vaj', nazov: 'Vajíčko',
+          co: 'Drobné podlhovasté vajíčko. Samička šidla ho kladielkom zapichne do rastlín alebo vlhkého dreva pri vode.',
+          potrava: 'Nežerie.',
+          pohyb: 'Nehýbe sa.',
+          kde: 'V rastlinách na brehu alebo vo vode.',
+          trvanie: 'niekoľko mesiacov – vajíčka nakladené v lete prezimujú a nymfy sa liahnu na jar',
+          deje: 'Vyvíja sa nymfa.' },
+        { rola: 'mlad', nazov: 'Nymfa',
+          co: 'Nymfa (v niektorých učebniciach <i>larva</i>) žije <b>vo vode</b>. Má veľké oči, 6 nôh a základy krídel; pod hlavou má sklápaciu <b>lapaciu masku</b>. Rovnako ako iné nymfy nemá krídla ani vyvinuté pohlavné orgány. Od dospelca sa líši viac ako nymfa kobylky, ale kuklu tiež nemá.',
+          potrava: 'Je dravá – vodný hmyz, larvy komárov, pulce, aj malé rybky.',
+          pohyb: 'Lezie po dne a rastlinách. Rýchlo sa pohne „prúdovým pohonom“ – vystrekne vodu z konca brucha.',
+          kde: 'Vo vode – jazierka, rybníky, mláky. Dýcha žiabrami ukrytými na konci brucha.',
+          trvanie: 'typicky asi 2 roky (niekedy 1–3 roky)',
+          deje: 'Rastie a veľakrát sa zvlieka. Na konci vylezie z vody na steblo, kde sa naposledy zvlečie.' },
+        { rola: 'dosp', nazov: 'Vážka', odb: 'dospelec – imágo',
+          co: 'Vážka s veľkými zloženými očami, dvoma pármi blanitých krídel a dlhým bruchom.',
+          potrava: 'Je dravá – chytá hmyz v lete (komáre, muchy).',
+          pohyb: 'Výborne lieta, vie aj „visieť“ na mieste vo vzduchu.',
+          kde: 'Pri vode, na lúkach, na okrajoch lesov aj v záhradách.',
+          trvanie: 'typicky niekoľko týždňov',
+          deje: 'Loví, pári sa, samička kladie vajíčka. Hneď po vyliahnutí je bledá, výrazné farby získa až po niekoľkých dňoch.' }
+      ],
+      fazy: [
+        { id: 'vajicko', dur: 5, nazov: 'Vajíčka v rastline', sezona: '❄ zima → jar', text: 'Vajíčka sú uložené v rastline pri hladine a čakajú na jar. <i>(Vážka nemá štádium kukly.)</i>' },
+        { id: 'liahnutie', dur: 5, nazov: 'Vyliahnutie nymfy', sezona: '🌱 jar', text: 'Z vajíčka sa vyliahne drobná nymfa a dostane sa do vody.' },
+        { id: 'rast', dur: 6, nazov: 'Nymfa loví vo vode', sezona: '💧 vo vode 1–3 roky', text: 'Nymfa číha na dne. Lapacou maskou bleskovo chytí korisť – tu larvu komára.' },
+        { id: 'zvliekanie', dur: 6, nazov: 'Zvliekanie pod vodou', sezona: '💧 vo vode', text: 'Starý krunier praskne a vylezie väčšia nymfa. <i>(Vážka sa zvlieka veľakrát, ukazujeme jedno zvliekanie.)</i>' },
+        { id: 'rast2', dur: 7, nazov: 'Veľká nymfa', sezona: '💧 vo vode', text: 'Veľká nymfa má už dlhé základy krídel. Pohybuje sa aj prúdovým pohonom – vystrekne vodu z konca brucha.' },
+        { id: 'vylahnutie', dur: 9, nazov: 'Výstup z vody a posledné zvliekanie', sezona: '☀ začiatok leta', text: 'Nymfa vylezie z vody na steblo a pevne sa ho chytí. Krunier praskne na chrbte, vážka sa vysúka, zakloní sa dozadu a potom vytiahne brucho. <b>Žiadna kukla</b> – z nymfy rovno dospelec.' },
+        { id: 'kridla', dur: 7, nazov: 'Rozprestretie a sušenie krídel', sezona: '☀ leto', text: 'Do krídel a brucha pumpuje telesnú tekutinu – krídla sa rozprestrú a brucho predĺži. Krídla schnú a tvrdnú. Na steble zostane prázdna kožka nymfy.' },
+        { id: 'dospelec', dur: 10, nazov: 'Dospelá vážka', sezona: '☀ leto → 🍂 jeseň', text: 'Vážka lieta a chytá hmyz vo vzduchu. Samička nakladie vajíčka do rastlín pri vode.' }
+      ]
+    }
+  },
+
+  /* Porovnanie úplnej a neúplnej premeny (prepínač Porovnať) */
+  porovnanie: {
+    nadpis: 'Porovnanie',
+    uvod: 'Oba cykly bežia súčasne, zosynchronizované podľa štádií. <b style="color:#7fdc8f">Zelená</b> = majú spoločné, <b style="color:#f3b453">oranžová</b> = úplná premena má navyše.',
+    hlavicka: ['', 'Úplná', 'Neúplná'],
+    riadky: [
+      { kluce: ['vajicko'], nazov: 'Vajíčko', u: '✔', n: '✔', spol: true },
+      { kluce: ['liahnutie', 'rast', 'zvliekanie', 'rast2'], nazov: 'Mladé štádium rastie a zvlieka sa', u: '✔ larva – nepodobá sa dospelcovi', n: '✔ nymfa – podobá sa dospelcovi, nemá krídla', spol: true },
+      { kluce: ['zakuklenie', 'kukla'], nazov: 'Kukla (prestavba tela)', u: '✔', n: '✘ chýba', spol: false },
+      { kluce: ['vylahnutie', 'kridla'], nazov: 'Posledné zvliekanie, rozprestretie krídel', u: '✔ z kukly', n: '✔ z nymfy', spol: true },
+      { kluce: ['dospelec'], nazov: 'Dospelec (imágo) – má krídla, rozmnožuje sa, už nerastie', u: '✔', n: '✔', spol: true }
+    ]
+  },
+
+  preco: {
+    nadpis: 'Prečo to hmyz robí',
+    a: { h: 'Larva a dospelec si nekonkurujú',
+      t: 'Pri úplnej premene larva a dospelec často jedia <b>inú potravu</b> a žijú v <b>inom prostredí</b>. Húsenica žerie listy, motýľ saje nektár z kvetov – nemusia o potravu súperiť. Larva sa sústredí na žranie a rast, dospelec na rozmnožovanie a šírenie (vie lietať).',
+      pr: ['<b>Motýľ:</b> húsenica – listy · motýľ – nektár z kvetov',
+        '<b>Vážka:</b> nymfa loví vo vode · dospelec loví hmyz vo vzduchu',
+        '<b>Lienka:</b> výnimka – larva aj dospelec jedia vošky',
+        '<b>Kobylka</b> (neúplná premena): nymfy aj dospelce žijú na tom istom mieste a jedia podobnú potravu'],
+      fig: 'Vľavo larva (húsenica) na liste, vpravo dospelec (motýľ) na kvete.' },
+    b: { h: 'Chitínový krunier nerastie, preto sa hmyz zvlieka',
+      t: 'Telo hmyzu chráni pevný <b>krunier s chitínom</b> – vonkajšia kostra. Nenaťahuje sa, preto keď je mladému hmyzu tesný, musí ho zvliecť. Pod starým krunierom sa vytvorí nový, ktorý je spočiatku mäkký a zvrásnený. Hmyz sa „nafúkne“ (nasaje vzduch alebo vodu), nový krunier sa natiahne a stvrdne. Preto hmyz rastie <b>po schodíkoch</b>. Dospelý hmyz (imágo) väčšinou už nerastie ani sa nezvlieka.',
+      fig: 'Veľkosť krunieru počas vývinu: rastie skokom vždy po zvlečení.',
+      os: { x: 'čas', y: 'veľkosť krunieru', z: 'zvliekanie', d: 'dospelec' } }
+  },
+
+  omyly: {
+    nadpis: 'Časté omyly',
+    polozky: [
+      { omyl: 'Kukla len odpočíva, nič sa v nej nedeje.',
+        pravda: 'Kukla navonok vyzerá nehybne, ale vnútri prebieha veľká prestavba. Tkanivá larvy sa rozkladajú a zo skupiniek buniek (imaginálnych terčíkov) vznikajú orgány dospelca – krídla, nohy, tykadlá, nové ústne ústrojenstvo.',
+        anim: 'kukla',
+        popisy: ['1. Tkanivá larvy sa rozkladajú…', '2. …zo skupiniek buniek (zlaté) rastú nové orgány…', '3. …vzniká telo dospelca.'] },
+      { omyl: 'Húsenica je červík.',
+        pravda: 'Húsenica je <b>larva motýľa</b> – je to hmyz. Má hlavu s hryzadlami a na hrudi <b>3 páry pravých článkovaných nôh (6 nôh)</b>. Na bruchu má ešte mäsité panôžky – tie nie sú pravé nohy a dospelý motýľ ich nemá. Dážďovka (červ) nemá nohy vôbec.',
+        anim: 'nohy',
+        stitky: { prave: 'pravé nohy (3 páry)', panozky: 'panôžky', dazdovka: 'dážďovka (červ) – nemá nohy' } },
+      { omyl: 'Zámotok a kukla sú to isté. Každý motýľ si pletie zámotok.',
+        pravda: '<b>Kukla</b> je štádium vývinu. <b>Zámotok</b> je ochranný obal z hodvábneho vlákna, ktorý si okolo seba utkajú len niektoré druhy, napr. priadky – vnútri zámotku je kukla. Pri denných motýľoch (mlynárik, babôčky) sa hovorí len o kukle: zámotok si väčšinou nerobia, ich kukla je voľná, pripevnená len vláknom.',
+        anim: 'zamotok',
+        stitky: { kukla: 'kukla mlynárika', kukla2: 'bez zámotku', zamotok: 'zámotok priadky', zamotok2: 'vnútri je kukla' } }
+    ]
+  },
+
+  kviz: {
+    nadpis: 'Kvíz', uvod: '5 otázok. Po kliknutí hneď uvidíš, či je odpoveď správna. Nič sa neukladá ani neodosiela.',
+    znova: 'Skúsiť znova', vysledok: 'Výsledok: {s} z {n} správne.', spravne: 'Správne!', nespravne: 'Nie celkom.',
+    otazky: [
+      { otazka: 'Ktoré štádiá patria k <b>neúplnej</b> premene?',
+        moznosti: ['vajíčko → nymfa → dospelec', 'vajíčko → larva → kukla → dospelec', 'vajíčko → kukla → dospelec', 'larva → kukla → nymfa'], spravna: 0,
+        vysvetlenie: 'Neúplná premena nemá kuklu: z vajíčka sa liahne nymfa, ktorá sa po zvliekaniach zmení na dospelca.' },
+      { otazka: 'Mladý jedinec vyzerá ako malý dospelec, žerie to isté a skáče, ale nemá krídla – len ich krátke základy. Je to larva, alebo nymfa?',
+        moznosti: ['nymfa (neúplná premena)', 'larva (úplná premena)', 'kukla', 'dospelec'], spravna: 0,
+        vysvetlenie: 'Nymfa sa podobá dospelcovi, len nemá vyvinuté krídla a pohlavné orgány – napríklad mladá kobylka. Larva sa na dospelca nepodobá (húsenica a motýľ).' },
+      { otazka: 'Ktoré tvrdenie o <b>kukle</b> je správne?',
+        moznosti: ['Vnútri kukly sa telo larvy prestavuje na telo dospelca.', 'Kukla len odpočíva a nič sa v nej nedeje.', 'Kukla je hodvábny obal, ktorý si upletie každý motýľ.', 'Kukla žerie a rastie.'], spravna: 0,
+        vysvetlenie: 'Navonok je kukla nehybná, ale vnútri sa tkanivá larvy rozkladajú a vznikajú orgány dospelca. Hodvábny obal je zámotok – robia si ho len niektoré druhy.' },
+      { otazka: 'Ktorý z týchto druhov má <b>neúplnú</b> premenu?',
+        moznosti: ['vážka', 'motýľ', 'lienka', 'včela medonosná'], spravna: 0,
+        vysvetlenie: 'Vážka nemá kuklu – jej nymfa žije vo vode, vylezie na steblo a zvlečie sa rovno na dospelca. Motýľ, lienka aj včela majú kuklu.' },
+      { otazka: 'Prečo sa hmyz počas rastu zvlieka?',
+        moznosti: ['Chitínový krunier nerastie, preto ho musí vymeniť za väčší.', 'Pretože sa mu pokožka zašpiní.', 'Aby zmenil farbu podľa ročného obdobia.', 'Zvliekajú sa len dospelce, mladé štádiá nie.'], spravna: 0,
+        vysvetlenie: 'Krunier (vonkajšia kostra) je pevný a nenaťahuje sa. Hmyz preto rastie „po schodíkoch“ – po každom zvlečení je väčší.' }
+    ]
+  },
+
+  pozn: {
+    nadpis: 'Čo je v animácii zjednodušené',
+    body: [
+      'Veľkosti nie sú v mierke. Vajíčka, mladé larvy a nymfy sú zväčšené, aby boli dobre vidieť.',
+      'Čas je veľmi zrýchlený a fázy v animácii netrvajú pomerne k skutočnosti (napr. vajíčko kobylky leží v pôde mesiace, v animácii niekoľko sekúnd).',
+      'Larvy a nymfy sa zvliekajú viackrát – v animácii ukazujeme len jedno zvliekanie a potom zakuklenie (úplná premena) alebo posledné zvliekanie (neúplná premena).',
+      'Dĺžky trvania pri štádiách sú typické príklady pre uvedený druh. Závisia od teploty, potravy a ročného obdobia, preto sa v rôznych zdrojoch môžu líšiť.',
+      'Tvary a farby sú zjednodušené. Motýľ a lienka sú kreslené zhora, včela, kobylka a vážka zboku.',
+      'Vnútro kukly v lupe je schematické – ukazuje, že tkanivá sa rozkladajú a vznikajú nové orgány, nie skutočný vzhľad.',
+      'Pri včele ukazujeme vývin robotnice v bunke plástu v reze. Kráľovná (asi 16 dní) a trúd (asi 24 dní) sa vyvíjajú inak dlho.',
+      'Pri porovnaní sú oba cykly zosynchronizované podľa štádií, nie podľa skutočného času.',
+      'V niektorých učebniciach sa mladé štádium vážky nazýva larva, nie nymfa.'
+    ]
+  }
+};
+</script>
+<style>
+/* ===== Farby a základ – rovnaká paleta ako predošlé animácie ===== */
+:root{
+  --bg:#04060c;--panel:rgba(12,16,28,.86);--line:rgba(140,160,215,.22);
+  --text:#e2e8f5;--muted:#a3adc6;--gold:#f3b453;--gold2:#ffd88a;--blue:#6fb4ff;--red:#ff7a6b;--green:#7fdc8f;--violet:#b9a3ff;
+  --r-vaj:#f3d27a;--r-mlad:#7fdc8f;--r-kuk:#b9a3ff;--r-dosp:#6fb4ff;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--text);background:var(--bg);
+  background-image:radial-gradient(ellipse at 50% -10%,#14204a 0%,#070b18 50%,#04060c 100%);background-attachment:fixed;
+  font:17px/1.5 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1440px;margin:0 auto;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 12px 40px rgba(0,0,0,.45);padding:16px}
+h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+h2{margin:0 0 10px;font-size:23px;line-height:1.25}
+h3{margin:0 0 6px;font-size:16px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:650}
+p{margin:0 0 10px}
+.sub{color:var(--muted);margin:4px 0 0;font-size:17px}
+button{font:inherit;font-size:16px;color:var(--text);background:rgba(255,255,255,.07);border:1px solid var(--line);
+  border-radius:10px;padding:8px 14px;min-height:44px;cursor:pointer;transition:background .15s,border-color .15s,color .15s;touch-action:manipulation}
+button:hover{background:rgba(255,255,255,.13);border-color:rgba(160,180,230,.4)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
+button.on{background:rgba(243,180,83,.2);border-color:rgba(243,180,83,.65);color:var(--gold2)}
+button.primary{background:linear-gradient(135deg,#f3b453,#d9772f);color:#1a0e02;border:none;font-weight:700;min-width:140px}
+button.primary:hover{filter:brightness(1.08)}
+
+/* ===== Hlavička a navigácia ===== */
+header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between;margin-bottom:16px}
+nav.skoky{display:flex;flex-wrap:wrap;gap:6px}
+nav.skoky a{color:var(--text);text-decoration:none;font-size:16px;padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.05)}
+nav.skoky a:hover{border-color:var(--gold);color:var(--gold2)}
+
+/* ===== Rozloženie ===== */
+.hlavna{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:16px;align-items:start}
+.stlpec{display:flex;flex-direction:column;gap:16px;min-width:0}
+section{scroll-margin-top:12px}
+.sekcia{margin-top:16px}
+@media (max-width:1100px){.hlavna{grid-template-columns:minmax(0,1fr)}}
+
+/* Výber typu a druhu */
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tabs button{font-weight:650}
+.tabs .cmp{margin-left:auto}
+@media (max-width:700px){.tabs .cmp{margin-left:0;width:100%}}
+.schema{margin:12px 0 6px;font-size:18px}
+.druhy{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin-top:8px}
+.druhy>span{color:var(--muted);min-width:76px}
+.druhy button small{color:var(--muted);font-size:16px}
+.druhy button.on small{color:var(--gold2)}
+
+/* Scény */
+.sceny{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.sceny.dve{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:820px){.sceny.dve{grid-template-columns:minmax(0,1fr)}}
+.sceneCard{position:relative;padding:0;overflow:hidden;transition:box-shadow .3s,border-color .3s}
+.sceneCard svg{display:block;width:100%;height:auto;background:#08101c;touch-action:manipulation}
+.sceneCard .org{cursor:pointer}
+.sceneCard.navyse{border-color:rgba(243,180,83,.8);box-shadow:0 0 0 2px rgba(243,180,83,.55),0 12px 40px rgba(0,0,0,.45)}
+.sceneCard.spol{border-color:rgba(127,220,143,.6)}
+.sceneCard.chyba svg{opacity:.38;filter:grayscale(.6)}
+.overlay{position:absolute;left:10px;top:10px;padding:6px 11px;border-radius:10px;background:rgba(8,12,24,.8);border:1px solid var(--line);pointer-events:none;max-width:calc(100% - 20px)}
+.overlay b{display:block;font-size:19px;line-height:1.25}
+.overlay span{color:var(--muted);font-size:16px}
+.chipy{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;pointer-events:none}
+.chipy span{font-size:16px;padding:3px 10px;border-radius:999px;background:rgba(8,12,24,.8);border:1px solid var(--line)}
+.chipy span:empty{display:none}
+.chipy .tag.spol{color:var(--green);border-color:rgba(127,220,143,.6)}
+.chipy .tag.navyse{color:#1a0e02;background:var(--gold);border-color:var(--gold);font-weight:700}
+.chipy .tag.chyba{color:var(--gold2);border-color:var(--gold);border-style:dashed}
+.mierka{position:absolute;right:10px;bottom:8px;font-size:16px;color:var(--muted);background:rgba(8,12,24,.7);padding:2px 9px;border-radius:8px;pointer-events:none}
+.chybaBox{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(86%,420px);padding:14px 16px;border-radius:12px;
+  background:rgba(20,14,4,.92);border:2px dashed var(--gold);text-align:center;font-size:17px;pointer-events:none}
+.chybaBox[hidden]{display:none}
+@media (max-width:600px){
+  .sceneCard{display:flex;flex-direction:column}
+  .sceneCard .overlay{position:static;order:-1;margin:8px 8px 0;max-width:none}
+  .sceneCard .chipy{position:static;order:-1;flex-direction:row;flex-wrap:wrap;margin:6px 8px 0;justify-content:flex-start}
+  .sceneCard .mierka{position:static;align-self:flex-end;margin:4px 8px 6px}
+  .chybaBox{position:static;transform:none;width:auto;margin:0 8px 8px;order:3}
+}
+
+/* Ovládanie */
+.ovl .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sl{flex:1 1 220px;min-width:200px}
+.sl .lbl{display:flex;justify-content:space-between;gap:10px}
+.sl .lbl b{color:var(--gold2);font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:40px;background:transparent;margin:2px 0 0;cursor:pointer;touch-action:pan-y}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;margin-top:-10px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02;box-shadow:0 0 0 2px var(--gold)}
+input[type=range]::-moz-range-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02}
+.mini{color:var(--muted);font-size:16px;margin:10px 0 4px}
+
+/* Časová os */
+.stRow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
+.stRow>.lab{color:var(--muted);min-width:76px}
+.stRow .sip{color:var(--muted)}
+.stRow button{display:inline-flex;align-items:center;gap:8px;padding:6px 12px}
+.stRow button i{width:13px;height:13px;border-radius:50%;display:inline-block;flex:none}
+.stRow button.on{background:rgba(255,255,255,.16);border-color:var(--gold2);color:var(--gold2)}
+.stRow button.navyse{border-color:var(--gold);border-width:2px}
+.stRow .duch{border:2px dashed var(--gold);color:var(--gold2);border-radius:10px;padding:6px 10px;font-size:16px;opacity:.9}
+.osa{position:relative;margin-top:12px;height:40px;border-radius:10px;overflow:hidden;display:flex;border:1px solid var(--line)}
+.osa button{min-height:0;height:100%;border:none;border-right:1px solid rgba(4,6,12,.75);border-radius:0;padding:0;opacity:.55;flex-basis:0}
+.osa button:last-child{border-right:none}
+.osa button.on{opacity:1}
+.osa button.navyse{background-image:repeating-linear-gradient(45deg,rgba(243,180,83,.0) 0 6px,rgba(243,180,83,.55) 6px 9px)}
+.ukaz{position:absolute;top:0;bottom:0;width:4px;margin-left:-2px;background:#fff;box-shadow:0 0 8px #fff;pointer-events:none;border-radius:2px}
+
+/* Pravý panel */
+#dejeNazov{font-size:20px;font-weight:700;color:var(--gold2);margin:2px 0 4px}
+#dejeKrok{color:var(--muted);font-size:16px}
+.dejeBlok+.dejeBlok{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.dejeBlok h4{margin:0 0 2px;font-size:16px;color:var(--muted);font-weight:650}
+#stadiumCard.flash{animation:flash .9s}
+@keyframes flash{0%{box-shadow:0 0 0 3px var(--gold2)}100%{box-shadow:0 12px 40px rgba(0,0,0,.45)}}
+#stNazov{font-size:22px;font-weight:750;margin:0 0 2px}
+#stNazov small{font-size:16px;color:var(--muted);font-weight:500}
+#stPriklad{color:var(--muted);font-size:16px;margin-bottom:8px}
+dl.info{margin:0}
+dl.info dt{color:var(--gold2);font-size:16px;font-weight:650;margin-top:9px}
+dl.info dd{margin:2px 0 0}
+.pozn{margin-top:12px;padding:9px 12px;border-radius:10px;background:rgba(111,180,255,.08);border:1px solid rgba(111,180,255,.4);font-size:16px}
+table.porov{width:100%;border-collapse:collapse;font-size:16px;margin-top:8px}
+table.porov th{color:var(--muted);text-align:left;font-weight:600;padding:4px;border-bottom:1px solid var(--line)}
+table.porov td{padding:6px 4px;border-bottom:1px solid rgba(140,160,215,.12);vertical-align:top}
+table.porov tr.spol td:first-child{border-left:4px solid var(--green);padding-left:8px}
+table.porov tr.nav td:first-child{border-left:4px solid var(--gold);padding-left:8px}
+table.porov tr.on td{background:rgba(255,255,255,.08)}
+table.porov tr.nav.on td{background:rgba(243,180,83,.18)}
+
+/* Ďalšie sekcie */
+.dvoj{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start}
+.dvoj svg,.omylyGrid svg{display:block;width:100%;height:auto;background:#0b1626;border-radius:10px}
+figure{margin:0}
+figcaption{color:var(--muted);font-size:16px;margin:6px 0 0;min-height:24px}
+ul.priklady{margin:6px 0 0;padding-left:22px}
+ul.priklady li{margin:4px 0}
+.omylyGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(330px,100%),1fr));gap:16px}
+.box{margin:10px 0;padding:10px 13px;border-radius:10px;border:1px solid}
+.box b.h{display:block;font-size:16px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.box.omyl{background:rgba(255,122,107,.09);border-color:rgba(255,122,107,.45)}.box.omyl b.h{color:var(--red)}
+.box.pravda{background:rgba(127,220,143,.08);border-color:rgba(127,220,143,.4)}.box.pravda b.h{color:var(--green)}
+
+/* Kvíz */
+.otazka{padding:12px 0;border-bottom:1px solid var(--line)}
+.otazka .q{font-size:18px;margin-bottom:8px}
+.moznosti{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}
+.moznosti button{text-align:left}
+.moznosti button:disabled{cursor:default;opacity:.8}
+.moznosti button.ok{background:rgba(127,220,143,.2);border-color:var(--green);color:#d7ffdf;opacity:1}
+.moznosti button.zle{background:rgba(255,122,107,.2);border-color:var(--red);color:#ffe0dc;opacity:1}
+.fb{margin-top:8px;font-size:16px}
+.fb.ok b{color:var(--green)}.fb.zle b{color:var(--red)}
+#kvizVysl{font-size:20px;font-weight:700;color:var(--gold2);margin:12px 0}
+ul.poznList{margin:0;padding-left:22px}
+ul.poznList li{margin:6px 0}
+footer{color:var(--muted);text-align:center;font-size:16px;padding:20px 0 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div><h1 data-t="titul"></h1><p class="sub" data-t="podtitul"></p></div>
+  <nav class="skoky">
+    <a href="#anim" data-t="nav.anim"></a><a href="#preco" data-t="nav.preco"></a><a href="#omyly" data-t="nav.omyly"></a>
+    <a href="#kviz" data-t="nav.kviz"></a><a href="#pozn" data-t="nav.pozn"></a>
+  </nav>
+</header>
+
+<!-- ============ HLAVNÁ ANIMÁCIA ============ -->
+<section id="anim" class="hlavna">
+  <div class="stlpec">
+    <div class="card">
+      <div class="tabs" role="tablist">
+        <button id="tab-uplna" role="tab"></button>
+        <button id="tab-neuplna" role="tab"></button>
+        <button id="btnPorovnat" class="cmp"></button>
+      </div>
+      <p class="schema" id="schema"></p>
+      <div class="druhy" id="druhy-uplna"></div>
+      <div class="druhy" id="druhy-neuplna"></div>
+    </div>
+
+    <div class="sceny" id="sceny">
+      <div class="card sceneCard" id="karta-uplna">
+        <svg viewBox="0 0 800 460" role="img" aria-label="Animácia úplnej premeny"><g class="bg"></g><g class="dyn"></g></svg>
+        <div class="overlay"><b class="st"></b><span class="fz"></span></div>
+        <div class="chipy"><span class="tag"></span><span class="sez"></span></div>
+        <div class="chybaBox" hidden></div>
+        <div class="mierka" data-t="ui.mierka"></div>
+      </div>
+      <div class="card sceneCard" id="karta-neuplna">
+        <svg viewBox="0 0 800 460" role="img" aria-label="Animácia neúplnej premeny"><g class="bg"></g><g class="dyn"></g></svg>
+        <div class="overlay"><b class="st"></b><span class="fz"></span></div>
+        <div class="chipy"><span class="tag"></span><span class="sez"></span></div>
+        <div class="chybaBox" hidden></div>
+        <div class="mierka" data-t="ui.mierka"></div>
+      </div>
+    </div>
+
+    <div class="card ovl">
+      <div class="row">
+        <button id="btnPlay" class="primary"></button>
+        <button id="btnKrok" data-t="ui.krok"></button>
+        <label class="sl">
+          <span class="lbl"><span data-t="ui.rychlost"></span><b id="rychlVal">1×</b></span>
+          <input type="range" id="rychl" min="0.25" max="3" step="0.25" value="1" aria-label="Rýchlosť animácie">
+        </label>
+      </div>
+      <p class="mini" data-t="ui.osa"></p>
+      <div class="stRow" id="stRow-uplna"></div>
+      <div class="stRow" id="stRow-neuplna"></div>
+      <div class="osa" id="osa"><div class="ukaz" id="ukaz"></div></div>
+      <p class="mini" data-t="ui.tip"></p>
+    </div>
+  </div>
+
+  <div class="stlpec">
+    <div class="card" id="dejeCard">
+      <h3 data-t="ui.deje"></h3>
+      <div id="dejeObsah"></div>
+    </div>
+    <div class="card" id="porovCard" hidden>
+      <h3 data-t="porovnanie.nadpis"></h3>
+      <p class="mini" style="margin-top:0" data-t="porovnanie.uvod"></p>
+      <table class="porov" id="porovTab"></table>
+    </div>
+    <div class="card" id="stadiumCard">
+      <h3 data-t="ui.stadium"></h3>
+      <div id="stNazov"></div>
+      <div id="stPriklad"></div>
+      <dl class="info" id="stInfo"></dl>
+      <div class="pozn" data-t="ui.orientacne"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PREČO TO HMYZ ROBÍ ============ -->
+<section id="preco" class="card sekcia">
+  <h2 data-t="preco.nadpis"></h2>
+  <div class="dvoj">
+    <div>
+      <h3 data-t="preco.a.h"></h3>
+      <figure><svg id="mPreco1" viewBox="0 0 400 230"></svg><figcaption data-t="preco.a.fig"></figcaption></figure>
+      <p style="margin-top:10px" data-t="preco.a.t"></p>
+      <ul class="priklady" id="precoPr"></ul>
+    </div>
+    <div>
+      <h3 data-t="preco.b.h"></h3>
+      <figure><svg id="mPreco2" viewBox="0 0 400 240"></svg><figcaption data-t="preco.b.fig"></figcaption></figure>
+      <p style="margin-top:10px" data-t="preco.b.t"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ČASTÉ OMYLY ============ -->
+<section id="omyly" class="card sekcia">
+  <h2 data-t="omyly.nadpis"></h2>
+  <div class="omylyGrid" id="omylyGrid"></div>
+</section>
+
+<!-- ============ KVÍZ ============ -->
+<section id="kviz" class="card sekcia">
+  <h2 data-t="kviz.nadpis"></h2>
+  <p class="mini" data-t="kviz.uvod"></p>
+  <div id="kvizBox"></div>
+  <div id="kvizVysl"></div>
+  <button id="kvizZnova" data-t="kviz.znova"></button>
+</section>
+
+<!-- ============ ZJEDNODUŠENIA ============ -->
+<section id="pozn" class="card sekcia">
+  <h2 data-t="pozn.nadpis"></h2>
+  <ul class="poznList" id="poznList"></ul>
+</section>
+
+<footer>Premena hmyzu · výučbová animácia pre 7. ročník ZŠ</footer>
+</div>
+
+<script>
+/* =====================================================================
+   POMOCNÉ FUNKCIE
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const PI = Math.PI;
+const cl = (x, a = 0, b = 1) => x < a ? a : x > b ? b : x;      // orezanie do intervalu
+const lerp = (a, b, t) => a + (b - a) * t;                      // lineárny prechod
+const ez = t => t * t * (3 - 2 * t);                            // plynulý nábeh a dobeh
+const seg = (p, a, b) => ez(cl((p - a) / (b - a)));             // časť fázy medzi a a b → 0..1
+const r1 = v => Math.round(v * 10) / 10;                        // zaokrúhlenie (kratšie SVG)
+const rnd = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }; // pevná „náhoda“
+let UID = 0; const uid = p => p + (UID = (UID + 1) % 1e6);       // jedinečné id pre clipPath
+const sablona = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => o[k]);
+
+/* transformácia: posun, otočenie (stupne), mierka (sy = zvislá mierka) */
+function tf(x, y, rot, sx, sy) {
+  let s = 'translate(' + r1(x) + ' ' + r1(y) + ')';
+  if (rot) s += ' rotate(' + r1(rot) + ')';
+  if (sx != null) s += ' scale(' + sx.toFixed(3) + ' ' + (sy != null ? sy : sx).toFixed(3) + ')';
+  return s;
+}
+/* skupina; op = priehľadnosť */
+const G = (t, inner, op) => (op != null && op <= 0.005) ? '' :
+  '<g transform="' + t + '"' + (op != null && op < 1 ? ' opacity="' + op.toFixed(2) + '"' : '') + '>' + inner + '</g>';
+/* skupina s hlavným živočíchom – dá sa na ňu kliknúť */
+const O = (t, inner, op) => (op != null && op <= 0.005) ? '' :
+  '<g class="org" transform="' + t + '"' + (op != null && op < 1 ? ' opacity="' + op.toFixed(2) + '"' : '') + '>' + inner + '</g>';
+/* miešanie dvoch farieb #rrggbb */
+function mix(a, b, t) {
+  t = cl(t); const A = [1, 3, 5].map(i => parseInt(a.substr(i, 2), 16)), B = [1, 3, 5].map(i => parseInt(b.substr(i, 2), 16));
+  return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join('');
+}
+const rotPt = (x, y, deg) => { const a = deg * PI / 180, c = Math.cos(a), s = Math.sin(a); return [x * c - y * s, x * s + y * c]; };
+const bez2 = (a, b, c, t) => [(1 - t) * (1 - t) * a[0] + 2 * (1 - t) * t * b[0] + t * t * c[0], (1 - t) * (1 - t) * a[1] + 2 * (1 - t) * t * b[1] + t * t * c[1]];
+
+/* =====================================================================
+   KRESLENIE ŽIVOČÍCHOV (SVG). Každá funkcia kreslí v lokálnych súradniciach,
+   umiestnenie a veľkosť sa nastavujú cez tf().
+   ===================================================================== */
+
+/* --- Húsenica (zhora/zboku): hlava v bode (0,0), telo smeruje do -x, dĺžka 150 ---
+   o.cas = čas, o.pohyb = 0..1 (vlna lezenia), o.kon = stiahnutie tela (1 = normálne),
+   o.kozka = zvlečená koža, o.bled = zblednutie, o.zvyraz = zvýrazniť nohy */
+function housenica(o) {
+  const n = 12, d = 12.5 * (o.kon ?? 1), r = 8.6, kz = o.kozka, T = o.cas || 0, poh = o.pohyb || 0;
+  const tel = kz ? '#dfe3c4' : mix('#9cc443', '#d3dea0', o.bled || 0), tm = kz ? '#b9bd9a' : '#5f7f2a';
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const w = Math.sin(T * 5 + i * 0.55);                   // vlna beží od chvosta k hlave
+    let y = -poh * Math.pow(Math.max(0, w), 3) * r * 0.9;
+    if (kz) y += (rnd(i + 7) - 0.5) * 5;
+    pts.push([-i * d, y]);
+  }
+  let s = '';
+  // pravé nohy na hrudi (3 páry – zboku vidno jednu stranu)
+  for (const i of [1, 2, 3]) {
+    const [x, y] = pts[i]; const c = o.zvyraz ? '#ffd88a' : (kz ? '#b9bd9a' : '#2b2a18');
+    s += `<path d="M${r1(x)},${r1(y + r * .5)} l2,${r1(r * .55)} l3,${r1(r * .3)}" stroke="${c}" stroke-width="${o.zvyraz ? 3.6 : 2.4}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  // panôžky na bruchu
+  for (const i of [6, 7, 8, 9, 12]) {
+    const [x, y] = pts[i];
+    s += `<rect x="${r1(x - r * .38)}" y="${r1(y + r * .55)}" width="${r1(r * .76)}" height="${r1(r * .75)}" rx="${r1(r * .3)}" fill="${o.zvyraz ? '#6fb4ff' : tm}"/>`;
+  }
+  // články tela od chvosta k hlave
+  for (let i = n; i >= 1; i--) {
+    const [x, y] = pts[i], rr = r * (i > 10 ? 1 - (i - 10) * 0.12 : 1);
+    s += `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(rr)}" fill="${tel}" stroke="${tm}" stroke-width="1"/>`;
+  }
+  if (!kz) {
+    s += `<polyline points="${pts.slice(1).map(p => r1(p[0]) + ',' + r1(p[1] - 1)).join(' ')}" fill="none" stroke="#f2e05a" stroke-width="2.2" opacity=".85"/>`;
+    for (let i = 1; i <= n; i++) { const [x, y] = pts[i]; s += `<circle cx="${r1(x - 2)}" cy="${r1(y - r * .5)}" r="1.3" fill="#1f2410"/><circle cx="${r1(x + 2.5)}" cy="${r1(y + r * .25)}" r="1.1" fill="#1f2410"/>`; }
+  }
+  // hlava
+  const [hx, hy] = pts[0];
+  s += `<circle cx="${r1(hx + 2)}" cy="${r1(hy)}" r="${r1(r * 1.02)}" fill="${kz ? '#c8cca8' : '#4d5a26'}" stroke="${kz ? '#a9ad88' : '#2f3815'}"/>`;
+  if (!kz) s += `<circle cx="${r1(hx + 5)}" cy="${r1(hy - 3)}" r="1.5" fill="#111"/><path d="M${r1(hx + r + 1)},${r1(hy + 2)} l3,2" stroke="#222" stroke-width="2"/>`;
+  else s += `<path d="M${r1(hx - 6)},${r1(hy - 7)} l4,6 l-3,6" stroke="#8d9070" stroke-width="1.4" fill="none"/>`;
+  return s;
+}
+
+/* --- Vajíčko mlynárika (fľaštička), spodok v (0,0) --- */
+function vajMotyl(c, otvor) {
+  let s = `<path d="M0,0 C-4.5,0 -4.8,-8 -2.6,-13 L0,-15 L2.6,-13 C4.8,-8 4.5,0 0,0Z" fill="${c}" stroke="#a8841c" stroke-width=".6"/>`
+    + `<path d="M-2,-1 L-1.4,-12 M0,-.5 L0,-13.5 M2,-1 L1.4,-12" stroke="#a8841c" stroke-width=".4" opacity=".7"/>`;
+  if (otvor > 0) s += `<ellipse cx="0" cy="-13" rx="2.3" ry="1" fill="#3a3010"/><ellipse cx="${r1(5 * otvor)}" cy="${r1(-15 - 3 * otvor)}" rx="2.4" ry="1.1" fill="${c}" transform="rotate(${r1(60 * otvor)} ${r1(5 * otvor)} ${r1(-15 - 3 * otvor)})"/>`;
+  return s;
+}
+
+/* --- Kukla mlynárika: miesto prichytenia (0,0), kukla smeruje hore --- */
+function kuklaMotyl(o) {
+  const pr = o.prazdna, c = pr ? '#e2e5cc' : (o.farba || '#8db35a');
+  let s = `<path d="M0,0 C-9,-8 -15,-26 -14,-40 L-21,-52 C-19,-66 -11,-80 -2,-96 L2,-96 C8,-84 14,-70 15,-58 L21,-50 C17,-30 9,-9 0,0Z" fill="${c}" stroke="${pr ? '#b9bc9f' : '#5d7a35'}" stroke-width="1.2"${pr ? ' opacity=".8"' : ''}/>`;
+  if (!pr) {
+    s += `<path d="M0,-4 C3,-30 6,-60 0,-94" stroke="#e7e48a" stroke-width="1.6" fill="none" opacity=".8"/>`;
+    [[-8, -30], [6, -36], [-12, -50], [10, -54], [-4, -70]].forEach(([x, y]) => s += `<circle cx="${x}" cy="${y}" r="1.4" fill="#2a3a18"/>`);
+    if (o.krid) s += `<path d="M-17,-52 C-16,-64 -10,-76 -3,-86 C-6,-74 -8,-62 -11,-50Z" fill="#222" opacity="${(o.krid * .8).toFixed(2)}"/><path d="M-15,-46 C-10,-60 -4,-70 0,-74 C2,-60 -2,-50 -8,-40Z" fill="#fff" opacity="${(o.krid * .5).toFixed(2)}"/>`;
+  } else s += `<path d="M-4,-94 L0,-80 L4,-94" stroke="#9a9d80" stroke-width="1.5" fill="none"/>`;
+  if (o.trhlina) s += `<path d="M-3,-95 L0,-84 L3,-95" stroke="#2d3a18" stroke-width="1.6" fill="none" opacity="${o.trhlina.toFixed(2)}"/>`;
+  if (o.pas) s += `<path d="M-15,-44 Q0,-38 15,-44" stroke="#fff" stroke-width="1" fill="none" opacity=".8"/><path d="M-4,2 L4,2" stroke="#fff" stroke-width="2"/>`;
+  return s;
+}
+
+/* --- Motýľ (mlynárik) zhora, hlava hore. o.k = rozvinutie krídel 0.25..1,
+       o.mav = otvorenie krídel pri mávaní 0..1, o.vr = pokrčenie, o.prob = vysunutá cicavka --- */
+function motyl(o) {
+  const k = o.k ?? 1, mav = o.mav ?? 1, vr = o.vr || 0;
+  const sx = (0.25 + 0.75 * k) * (0.12 + 0.88 * mav), sy = 0.35 + 0.65 * k;
+  const wc = mix('#a7ab92', '#f6f3e6', k * k), cier = (0.3 + 0.7 * k).toFixed(2);
+  const kr = `<path d="M4,2 C36,0 52,16 46,30 C38,44 14,38 3,10Z" fill="${wc}" stroke="#8a8a7a" stroke-width=".8"/>`
+    + `<path d="M14,4 C20,2 26,3 28,6 C22,8 18,7 14,4Z" fill="#2a2a2a" opacity=".6"/>`
+    + `<path d="M2,-6 C20,-38 52,-50 64,-42 C70,-30 54,-8 6,2Z" fill="${wc}" stroke="#8a8a7a" stroke-width=".8"/>`
+    + `<path d="M44,-47 C56,-50 66,-44 64,-34 C58,-36 50,-40 44,-47Z" fill="#2a2a2a" opacity="${cier}"/>`
+    + `<circle cx="38" cy="-24" r="4" fill="#2a2a2a" opacity="${cier}"/><circle cx="30" cy="-12" r="3.4" fill="#2a2a2a" opacity="${cier}"/>`
+    + (vr > 0 ? `<path d="M8,-6 L20,-18 L26,-10 L36,-24 L40,-14 L50,-30 M8,6 L18,14 L24,8 L32,20 L38,16" stroke="#555" stroke-width="1.4" fill="none" opacity="${vr.toFixed(2)}"/>` : '');
+  let s = `<g transform="scale(${sx.toFixed(3)} ${sy.toFixed(3)})">${kr}</g><g transform="scale(${(-sx).toFixed(3)} ${sy.toFixed(3)})">${kr}</g>`;
+  s += `<ellipse cx="0" cy="14" rx="3.6" ry="15" fill="#3a3a3a"/><ellipse cx="0" cy="-5" rx="5" ry="7.5" fill="#2e2e2e"/><circle cx="0" cy="-15" r="4.2" fill="#2a2a2a"/>`;
+  s += `<path d="M-1.5,-18 Q-6,-30 -10,-38 M1.5,-18 Q6,-30 10,-38" stroke="#333" stroke-width="1.3" fill="none"/><circle cx="-10" cy="-38" r="2" fill="#333"/><circle cx="10" cy="-38" r="2" fill="#333"/>`;
+  const pr = o.prob || 0;
+  s += pr > 0.05 ? `<path d="M0,-19 L0,${r1(-19 - 18 * pr)}" stroke="#7a6a3a" stroke-width="1.4"/>` : `<circle cx="0" cy="-21" r="2" fill="none" stroke="#7a6a3a" stroke-width="1"/>`;
+  return s;
+}
+
+/* --- Larva lienky zhora: hlava v (0,0), telo do -x (dĺžka ~105) --- */
+function larvaLienka(o) {
+  const k = o.kon ?? 1, T = o.cas || 0, kz = o.kozka;
+  const tel = kz ? '#cbc9bf' : '#30354a', sv = kz ? '#b0aea3' : '#1a1d2a', or = '#f08a2c';
+  let s = '';
+  const hrud = [[-9, 9], [-17, 10], [-25, 10]];
+  hrud.forEach(([x, w], i) => {
+    x *= k; const ph = Math.sin(T * 9 + i * 2.1) * (o.pohyb || 0) * 4;
+    for (const sg of [1, -1]) {
+      const q = ph * sg;
+      s += `<path d="M${r1(x)},${r1(sg * w * .6)} L${r1(x + 3 + q)},${r1(sg * (w + 7))} L${r1(x + 8 + q)},${r1(sg * (w + 13))}" stroke="${kz ? '#bdbab0' : '#232634'}" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+    }
+  });
+  for (let i = 7; i >= 0; i--) {
+    const x = (-33 - i * 8.5) * k, w = 10 - i * 0.95;
+    s += `<ellipse cx="${r1(x)}" cy="0" rx="${r1(5.5 * k + 1)}" ry="${r1(w)}" fill="${tel}" stroke="${sv}" stroke-width=".8"/>`;
+    if (!kz) s += `<circle cx="${r1(x)}" cy="${r1(w * .6)}" r="1.4" fill="${sv}"/><circle cx="${r1(x)}" cy="${r1(-w * .6)}" r="1.4" fill="${sv}"/>`;
+  }
+  hrud.slice().reverse().forEach(([x, w]) => s += `<ellipse cx="${r1(x * k)}" cy="0" rx="${r1(5 * k + 1)}" ry="${w}" fill="${tel}" stroke="${sv}" stroke-width=".8"/>`);
+  if (!kz) {
+    const x1 = -33 * k, x4 = (-33 - 3 * 8.5) * k;
+    s += `<circle cx="${r1(x1)}" cy="6.5" r="2.6" fill="${or}"/><circle cx="${r1(x1)}" cy="-6.5" r="2.6" fill="${or}"/>`
+      + `<circle cx="${r1(x4)}" cy="5.5" r="2.3" fill="${or}"/><circle cx="${r1(x4)}" cy="-5.5" r="2.3" fill="${or}"/><circle cx="${r1(x4)}" cy="1.8" r="1.8" fill="${or}"/><circle cx="${r1(x4)}" cy="-1.8" r="1.8" fill="${or}"/>`;
+  }
+  s += `<ellipse cx="0" cy="0" rx="5" ry="6" fill="${kz ? '#bdbab0' : '#15171f'}"/><path d="M3,-3 L9,-7 M3,3 L9,7" stroke="${sv}" stroke-width="1.2"/>`;
+  return s;
+}
+
+/* --- Kukla lienky zhora: stred (0,0), vzadu (-x) zhrnutá koža larvy --- */
+function kuklaLienka(o) {
+  const pr = o.prazdna, c = pr ? '#ebe0c4' : (o.farba || '#e98a30');
+  let s = `<path d="M-36,0 C-37,-7 -30,-10 -22,-8 L-19,8 C-28,10 -36,7 -36,0Z" fill="#3a3c44"/><path d="M-33,-4 L-25,-2 M-33,3 L-24,2" stroke="#585a66" stroke-width="1.2"/>`;
+  s += `<ellipse cx="0" cy="0" rx="22" ry="17" fill="${c}" stroke="${pr ? '#c8b894' : '#7a3c10'}" stroke-width="1"${pr ? ' opacity=".8"' : ''}/>`;
+  if (!pr) {
+    s += `<path d="M-13,-15 Q-11,0 -13,15 M-4,-17 Q-2,0 -4,17 M6,-16 Q8,0 6,16" stroke="#9a4a14" stroke-width="1" fill="none" opacity=".7"/>`;
+    [[-9, -8], [-9, 8], [1, -10], [1, 10], [11, -6], [11, 6], [-1, 0]].forEach(([x, y]) => s += `<ellipse cx="${x}" cy="${y}" rx="2.6" ry="2" fill="#1d1d1d" opacity=".85"/>`);
+  } else s += `<path d="M20,-7 L13,0 L20,7" stroke="#a8946a" stroke-width="1.5" fill="none"/>`;
+  return s;
+}
+
+/* --- Lienka zhora, hlava smeruje do +x. o.farba 0 = bledá, 1 = červená; o.bodky; o.kr = blanité krídla vonku;
+       o.let = otvorené krovky; o.mav = mávanie --- */
+function lienka(o) {
+  const f = o.farba ?? 1, b = (o.bodky ?? 1).toFixed(2), kr = o.kr || 0, lt = o.let || 0, mav = o.mav ?? 1;
+  const ec = mix('#f2e3a0', '#d42a1c', f), es = mix('#c8b070', '#7a1a10', f);
+  let s = '';
+  for (const x of [10, 2, -6]) for (const sg of [1, -1]) s += `<path d="M${x},${sg * 12} L${x + 2},${sg * 24} L${x + 6},${sg * 27}" stroke="#1a1a1a" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+  const wk = Math.max(kr, lt * (0.3 + 0.7 * mav));
+  if (wk > 0.02) for (const sg of [1, -1]) s += `<ellipse cx="${r1(-8 - 6 * wk)}" cy="${r1(sg * (10 + 20 * wk))}" rx="${r1(10 + 10 * wk)}" ry="${r1(6 + 18 * wk)}" transform="rotate(${sg * -20} -8 ${sg * 10})" fill="rgba(220,230,255,.45)" stroke="rgba(200,210,240,.85)"/>`;
+  const ang = lt * 40;
+  for (const sg of [1, -1]) {
+    const half = `<path d="M16,0 A22,22 0 0 ${sg > 0 ? 1 : 0} -28,0Z" fill="${ec}" stroke="${es}" stroke-width="1"/>`
+      + [[6, 13, 3.6], [-6, 11, 5], [-18, 8, 3.6]].map(([x, y, r]) => `<circle cx="${x}" cy="${sg * y}" r="${r}" fill="#151515" opacity="${b}"/>`).join('');
+    s += `<g transform="rotate(${r1(-sg * ang)} 14 ${sg * 2})">${half}</g>`;
+  }
+  s += `<circle cx="13" cy="0" r="4.4" fill="#151515" opacity="${b}"/>`;
+  s += `<path d="M12,-13 Q24,-12 24,0 Q24,12 12,13Z" fill="#151515"/><ellipse cx="18" cy="-8.5" rx="3" ry="2.6" fill="#f4f0e6"/><ellipse cx="18" cy="8.5" rx="3" ry="2.6" fill="#f4f0e6"/>`;
+  s += `<ellipse cx="26" cy="0" rx="4.6" ry="7" fill="#151515"/><circle cx="27" cy="-4" r="1.3" fill="#eee"/><circle cx="27" cy="4" r="1.3" fill="#eee"/>`;
+  return s;
+}
+
+/* --- body pozdĺž oblúka (pre larvu včely): začiatok (0,0), smer a0, zakrivenie k --- */
+function krivka(n, L, k, a0) {
+  const pts = []; let x = 0, y = 0, a = a0; const ds = L / (n - 1);
+  for (let i = 0; i < n; i++) { pts.push([x, y]); x += Math.cos(a) * ds; y += Math.sin(a) * ds; a += k * ds; }
+  return pts;
+}
+/* --- Larva včely zboku: tvar C (o.ohyb = 1) alebo rovná (o.ohyb = 0), hlava na konci --- */
+function larvaVcela(o) {
+  const L = 150, b = o.ohyb ?? 1, k = b * (1.5 * PI) / L, pts = krivka(13, L, k, 0);
+  let mx = 0, my = 0; pts.forEach(p => { mx += p[0]; my += p[1]; }); mx /= pts.length; my /= pts.length;
+  const kz = o.kozka, tel = kz ? 'rgba(245,240,225,.45)' : '#f7f2e4', st = kz ? 'rgba(210,200,175,.6)' : '#d4c7a8';
+  let s = '';
+  pts.forEach((p, i) => { const r = 13 * (i < 2 ? 0.7 + i * 0.15 : 1); s += `<circle cx="${r1(p[0] - mx)}" cy="${r1(p[1] - my)}" r="${r1(r)}" fill="${tel}" stroke="${st}" stroke-width="1"/>`; });
+  const h = pts[12];
+  if (!kz) s += `<circle cx="${r1(h[0] - mx)}" cy="${r1(h[1] - my)}" r="10" fill="#efe5cc" stroke="#c9b993"/>`;
+  return s;
+}
+
+/* --- Včela zboku, hlava do +x. o.kukla = kukla (o.oci, o.tma = sfarbenie 0..1), o.mav = krídla --- */
+function vcela(o) {
+  const id = uid('vc'), kuk = o.kukla, tm = o.tma ?? 1, oc = o.oci ?? 1;
+  const bAbd = kuk ? mix('#f4eedd', '#9a7a50', tm) : '#c98a2c', band = kuk ? mix('#efe6d0', '#4a3a26', tm) : '#3a2a18';
+  const thor = kuk ? mix('#f4eedd', '#7a6040', tm) : '#8a6a3c', head = kuk ? mix('#f4eedd', '#3a3024', tm) : '#3a2c1e';
+  const eye = kuk ? (oc < 0.5 ? mix('#f4eedd', '#e48aa0', oc * 2) : mix('#e48aa0', '#3a2230', (oc - 0.5) * 2)) : '#1e1a1a';
+  const nc = kuk ? mix('#e8dfc6', '#5a4630', tm) : '#2a2016';
+  let s = '';
+  if (!kuk && o.zloz) {                     // dospelec v bunke: krídla pritiahnuté, nohy pod telom
+    s += `<ellipse cx="-18" cy="-9" rx="22" ry="5" transform="rotate(4 -18 -9)" fill="rgba(220,235,255,.45)" stroke="rgba(190,210,240,.85)"/>`;
+    s += `<path d="M10,9 L16,14 L24,12 M4,10 L10,17 L20,18 M-2,10 L4,19 L14,21" stroke="${nc}" stroke-width="2" fill="none"/>`;
+  } else if (!kuk) {
+    const fl = o.mav ?? 1;
+    s += `<g transform="rotate(${r1(-35 * (1 - fl))} 4 -10)"><ellipse cx="-16" cy="-17" rx="24" ry="7.5" transform="rotate(-10 -16 -17)" fill="rgba(220,235,255,.45)" stroke="rgba(190,210,240,.85)"/><ellipse cx="-10" cy="-12" rx="16" ry="5" transform="rotate(-4 -10 -12)" fill="rgba(220,235,255,.35)" stroke="rgba(190,210,240,.7)"/></g>`;
+    s += `<path d="M8,9 L10,21 L6,31 M1,10 L-3,23 L-9,31 M-5,9 L-15,22 L-21,33" stroke="${nc}" stroke-width="2" fill="none" stroke-linejoin="round"/>`;
+    if (o.pel) s += `<ellipse cx="-14" cy="22" rx="${r1(4 * o.pel)}" ry="${r1(3 * o.pel)}" fill="#f2c230"/>`;
+  } else s += `<path d="M10,9 L18,13 L24,11 M4,10 L12,16 L20,16 M-2,10 L6,18 L16,19" stroke="${nc}" stroke-width="2" fill="none"/>`;
+  s += `<defs><clipPath id="${id}"><ellipse cx="-24" cy="2" rx="24" ry="13"/></clipPath></defs><ellipse cx="-24" cy="2" rx="24" ry="13" fill="${bAbd}"/>`
+    + `<g clip-path="url(#${id})">` + [-14, -26, -38].map(x => `<rect x="${x - 3}" y="-14" width="5.5" height="32" fill="${band}" transform="rotate(10 ${x} 2)"/>`).join('') + `</g>`;
+  if (!kuk) s += `<path d="M-47,3 L-54,4" stroke="#2a2016" stroke-width="1.6"/>`;
+  s += `<ellipse cx="4" cy="0" rx="12" ry="11" fill="${thor}"/>`;
+  if (!kuk) s += `<ellipse cx="4" cy="-2" rx="11" ry="9" fill="none" stroke="#b08850" stroke-width="2" stroke-dasharray="1.5 2" opacity=".7"/>`;
+  s += `<ellipse cx="20" cy="2" rx="8" ry="9.5" fill="${head}"/><ellipse cx="20" cy="-1" rx="4" ry="6.5" fill="${eye}"/>`;
+  s += kuk ? `<path d="M24,-5 Q28,4 25,13" stroke="${nc}" stroke-width="1.6" fill="none"/>` : `<path d="M23,-6 L28,-16 L36,-13" stroke="#2a2016" stroke-width="1.6" fill="none"/>`;
+  if (kuk) s += `<path d="M8,-6 C0,-4 -6,2 -4,8 C2,6 8,2 8,-6Z" fill="${mix('#e9e0c8', '#806a4a', tm)}"/>`;
+  return s;
+}
+
+/* --- Kobylka zboku, hlava do +x. o.nymfa (väčšia hlava, bez krídel), o.kw = dĺžka krídel,
+       o.zakl = základy krídel, o.vr = pokrčenie, o.klad = kladielko, o.farba 0..1 --- */
+function kobylka(o) {
+  const kz = o.kozka, f = o.farba ?? 1;
+  const c = kz ? '#d8dbc0' : mix('#d5e6b6', '#5aa83c', f), d = kz ? '#b2b598' : mix('#a3ba8a', '#386f26', f), w = kz ? '#d0d3b6' : mix('#e2efcc', '#6cbd4a', f);
+  const ph = Math.sin((o.cas || 0) * 9) * (o.pohyb || 0), hs = o.nymfa ? 1.25 : 1;
+  const leg = (dd, sw) => `<path d="${dd}" stroke="${d}" stroke-width="${sw}" fill="none" stroke-linejoin="round" stroke-linecap="round"/>`;
+  let s = '';
+  s += `<g opacity=".65">${leg(`M26,7 L${r1(32 - ph * 3)},21 L${r1(40 - ph * 3)},31`, 2)}${leg(`M14,8 L${r1(12 + ph * 3)},22 L${r1(4 + ph * 3)},31`, 2)}</g>`;
+  s += `<path d="M4,-10 C-25,-14 -60,-10 -74,-2 C-76,2 -72,8 -66,9 C-40,12 -10,12 4,10Z" fill="${c}" stroke="${d}" stroke-width="1.2"/>`;
+  for (const x of [-12, -24, -36, -48, -60]) s += `<path d="M${x},${r1(-11 - x * .1)} Q${x - 3},0 ${x},${r1(10 + x * .03)}" stroke="${d}" stroke-width=".9" fill="none" opacity=".7"/>`;
+  if (o.klad) s += `<path d="M-66,3 Q-95,4 -122,-8 Q-96,10 -66,8Z" fill="${kz ? '#cfc9ae' : mix('#ddd6b4', '#8a7a40', f)}" stroke="${d}" stroke-width=".8"/>`;
+  if (o.kw > 0) {
+    const kw = o.kw;
+    s += `<g transform="translate(24 -6) scale(${kw.toFixed(3)} ${(0.55 + 0.45 * kw).toFixed(3)}) translate(-24 6)"><path d="M24,-11 C-20,-21 -70,-17 -100,-6 C-70,0 -20,-1 24,-2Z" fill="${w}" stroke="${d}" stroke-width="1"/><path d="M20,-6 C-20,-11 -60,-9 -94,-5" stroke="${d}" stroke-width=".8" fill="none"/>`
+      + (o.vr ? `<path d="M10,-9 L0,-3 L-12,-12 L-24,-3 L-36,-12 L-50,-4 L-64,-11" stroke="#7a8a6a" stroke-width="1.4" fill="none" opacity="${o.vr.toFixed(2)}"/>` : '') + `</g>`;
+  }
+  if (o.zakl > 0) s += `<path d="M22,-11 L${r1(20 - 26 * o.zakl)},-8 L${r1(22 - 22 * o.zakl)},-1 L22,-1Z" fill="${w}" stroke="${d}" stroke-width=".8"/>`;
+  s += `<path d="M2,-12 Q16,-17 30,-12 L30,9 Q16,13 2,9Z" fill="${c}" stroke="${d}" stroke-width="1.2"/>`;
+  if (kz) s += `<path d="M4,-13 L29,-13" stroke="#7e8066" stroke-width="2.2"/>`;
+  const ant = `<path d="M45,-11 C34,-70 -50,-74 -125,-46" stroke="${d}" stroke-width="1.3" fill="none"/><path d="M43,-11 C26,-60 -55,-60 -115,-30" stroke="${d}" stroke-width="1.1" fill="none" opacity=".75"/>`;
+  s += `<g transform="translate(30 0) scale(${hs}) translate(-30 0)">${ant}<ellipse cx="40" cy="1" rx="11" ry="13" fill="${c}" stroke="${d}" stroke-width="1.2"/><circle cx="43" cy="-5" r="3.4" fill="${kz ? '#bdb8a0' : '#6a4a2a'}"/><path d="M46,11 l3,6" stroke="${d}" stroke-width="2"/></g>`;
+  s += leg(`M30,8 L${r1(38 + ph * 3)},21 L${r1(46 + ph * 3)},31`, 2.3) + leg(`M18,9 L${r1(15 - ph * 3)},22 L${r1(7 - ph * 3)},32`, 2.3);
+  s += `<path d="M4,3 C-15,-4 -36,-18 -54,-17 C-50,-9 -22,6 4,9Z" fill="${c}" stroke="${d}" stroke-width="1.2"/>` + leg(`M-53,-15 L${r1(-42 + ph * 2)},31 l9,2`, 2.3);
+  return s;
+}
+
+/* --- Nymfa vážky zboku, hlava do +x. o.zakl = základy krídel, o.maska = vysunutá lapacia maska --- */
+function nymfaVazka(o) {
+  const kz = o.kozka, c = kz ? '#d2cdb2' : '#6e6b3a', d = kz ? '#b0aa8e' : '#46431f', ph = Math.sin((o.cas || 0) * 7) * (o.pohyb || 0) * 3;
+  const leg = (a, b, e, w) => `<path d="M${a} L${b} L${e}" stroke="${d}" stroke-width="${w}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  let s = leg('36,8', `${r1(44 + ph)},24`, `${r1(52 + ph)},35`, 2) + leg('28,9', `${r1(24 - ph)},26`, `${r1(18 - ph)},36`, 2) + leg('20,8', `${r1(6 + ph)},24`, `${r1(-6 + ph)},35`, 2);
+  s += `<path d="M18,-9 C-20,-14 -70,-11 -88,-3 L-97,0 L-88,3 C-70,10 -20,12 18,9Z" fill="${c}" stroke="${d}" stroke-width="1.2"/>`;
+  for (let x = -2; x > -85; x -= 13) s += `<path d="M${x},${r1(-12 - x * .08)} Q${x - 3},0 ${x},${r1(11 + x * .07)}" stroke="${d}" fill="none" stroke-width="1"/>`;
+  s += `<ellipse cx="30" cy="0" rx="15" ry="11" fill="${c}" stroke="${d}" stroke-width="1.2"/>`;
+  if (o.zakl > 0) s += `<path d="M38,-9 L${r1(36 - 44 * o.zakl)},${r1(-7 + o.zakl)} L${r1(36 - 40 * o.zakl)},-2 L30,-3Z" fill="${kz ? '#c4bfa3' : '#8a8650'}" stroke="${d}" stroke-width=".8"/>`;
+  s += `<ellipse cx="51" cy="0" rx="11" ry="10" fill="${c}" stroke="${d}" stroke-width="1.2"/><ellipse cx="54" cy="-4" rx="6.5" ry="6" fill="${kz ? '#c8c3a8' : '#2e3a1e'}"/>`;
+  const m = o.maska || 0;
+  if (m > 0.02) { const ex = 48 + 62 * m; s += `<path d="M46,9 L${r1(ex - 8)},12 L${r1(ex)},10" stroke="${d}" stroke-width="3.2" fill="none" stroke-linecap="round"/><path d="M${r1(ex)},10 l5,-5 M${r1(ex)},10 l5,5" stroke="${d}" stroke-width="2"/>`; }
+  else s += `<path d="M58,10 L40,13 L52,15" stroke="${d}" stroke-width="3" fill="none" stroke-linejoin="round"/>`;
+  s += leg('38,9', `${r1(48 - ph)},25`, `${r1(58 - ph)},36`, 2.6) + leg('30,10', `${r1(28 + ph)},27`, `${r1(22 + ph)},37`, 2.6) + leg('22,9', `${r1(8 - ph)},25`, `${r1(-4 - ph)},36`, 2.6);
+  if (kz) s += `<path d="M42,-10 L30,-12 L18,-9" stroke="#8a8468" stroke-width="1.8" fill="none"/>`;
+  return s;
+}
+
+/* --- Dospelá vážka zboku, hlava do +x. o.kw = krídla, o.br = dĺžka brucha, o.farba, o.mav --- */
+function vazka(o) {
+  const f = o.farba ?? 1, kw = o.kw ?? 1, br = o.br ?? 1, mv = o.mav ?? 1, vr = o.vr || 0;
+  const tc = mix('#d8d4b6', '#5b7f3a', f), bc = mix('#dcd9c6', '#2f86b8', f), ec = mix('#cfd6c8', '#2b9fca', f), dk = mix('#aaa68e', '#1d2a20', f);
+  const kr = (p, ang, pt) => `<g transform="rotate(${r1(ang)} 42 -9) translate(42 -9) scale(${kw.toFixed(3)} ${(0.45 + 0.55 * kw).toFixed(3)}) translate(-42 9)"><path d="${p}" fill="rgba(215,232,255,.36)" stroke="rgba(200,220,245,.9)" stroke-width="1"/><path d="${pt}" stroke="#3a3a30" stroke-width="3"/>`
+    + (vr > 0 ? `<path d="M30,-14 L18,-22 L6,-16 L-8,-26 L-22,-20 L-36,-30" stroke="#8a90a0" stroke-width="1.4" fill="none" opacity="${vr.toFixed(2)}"/>` : '') + `</g>`;
+  const fl = (1 - mv) * 45;
+  let s = kr('M40,-9 C22,-28 -32,-36 -72,-30 C-70,-22 -18,-14 40,-5Z', fl * .8 + 5, 'M-58,-31 l8,-1');
+  s += `<path d="M38,9 L44,18 L50,24 M44,10 L52,18 L60,22 M32,9 L34,19 L38,26" stroke="${dk}" stroke-width="1.6" fill="none"/>`;
+  const L = -124 * br;
+  s += `<path d="M32,-6 C16,-6 8,-4 -6,-3.6 L${r1(L + 4)},-2.6 L${r1(L)},0 L${r1(L + 4)},2.6 L-6,3.6 C8,4 16,6 32,6Z" fill="${bc}" stroke="${dk}" stroke-width=".8"/>`;
+  for (let i = 1; i < 9; i++) { const x = -6 + (L + 6) * i / 9; s += `<line x1="${r1(x)}" y1="-3.4" x2="${r1(x)}" y2="3.4" stroke="${dk}" stroke-width="1.8"/>`; }
+  s += `<ellipse cx="42" cy="0" rx="15" ry="11" fill="${tc}" stroke="${dk}" stroke-width="1"/><path d="M36,-9 L44,8 M44,-10 L50,6" stroke="${dk}" stroke-width="2" opacity=".6"/>`;
+  s += `<circle cx="61" cy="-1" r="10" fill="${ec}" stroke="${dk}" stroke-width="1"/><circle cx="66" cy="5" r="4" fill="${tc}"/>`;
+  s += kr('M44,-9 C30,-34 -14,-48 -58,-46 C-58,-38 -8,-22 44,-6Z', -fl, 'M-46,-45 l8,0');
+  return s;
+}
+
+/* --- Lupa: pohľad dovnútra kukly. p = priebeh 0..1, druh = 'motyl' | 'lienka' --- */
+function vnutroKukly(cx, cy, R, p, druh) {
+  let s = '';
+  const a = 1 - seg(p, .12, .42);                          // 1. tkanivá larvy
+  if (a > 0) {
+    let in1 = '';
+    for (let i = 0; i < 9; i++) {
+      const x = (i - 4) * R * 0.17, jx = (rnd(i) - .5) * R * .5 * (1 - a), jy = (rnd(i + 20) - .5) * R * .5 * (1 - a);
+      in1 += `<circle cx="${r1(cx + x + jx)}" cy="${r1(cy + jy)}" r="${r1(R * .12 * (0.5 + 0.5 * a))}" fill="${druh === 'lienka' ? '#4a5068' : '#86b04a'}"/>`;
+    }
+    s += `<g opacity="${a.toFixed(2)}">${in1}</g>`;
+  }
+  const b = seg(p, .12, .32) * (1 - seg(p, .72, .95));      // 2. rozložené tkanivá
+  if (b > 0) {
+    let in2 = ''; const cols = druh === 'lienka' ? ['#e8b070', '#f2d29a', '#c88a4a'] : ['#a7c35d', '#cfd88a', '#7c9a3c'];
+    for (let i = 0; i < 46; i++) {
+      const ang = rnd(i) * 6.283 + p * 4 * (rnd(i + 3) - .5), rr = Math.sqrt(rnd(i + 9)) * R * .82;
+      in2 += `<circle cx="${r1(cx + Math.cos(ang) * rr)}" cy="${r1(cy + Math.sin(ang) * rr)}" r="${r1(2 + rnd(i + 5) * 3)}" fill="${cols[i % 3]}"/>`;
+    }
+    s += `<g opacity="${(b * .9).toFixed(2)}">${in2}</g>`;
+  }
+  const c = seg(p, .22, .5) * (1 - seg(p, .78, .97));       // 3. skupinky buniek (imaginálne terčíky)
+  if (c > 0) {
+    const tp = [[-.32, -.22], [.32, -.22], [-.3, .22], [.3, .22], [-.12, .05], [.12, .05], [-.1, -.42], [.1, -.42]];
+    s += tp.map(([x, y]) => `<circle cx="${r1(cx + x * R)}" cy="${r1(cy + y * R)}" r="${r1(R * (0.03 + 0.07 * seg(p, .3, .7)))}" fill="#ffd88a" opacity="${c.toFixed(2)}"/>`).join('');
+  }
+  const d = seg(p, .55, .95);                              // 4. telo dospelca
+  if (d > 0) s += druh === 'lienka' ? G(tf(cx, cy, -90, R / 36), lienka({ farba: .1, bodky: 0 }), d) : G(tf(cx, cy + R * .05, 0, R / 76), motyl({ k: .85, mav: 1 }), d);
+  return s;
+}
+function lupa(cx, cy, R, p, druh, px, py) {
+  const id = uid('lp');
+  return `<line x1="${px}" y1="${py}" x2="${cx}" y2="${cy}" stroke="#ffd88a" stroke-width="2.5" stroke-dasharray="7 6" opacity=".75"/>`
+    + `<defs><clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${R}"/></clipPath></defs>`
+    + `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${druh === 'lienka' ? '#3a1e0c' : '#1d2b14'}"/>`
+    + `<g clip-path="url(#${id})">${vnutroKukly(cx, cy, R, p, druh)}</g>`
+    + `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#ffd88a" stroke-width="5"/><circle cx="${cx}" cy="${cy}" r="${R + 5}" fill="none" stroke="#1a0e02" stroke-width="2"/>`
+    + `<line x1="${r1(cx + R * .72)}" y1="${r1(cy + R * .72)}" x2="${r1(cx + R * 1.05)}" y2="${r1(cy + R * 1.05)}" stroke="#ffd88a" stroke-width="12" stroke-linecap="round"/>`;
+}
+
+/* --- Ďalšie drobnosti: kvet, voška, tráva, dážďovka, komár, pulec, mušica --- */
+function kvet(x, y, sc = 1) {
+  let s = `<path d="M${x},${y + 14} C${x - 6},${y + 120} ${x - 30},${y + 220} ${x - 40},460" stroke="#4f8a3a" stroke-width="${6 * sc}" fill="none"/>`
+    + `<path d="M${x - 12},${y + 150} C${x - 50},${y + 130} ${x - 70},${y + 150} ${x - 80},${y + 165} C${x - 50},${y + 170} ${x - 30},${y + 165} ${x - 12},${y + 150}Z" fill="#4f8a3a"/>`;
+  for (let i = 0; i < 8; i++) s += `<ellipse cx="${x}" cy="${y - 24 * sc}" rx="${12 * sc}" ry="${24 * sc}" fill="${i % 2 ? '#b56cc8' : '#c77dd8'}" transform="rotate(${i * 45} ${x} ${y})"/>`;
+  return s + `<circle cx="${x}" cy="${y}" r="${14 * sc}" fill="#f2c94c"/><circle cx="${x}" cy="${y}" r="${7 * sc}" fill="#e0a53a"/>`;
+}
+function voska(x, y, a) {
+  return G(tf(x, y, a, 1.3), `<path d="M-6,-3 L-9,-6 M-6,3 L-9,6 M0,-4 L1,-8 M0,4 L1,8 M4,-3 L7,-6 M4,3 L7,6" stroke="#5a8a3a" stroke-width="1"/><ellipse cx="0" cy="0" rx="7" ry="4.6" fill="#93d06a" stroke="#5a9a3a" stroke-width=".8"/><circle cx="7" cy="0" r="2.6" fill="#7ab854"/><path d="M-5,-2 L-10,-3 M-5,2 L-10,3" stroke="#4a7a2a" stroke-width="1.4"/>`);
+}
+const TRAVA = Array.from({ length: 46 }, (_, i) => [rnd(i + 100) * 800, 30 + rnd(i + 200) * 60, (rnd(i + 300) - .5) * 34]);
+function trava(col) {
+  return `<g stroke="${col}" stroke-width="3" fill="none" stroke-linecap="round">` + TRAVA.map(([x, h, b]) => `<path d="M${r1(x)},362 Q${r1(x + b * .3)},${r1(362 - h * .6)} ${r1(x + b)},${r1(362 - h)}"/>`).join('') + `</g>`;
+}
+function dazdovka(x0, x1, y, c) {
+  let s = ''; const n = 30;
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1), x = lerp(x0, x1, t) + Math.sin(c * 3 - t * 9) * 4, kl = i > 5 && i < 10;
+    s += `<circle cx="${r1(x)}" cy="${y}" r="${kl ? 9 : 7.5}" fill="${kl ? '#d98078' : '#e3a3a0'}" stroke="#b56f6c" stroke-width="1"/>`;
+  }
+  return s;
+}
+function komar(x, y, c) { // larva komára visiaca pod hladinou
+  const w = Math.sin(c * 8) * 4;
+  return `<path d="M${x},${y - 14} Q${r1(x + w)},${y} ${x},${y + 14}" stroke="#c8c2a0" stroke-width="3" fill="none"/><circle cx="${x}" cy="${y + 15}" r="3.4" fill="#a8a080"/>`;
+}
+function pulec(x, y, c) {
+  const w = Math.sin(c * 10) * 5;
+  return `<path d="M${x - 6},${y} Q${x - 16},${r1(y + w)} ${x - 26},${r1(y - w)}" stroke="#3a3a30" stroke-width="3" fill="none"/><ellipse cx="${x}" cy="${y}" rx="8" ry="6.5" fill="#3a3a30"/>`;
+}
+function musica(x, y, c) {
+  const m = Math.abs(Math.sin(c * 30));
+  return `<ellipse cx="${x}" cy="${y}" rx="4" ry="2.4" fill="#222"/><ellipse cx="${x - 1}" cy="${r1(y - 3 - 2 * m)}" rx="4" ry="${r1(1 + 2 * m)}" fill="rgba(220,230,255,.6)"/>`;
+}
+
+/* =====================================================================
+   SCÉNY – pre každý druh: bg() = statické pozadie, dyn(faza, p, cas) = to, čo sa hýbe.
+   p = priebeh aktuálnej fázy 0..1, cas = čas animácie v sekundách.
+   ===================================================================== */
+const DIERY_M = [[255, 396, 12], [292, 404, 16], [330, 394, 14], [372, 406, 18], [414, 396, 15]];
+const VOSKY = [[302, 372], [318, 394], [334, 364], [350, 386], [364, 406], [378, 370], [392, 392], [404, 362], [418, 402], [430, 378], [446, 394], [456, 364], [468, 384], [480, 404]].map(([x, y], i) => [x, y, rnd(i + 50) * 360]);
+
+const SCENY = {
+  /* ---------------- MOTÝĽ ---------------- */
+  motyl: {
+    bg() {
+      return `<defs><linearGradient id="gMot" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1833"/><stop offset="1" stop-color="#123326"/></linearGradient></defs><rect width="800" height="460" fill="url(#gMot)"/>`
+        + kvet(150, 150)
+        + `<rect x="593" y="10" width="14" height="450" rx="6" fill="#6b7d3a"/><path d="M600,120 l0,8 M600,300 l0,8" stroke="#55652c" stroke-width="14"/>`
+        + `<path d="M440,384 C500,386 560,392 606,394" stroke="#5c6e30" stroke-width="10" stroke-linecap="round" fill="none"/>`
+        + `<path d="M30,430 C90,320 300,300 480,345 C520,355 520,380 470,395 C330,450 140,460 30,430Z" fill="#4b9650" stroke="#3b7a40" stroke-width="2"/>`
+        + `<path d="M40,428 C180,400 330,370 490,368" stroke="#7fc27f" stroke-width="3" fill="none" opacity=".6"/>`
+        + [[120, 420, 150, 360], [200, 410, 230, 345], [290, 398, 320, 335], [380, 385, 410, 340]].map(([a, b, c, d]) => `<path d="M${a},${b} Q${a + 10},${b - 30} ${c},${d}" stroke="#7fc27f" stroke-width="1.5" fill="none" opacity=".45"/>`).join('');
+    },
+    dyn(f, p, c) {
+      let s = '';
+      const HY = 372, VX = 190, VY = 388, VAJ = [[-24, 2], [-12, -2], [0, 3], [12, -1], [24, 2]];
+      // zjedené diery v liste
+      const zj = f === 'rast' ? p * .45 : f === 'zvliekanie' ? .45 : f === 'rast2' ? .45 + .55 * p : ['vajicko', 'liahnutie'].includes(f) ? 0 : 1;
+      DIERY_M.forEach(([x, y, r], i) => { const k = cl(zj * DIERY_M.length - i); if (k > 0) s += `<ellipse cx="${x}" cy="${y}" rx="${r1(r * k)}" ry="${r1(r * .7 * k)}" fill="#11251e" stroke="#2f6b37" stroke-width="2"/>`; });
+      // vajíčka
+      if (f === 'vajicko' || f === 'liahnutie' || f === 'rast') {
+        const col = f === 'vajicko' ? mix('#f6eda8', '#e2a92c', p) : '#e2a92c';
+        VAJ.forEach(([dx, dy], i) => {
+          if (i === 2 && f !== 'vajicko') {
+            if (f === 'rast') return;
+            const tras = p < .15 ? Math.sin(c * 60) * 1.2 : 0;
+            s += G(tf(VX + dx + tras, VY + dy, 0, 2.3, 2.3 * (1 - .85 * seg(p, .72, 1))), vajMotyl(col, seg(p, .15, .3)), 1 - seg(p, .85, 1));
+            return;
+          }
+          s += G(tf(VX + dx, VY + dy, 0, 2.3), vajMotyl(f === 'rast' ? '#efe3b8' : col, f === 'rast' ? 1 : 0), f === 'rast' ? 1 - p : 1);
+        });
+      } else if (f === 'vajicko' || f === 'dospelec') {
+        const n = Math.floor(seg(p, .82, .97) * 5.99);
+        VAJ.slice(0, n).forEach(([dx, dy]) => s += G(tf(VX + dx, VY + dy, 0, 2.3), vajMotyl('#f6eda8', 0)));
+      }
+      // húsenica
+      if (f === 'liahnutie') { const k = seg(p, .25, .7); s += O(tf(lerp(VX + 4, 226, k), lerp(VY - 30, HY, k), lerp(-50, 0, k), .3), housenica({ cas: c, pohyb: k > 0 && k < 1 ? 1 : 0 }), seg(p, .2, .35)); }
+      if (f === 'rast') s += O(tf(lerp(226, 300, p), HY, 0, lerp(.3, .6, p)), housenica({ cas: c, pohyb: 1 }));
+      if (f === 'zvliekanie') {
+        const old = .6, tail = 300 - 150 * old;
+        if (p < .3) s += O(tf(300, HY, 0, old), housenica({ bled: seg(p, 0, .28) }));
+        else {
+          const kx = 1 - .45 * seg(p, .35, .95), nw = lerp(.6, .78, seg(p, .3, .9));
+          const kozka = G(tf(tail + 150 * old * kx, HY, 0, old * kx, old), housenica({ kozka: 1 }), .8);
+          const tel = O(tf(lerp(300, 350, seg(p, .3, .9)), HY, 0, nw), housenica({ cas: c, pohyb: p < .9 ? 1 : 0, bled: 1 - seg(p, .4, 1) }));
+          s += p < .55 ? tel + kozka : kozka + tel;
+        }
+      }
+      if (f === 'rast2') {
+        s += G(tf(210 + 90 * .55, HY, 0, .6 * .55, .6), housenica({ kozka: 1 }), .8 * (1 - seg(p, 0, .6)));
+        s += O(tf(lerp(350, 430, p), HY, 0, lerp(.78, 1, p)), housenica({ cas: c, pohyb: 1 }));
+      }
+      if (f === 'zakuklenie') {
+        const PX = 594;
+        if (p < .5) {
+          let x, y, r;
+          if (p < .2) { const k = seg(p, 0, .2); x = lerp(430, 586, k); y = lerp(HY, 378, k); r = 0; }
+          else if (p < .32) { const k = seg(p, .2, .32); x = lerp(586, PX, k); y = lerp(378, 330, k); r = lerp(0, -90, k); }
+          else { const k = seg(p, .32, .5); x = PX; y = lerp(330, 170, k); r = -90; }
+          s += O(tf(x, y, r, 1), housenica({ cas: c, pohyb: 1 }));
+        } else {
+          const tail = 320, pk = seg(p, .62, .75);
+          if (pk > 0) s += O(tf(600, 322, 0, 1), kuklaMotyl({ farba: mix('#d4e6a4', '#8db35a', seg(p, .8, 1)), pas: 1 }), pk);
+          const kon = p < .62 ? lerp(1, .72, seg(p, .5, .62)) : lerp(.72, .14, seg(p, .62, .92)), kz = p >= .62;
+          s += (kz ? G : O)(tf(PX, tail + 60 * seg(p, .92, 1) - 150 * kon, -90, 1), housenica({ kon, kozka: kz ? 1 : 0, bled: seg(p, .5, .62) }), kz ? .85 * (1 - seg(p, .94, 1)) : 1);
+          if (!kz) s += `<path d="M584,262 Q600,270 614,258" stroke="#fff" stroke-width="1.4" fill="none" opacity="${seg(p, .5, .6).toFixed(2)}"/>`;
+        }
+      }
+      // kukla a prázdny obal
+      if (f === 'kukla') s += O(tf(600, 322, 0, 1), kuklaMotyl({ farba: '#8db35a', pas: 1, krid: seg(p, .7, 1) })) + lupa(380, 190, 105, p, 'motyl', 588, 272);
+      if (f === 'vylahnutie') {
+        const tras = p < .15 ? Math.sin(c * 50) * 1.5 : 0;
+        s += p < .3 ? O(tf(600 + tras, 322, 0, 1), kuklaMotyl({ farba: '#8db35a', pas: 1, krid: 1, trhlina: seg(p, .15, .3) })) : G(tf(600, 322, 0, 1), kuklaMotyl({ prazdna: 1, pas: 1 }));
+        s += O(tf(600, lerp(290, 205, seg(p, .3, .85)), 0, 1.5), motyl({ k: .25, vr: 1, mav: .5 }), seg(p, .3, .42));
+      }
+      if (f === 'kridla') {
+        s += G(tf(600, 322, 0, 1), kuklaMotyl({ prazdna: 1, pas: 1 }));
+        const mav = p < .78 ? .5 : .5 + .45 * Math.sin((p - .78) * 40);
+        s += O(tf(600, 205, 0, 1.5), motyl({ k: lerp(.25, 1, seg(p, 0, .75)), vr: 1 - seg(p, .05, .8), mav }));
+      }
+      if (f === 'dospelec') {
+        s += G(tf(600, 322, 0, 1), kuklaMotyl({ prazdna: 1, pas: 1 }), 1 - seg(p, .85, 1));
+        let x, y, r = 0, sc = 1.15, mav, prob = 0;
+        const KX = 150, KY = 136, let1 = .5 + .5 * Math.sin(c * 22);
+        if (p < .32) { const k = seg(p, 0, .32); [x, y] = bez2([600, 205], [400, 30], [KX, KY], k); sc = lerp(1.5, 1.15, k); mav = let1; y += Math.sin(c * 6) * 6 * Math.sin(k * PI); r = -25 * Math.sin(k * PI); }
+        else if (p < .58) { x = KX; y = KY; prob = seg(p, .35, .4) * (1 - seg(p, .54, .58)); mav = .65 + .35 * Math.sin(c * 2.5); }
+        else if (p < .8) { const k = seg(p, .58, .8); [x, y] = bez2([KX, KY], [260, 180], [192, 352], k); mav = let1; r = 15 * Math.sin(k * PI); }
+        else { x = 192; y = 352; mav = .75 + .2 * Math.sin(c * 2); }
+        s += O(tf(x, y, r, sc), motyl({ k: 1, mav, prob }), 1 - seg(p, .95, 1));
+      }
+      return s;
+    }
+  },
+
+  /* ---------------- LIENKA ---------------- */
+  lienka: {
+    bg() {
+      return `<defs><linearGradient id="gLie" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0c1a30"/><stop offset="1" stop-color="#14301f"/></linearGradient></defs><rect width="800" height="460" fill="url(#gLie)"/>`
+        + `<path d="M700,0 C690,150 690,300 660,460" stroke="#4f7a32" stroke-width="12" fill="none"/><path d="M692,120 C740,90 780,110 800,100 C770,140 730,140 692,120Z" fill="#3f8a44"/>`
+        + `<path d="M20,440 C80,320 360,300 610,330 C660,340 660,378 610,396 C400,452 150,466 20,440Z" fill="#4f9a4a" stroke="#3b7a40" stroke-width="2"/>`
+        + `<path d="M30,435 C200,400 420,370 640,362" stroke="#86c47e" stroke-width="3" fill="none" opacity=".55"/>`
+        + [[140, 418, 180, 352], [260, 400, 300, 340], [380, 386, 420, 334], [500, 372, 540, 332]].map(([a, b, c, d]) => `<path d="M${a},${b} Q${a + 10},${b - 30} ${c},${d}" stroke="#86c47e" stroke-width="1.5" fill="none" opacity=".4"/>`).join('');
+    },
+    dyn(f, p, c) {
+      let s = '', org = '';
+      const LY = 384, LS = 1.25, PUX = 560 - 100 * LS + 34 * LS, PUY = 352;
+      let doprava = -1e9, dolava = 1e9;                     // vošky zjedené larvou (idúcou doprava) a lienkou (idúcou doľava)
+      const larva = (hx, hy, r, sv, o, op) => O(tf(hx, hy, r, LS * sv), larvaLienka(o), op);
+      // --- larva ---
+      if (f === 'liahnutie') { const k = seg(p, .3, .8); org += larva(lerp(182, 215, k), LY, 0, .3, { cas: c, pohyb: k > 0 && k < 1 ? 1 : 0 }, seg(p, .3, .45)); }
+      if (f === 'rast') { const hx = lerp(215, 330, p); doprava = hx; org += larva(hx, LY, 0, lerp(.3, .55, p), { cas: c, pohyb: 1 }); }
+      if (f === 'zvliekanie') {
+        if (p < .3) { doprava = 330; org += larva(330, LY, 0, .55, {}); }
+        else {
+          const hx = lerp(330, 362, seg(p, .3, .9)); doprava = hx;
+          const kozka = G(tf(330, LY, 0, LS * .55), larvaLienka({ kozka: 1 }), .8), tel = larva(hx, LY, 0, lerp(.55, .72, seg(p, .3, .9)), { cas: c, pohyb: p < .9 ? 1 : 0 });
+          org += p < .55 ? tel + kozka : kozka + tel;
+        }
+      }
+      if (f === 'rast2') {
+        const hx = lerp(362, 440, p); doprava = hx;
+        org += G(tf(330, LY, 0, LS * .55), larvaLienka({ kozka: 1 }), .8 * (1 - seg(p, 0, .6)));
+        org += larva(hx, LY, 0, lerp(.72, 1, p), { cas: c, pohyb: 1 });
+      }
+      if (['zakuklenie', 'kukla', 'vylahnutie', 'kridla', 'dospelec'].includes(f)) doprava = 440;
+      if (f === 'zakuklenie') {
+        if (p < .3) { const k = seg(p, 0, .3); org += larva(lerp(440, 560, k), lerp(LY, PUY, k), -15 * Math.sin(k * PI), 1, { cas: c, pohyb: 1 }); }
+        else {
+          const tail = 560 - 100 * LS, kon = lerp(1, .55, seg(p, .3, .55));
+          org += O(tf(PUX, PUY, 0, LS), kuklaLienka({ farba: mix('#f4dc8a', '#e98a30', seg(p, .7, 1)) }), seg(p, .55, .85));
+          org += larva(tail + 100 * LS * kon, PUY, 0, 1, { kon }, 1 - seg(p, .55, .85));
+        }
+      }
+      if (f === 'kukla') org += O(tf(PUX, PUY, 0, LS), kuklaLienka({})) + lupa(250, 175, 105, p, 'lienka', 470, 340);
+      if (f === 'vylahnutie') {
+        org += G(tf(PUX, PUY, 0, LS), kuklaLienka({ prazdna: p > .2 }));
+        org += O(tf(lerp(PUX, 530, seg(p, .2, .8)), PUY, 0, 1.4), lienka({ farba: 0, bodky: 0 }), seg(p, .15, .3));
+      }
+      if (f === 'kridla') {
+        org += G(tf(PUX, PUY, 0, LS), kuklaLienka({ prazdna: 1 }));
+        org += O(tf(530, PUY, 0, 1.4), lienka({ farba: seg(p, .15, 1), bodky: seg(p, .35, 1), kr: seg(p, .05, .3) * (1 - seg(p, .55, .8)) }));
+      }
+      if (f === 'dospelec') {
+        org += G(tf(PUX, PUY, 0, LS), kuklaLienka({ prazdna: 1 }), 1 - seg(p, .5, .8));
+        let x, y, r, lt = 0, mav = 1;
+        if (p < .08) { x = 530; y = PUY; r = lerp(0, 180, seg(p, 0, .08)); }
+        else if (p < .38) { const k = seg(p, .08, .38); x = lerp(530, 455, k); y = lerp(PUY, LY, k); r = 180; dolava = x - 43; }
+        else if (p < .72) {
+          const k = seg(p, .42, .7); [x, y] = bez2([455, LY], [330, 170], [215, 375], k); r = 180; dolava = 412;
+          lt = seg(p, .38, .44) * (1 - seg(p, .68, .72)); mav = .5 + .5 * Math.sin(c * 30);
+        } else { x = 215; y = 375; r = lerp(180, 360, seg(p, .72, .78)); dolava = 412; }
+        org += O(tf(x, y, r, 1.4), lienka({ let: lt, mav }), 1 - seg(p, .96, 1));
+      }
+      // --- vošky (zjedené zmiznú) ---
+      VOSKY.forEach(([x, y, a]) => { if (!(x < doprava - 2 || x > dolava + 2)) s += voska(x, y, a); });
+      // --- vajíčka ---
+      const VX = 175, VY = 385, vaj = [];
+      for (let r = 0; r < 3; r++) for (let q = 0; q < 4; q++) vaj.push([VX - 15 + q * 10 + (r % 2) * 4, VY - 12 + r * 12]);
+      const vajicko = (x, y, col, op) => G(tf(x, y, -10, 1.4), `<ellipse cx="0" cy="0" rx="3.2" ry="5.8" fill="${col}" stroke="#b08a20" stroke-width=".6"/>`, op);
+      if (f === 'vajicko') vaj.forEach(([x, y]) => s += vajicko(x, y, mix('#f4c430', '#a8a080', seg(p, .5, 1)), 1));
+      if (f === 'liahnutie') vaj.forEach(([x, y]) => s += vajicko(x, y, mix('#a8a080', '#efe6c8', seg(p, .2, .5)), 1));
+      if (f === 'rast' || f === 'zvliekanie') vaj.forEach(([x, y]) => s += vajicko(x, y, '#efe6c8', f === 'rast' ? 1 - .5 * p : .5 * (1 - p)));
+      if (f === 'dospelec') { const n = Math.floor(seg(p, .78, .97) * 12.99); vaj.slice(0, n).forEach(([x, y]) => s += vajicko(x, y, '#f4c430', 1)); }
+      return s + org;
+    }
+  },
+
+  /* ---------------- VČELA ---------------- */
+  vcela: {
+    bg() {
+      const bunka = (dy, vypln, viecko) => {
+        const t = 165 + dy, b = 315 + dy, m = 240 + dy;
+        return `<path d="M520,${t} L200,${t} L170,${m} L200,${b} L520,${b}Z" fill="${vypln}"/>` + (viecko ? `<path d="M526,${t + 1} Q538,${m} 526,${b - 1}" stroke="${viecko}" stroke-width="12" fill="none"/>` : '');
+      };
+      const steny = dy => `<path fill-rule="evenodd" d="M530,${151 + dy} L196,${151 + dy} L154,${240 + dy} L196,${329 + dy} L530,${329 + dy} Z M520,${165 + dy} L200,${165 + dy} L170,${240 + dy} L200,${315 + dy} L520,${315 + dy} Z" fill="#e0aa48" stroke="#b07c26" stroke-width="1.5"/>`;
+      return `<rect width="800" height="460" fill="#120c05"/><rect x="0" y="0" width="530" height="460" fill="#5a3c14"/>`
+        + bunka(-178, '#b9801c', '#efe0b0') + bunka(178, '#3b2610', '#a8742e')
+        + `<defs><linearGradient id="gBun" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#24170a"/><stop offset="1" stop-color="#43301a"/></linearGradient></defs>`
+        + bunka(0, 'url(#gBun)') + steny(-178) + steny(0) + steny(178);
+    },
+    dyn(f, p, c) {
+      let s = '';
+      const BX = 174, BY = 240;
+      const vaj = (uhol, op) => G(tf(BX, BY, uhol, 1), `<ellipse cx="22" cy="0" rx="22" ry="5.2" fill="#fbf8ee" stroke="#d6ccb0" stroke-width="1"/>`, op);
+      const kas = f === 'liahnutie' ? seg(p, .2, .5) : f === 'rast' ? 1 - .4 * p : f === 'zvliekanie' ? .6 : f === 'rast2' ? .6 * (1 - p) : 0;
+      if (kas > 0) s += `<ellipse cx="236" cy="302" rx="46" ry="10" fill="#fbf6e2" opacity="${(kas * .85).toFixed(2)}"/>`;
+      if (f === 'vajicko') s += O(tf(BX, BY, 50 * ez(p), 1), `<ellipse cx="22" cy="0" rx="22" ry="5.2" fill="#fbf8ee" stroke="#d6ccb0" stroke-width="1"/>`);
+      if (f === 'liahnutie') s += vaj(50, 1 - seg(p, .35, .65));
+      // larva v bunke
+      const larva = (sv, o, op, el) => { const sc = 1.5 * sv; return (el || O)(tf(205 + 46 * sc, 308 - 46 * sc, o.rot || 0, sc), larvaVcela(o), op); };
+      if (f === 'liahnutie') s += larva(.28, {}, seg(p, .45, .7));
+      if (f === 'rast') s += larva(lerp(.28, .6, p), { rot: Math.sin(c * 1.3) * 8 });
+      if (f === 'zvliekanie') {
+        if (p < .3) s += larva(.6, {});
+        else s += larva(.6, { kozka: 1 }, .8, G) + larva(lerp(.6, .78, seg(p, .3, .9)), { rot: Math.sin(c * 1.3) * 5 });
+      }
+      if (f === 'rast2') s += larva(.6, { kozka: 1 }, .8 * (1 - seg(p, 0, .5)), G) + larva(lerp(.78, 1, p), { rot: Math.sin(c * 1.3) * 6 });
+      if (f === 'zakuklenie') {
+        const b = 1 - seg(p, .3, .55), sc = 1.5, cx = lerp(274, 360, 1 - b), cy = lerp(239, 240, 1 - b);
+        s += O(tf(cx, cy, 0, sc), larvaVcela({ ohyb: b }), 1 - seg(p, .62, .92));
+        s += O(tf(395, 240, 0, 3.6), vcela({ kukla: 1, oci: 0, tma: 0 }), seg(p, .62, .92));
+      }
+      // zámotok (tenké hodvábne vlákna)
+      const zam = f === 'zakuklenie' ? seg(p, .45, .65) : (f === 'kukla' || f === 'vylahnutie') ? 1 : f === 'dospelec' ? 1 - seg(p, .45, .6) : 0;
+      if (zam > 0) s += `<path d="M518,171 L204,171 L177,240 L204,309 L518,309" stroke="#fff" stroke-width="2" stroke-dasharray="3 4" fill="none" opacity="${(zam * .55).toFixed(2)}"/>`;
+      if (f === 'kukla') s += O(tf(395, 240, 0, 3.6), vcela({ kukla: 1, oci: seg(p, .05, .75), tma: seg(p, .55, 1) }));
+      if (f === 'vylahnutie') {
+        s += G(tf(380, 240, 0, 3.6), vcela({ kukla: 1, oci: 0, tma: 0 }), .3 * seg(p, .1, .25));
+        const x = p < .75 ? 395 : lerp(395, 470, seg(p, .75, 1));
+        s += O(tf(x, 240, 0, 3.6), vcela({ kukla: 1, oci: 1, tma: 1 }), 1 - seg(p, 0, .25)) + O(tf(x, 240, 0, 3.6), vcela({ zloz: 1 }), seg(p, 0, .25));
+      }
+      if (f === 'dospelec') {
+        s += G(tf(380, 240, 0, 3.6), vcela({ kukla: 1, oci: 0, tma: 0 }), .3 * (1 - seg(p, .45, .6)));
+        if (p < .4) {
+          let x, y = 240, mv = 0;
+          if (p < .2) x = lerp(470, 640, seg(p, 0, .2));
+          else { const k = seg(p, .2, .4); x = lerp(640, 940, k); y = lerp(240, 40, k); mv = .5 + .5 * Math.sin(c * 40); }
+          s += O(tf(x, y, p < .2 ? 0 : -20 * seg(p, .2, .26), 3.6), vcela({ mav: mv, zloz: x < 560 }));
+        }
+        s += vaj(0, seg(p, .82, .94));
+      }
+      // voskové viečko (rastie od okrajov) a otvor, ktorý prehryzie včela
+      const g = f === 'zakuklenie' ? seg(p, 0, .35) : ['kukla', 'vylahnutie', 'dospelec'].includes(f) ? 1 : 0;
+      const h = f === 'vylahnutie' ? seg(p, .3, .75) : f === 'dospelec' ? 1 : 0;
+      const vop = f === 'dospelec' ? 1 - seg(p, .45, .6) : 1;
+      if (g > 0 && vop > 0) {
+        let v = `<path d="M526,166 Q544,203 546,240" stroke="#9c6c2a" stroke-width="14" fill="none" stroke-dasharray="${r1(80 * g)} 400"/><path d="M526,314 Q544,277 546,240" stroke="#9c6c2a" stroke-width="14" fill="none" stroke-dasharray="${r1(80 * g)} 400"/>`;
+        if (h > 0) v += `<ellipse cx="540" cy="240" rx="11" ry="${r1(56 * h)}" fill="#120c05"/>`;
+        s += `<g opacity="${vop.toFixed(2)}">${v}</g>`;
+      }
+      // robotnica-kŕmička pri otvore bunky
+      const navsteva = (a, b) => { if (p < a || p > b) return null; const k = Math.min(seg(p, a, a + .08), 1 - seg(p, b - .08, b)); return lerp(800, 612, k); };
+      let kx = null;
+      if (f === 'liahnutie') kx = navsteva(0, .95); else if (f === 'rast') kx = navsteva(.3, .7);
+      else if (f === 'rast2') kx = navsteva(.15, .5) ?? navsteva(.55, .9); else if (f === 'zakuklenie') kx = navsteva(0, .42);
+      else if (f === 'dospelec') kx = navsteva(.42, .7);
+      if (kx != null) s += G(tf(kx, 236 + Math.sin(c * 4) * 2, 0, -3, 3), vcela({ mav: .9 }));
+      return s;
+    }
+  },
+
+  /* ---------------- KOBYLKA ---------------- */
+  kobylka: {
+    bg() {
+      return `<defs><linearGradient id="gKob" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1730"/><stop offset="1" stop-color="#1b2c36"/></linearGradient><linearGradient id="gPod" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a3422"/><stop offset="1" stop-color="#2a1c12"/></linearGradient></defs>`
+        + `<rect width="800" height="460" fill="url(#gKob)"/><rect y="360" width="800" height="100" fill="url(#gPod)"/>`
+        + Array.from({ length: 30 }, (_, i) => `<ellipse cx="${r1(rnd(i + 600) * 800)}" cy="${r1(372 + rnd(i + 700) * 82)}" rx="${r1(3 + rnd(i + 800) * 4)}" ry="${r1(2 + rnd(i + 900) * 2)}" fill="#5a4430"/>`).join('')
+        + `<rect x="605" y="60" width="10" height="302" rx="4" fill="#5f8a3a"/><path d="M610,170 C650,150 680,160 700,150 C680,180 640,185 610,170Z M610,260 C570,240 545,250 525,240 C545,270 580,275 610,260Z" fill="#4f8a3a"/>`;
+    },
+    dyn(f, p, c) {
+      let s = '';
+      const GY = 360, K = 1.4, LEG = 32, EX = 250, EY = 418;
+      const stoj = sc => GY - LEG * sc;
+      const tz = f === 'vajicko' ? 1 - seg(p, .5, 1) : f === 'dospelec' ? seg(p, .55, 1) : 0;
+      s += trava(mix('#5aa83c', '#8f7f4f', tz));
+      if (f === 'vajicko') {
+        const sn = 1 - seg(p, .45, .7);
+        if (sn > 0) {
+          s += `<rect x="0" y="${GY - 6}" width="800" height="10" rx="4" fill="#e8eef8" opacity="${sn.toFixed(2)}"/>`;
+          for (let i = 0; i < 40; i++) s += `<circle cx="${r1(rnd(i + 400) * 800)}" cy="${r1((rnd(i + 500) * 360 + c * 40 * (0.6 + rnd(i) * .6)) % 360)}" r="2.6" fill="#fff" opacity="${(sn * .85).toFixed(2)}"/>`;
+        }
+      }
+      // vajíčka v pôde
+      const VAJ = [[-24, 4, -25], [-12, -2, -10], [0, 3, 5], [12, -1, 15], [24, 4, 30]];
+      const vajicko = (dx, dy, a, col, op) => G(tf(EX + dx, EY + dy, a, 1.6), `<ellipse cx="0" cy="0" rx="3" ry="9" fill="${col}" stroke="#7a6a4a" stroke-width=".7"/>`, op);
+      if (f === 'vajicko') VAJ.forEach(v => s += vajicko(...v, '#b9a77e', 1));
+      if (f === 'liahnutie' || f === 'rast') VAJ.forEach((v, i) => s += vajicko(...v, i === 2 || f === 'rast' ? '#d8cfb4' : '#b9a77e', f === 'rast' ? 1 - p : 1));
+      // kobylka
+      const kob = (x, y, r, sc, o, op, el) => (el || O)(tf(x, y, r, sc), kobylka(o), op);
+      if (f === 'liahnutie') {
+        const sc = K * .3;
+        s += kob(EX, lerp(EY, stoj(sc), seg(p, .05, .6)), lerp(-90, 0, seg(p, .55, .8)), sc, { nymfa: 1, cas: c, pohyb: p > .8 ? 0 : .5 }, seg(p, .05, .15));
+      }
+      if (f === 'rast') { const sc = K * lerp(.3, .48, p); s += kob(lerp(EX, 420, p), stoj(sc), 0, sc, { nymfa: 1, cas: c, pohyb: 1 }); }
+      if (f === 'zvliekanie') {
+        const so = K * .48;
+        if (p < .3) s += kob(420, stoj(so), 0, so, { nymfa: 1 });
+        else {
+          const sn = K * lerp(.48, .62, seg(p, .3, .9)), kozka = kob(420, stoj(so), 0, so, { nymfa: 1, kozka: 1 }, .85, G);
+          const tel = kob(lerp(420, 475, seg(p, .3, .9)), stoj(sn), 0, sn, { nymfa: 1, cas: c, pohyb: p < .9 ? 1 : 0, zakl: .25 * seg(p, .3, .9), farba: lerp(.3, 1, seg(p, .4, 1)) });
+          s += p < .55 ? tel + kozka : kozka + tel;
+        }
+      }
+      if (f === 'rast2') {
+        s += kob(420, stoj(K * .48), 0, K * .48, { nymfa: 1, kozka: 1 }, .85 * (1 - seg(p, 0, .6)), G);
+        let x, y, r = 0, sc;
+        if (p < .4) { const k = seg(p, 0, .4); sc = K * lerp(.62, .75, k); x = lerp(475, 575, k); y = stoj(sc); }
+        else if (p < .55) { const k = seg(p, .4, .55); sc = K * .75; x = lerp(575, 606 - LEG * sc, k); y = lerp(stoj(sc), GY - 70, k); r = -90 * k; }
+        else { const k = seg(p, .55, 1); sc = K * lerp(.75, .8, k); x = 606 - LEG * sc; y = lerp(GY - 70, 210, k); r = -90; }
+        s += kob(x, y, r, sc, { nymfa: 1, cas: c, pohyb: 1, zakl: lerp(.25, .85, p) });
+      }
+      const XS = 606 - LEG * K * .8, XA = 606 - LEG * K;
+      const exuvia = op => kob(XS, 210, -90, K * .8, { nymfa: 1, kozka: 1, zakl: .85 }, op, G);
+      if (f === 'vylahnutie') {
+        if (p < .3) s += kob(XS, 210, -90, K * .8, { nymfa: 1, zakl: .85 });
+        else {
+          const ad = kob(XA, lerp(210, 150, seg(p, .35, .85)), -90, K, { kw: .25, vr: 1, farba: 0, klad: 1 }, seg(p, .3, .42));
+          s += p < .55 ? ad + exuvia(.75) : exuvia(.85) + ad;
+        }
+      }
+      if (f === 'kridla') s += exuvia(.85) + kob(XA, 150, -90, K, { kw: lerp(.25, 1, seg(p, 0, .7)), vr: 1 - seg(p, .05, .75), farba: seg(p, .2, 1), klad: 1 });
+      if (f === 'dospelec') {
+        s += exuvia(.85 * (1 - seg(p, 0, .2)));
+        const [tx, ty] = rotPt(-122 * K, -8 * K, -25), CX = EX - tx, CY = EY - 4 - ty;
+        let x, y, r = 0, poh = 0;
+        if (p < .2) { const k = seg(p, 0, .2); x = lerp(XA, 440, k); y = lerp(150, stoj(K), k) - 110 * Math.sin(k * PI); r = lerp(-90, 0, k); }
+        else if (p < .42) { x = lerp(440, 410, seg(p, .2, .42)); y = stoj(K); poh = 1; }
+        else { const k = seg(p, .42, .55); x = lerp(410, CX, k); y = lerp(stoj(K), CY, k); r = -25 * k; }
+        const n = Math.floor(seg(p, .6, .88) * 5.99);
+        VAJ.slice(0, n).forEach(v => s += vajicko(...v, '#b9a77e', 1));
+        s += kob(x, y, r, K, { kw: 1, klad: 1, cas: c, pohyb: poh }, 1 - seg(p, .9, 1));
+      }
+      return s;
+    }
+  },
+
+  /* ---------------- VÁŽKA ---------------- */
+  vazka: {
+    bg() {
+      return `<defs><linearGradient id="gVzS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1730"/><stop offset="1" stop-color="#1a2c40"/></linearGradient><linearGradient id="gVzV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a5a7a"/><stop offset="1" stop-color="#082034"/></linearGradient></defs>`
+        + `<rect width="800" height="460" fill="url(#gVzS)"/>`
+        + `<rect x="604" y="20" width="12" height="440" rx="5" fill="#7a8a3a"/><path d="M610,60 C640,20 660,10 680,0 C660,40 640,60 610,80Z" fill="#6a7a32"/>`
+        + `<rect y="260" width="800" height="200" fill="url(#gVzV)" opacity=".86"/>`
+        + `<path d="M0,260 Q50,255 100,260 T200,260 T300,260 T400,260 T500,260 T600,260 T700,260 T800,260" stroke="#8fd0f0" stroke-width="2" fill="none" opacity=".7"/>`
+        + `<path d="M0,438 C150,428 300,442 450,434 C600,428 700,440 800,432 L800,460 L0,460Z" fill="#2c2618"/>`
+        + [[60, 120], [130, 90], [700, 110], [750, 80]].map(([x, h], i) => `<path d="M${x},440 Q${x + 15},${440 - h / 2} ${x - 5},${440 - h}" stroke="#2f6a4a" stroke-width="5" fill="none" opacity=".8"/>`).join('')
+        + `<path d="M100,262 L340,276" stroke="#5a6a30" stroke-width="12" stroke-linecap="round" opacity=".9"/>`;
+    },
+    dyn(f, p, c) {
+      let s = '';
+      const DNO = 432, NL = 36, VS = 1.2, EG = [235, 250, 265, 280, 295, 310], ey = x => 262 + 14 * (x - 100) / 240;
+      const nymfa = (x, y, r, sc, o, op, el) => (el || O)(tf(x, y, r, sc * VS), nymfaVazka(o), op);
+      const dole = sc => DNO - NL * sc * VS;
+      // vajíčka v rastline
+      const vajicko = (x, col, op) => G(tf(x, ey(x), 3, 1), `<ellipse cx="0" cy="0" rx="5" ry="2" fill="${col}"/>`, op);
+      if (f === 'vajicko') EG.forEach(x => s += vajicko(x, mix('#f1e9c9', '#cfc6a2', p), 1));
+      if (f === 'liahnutie') EG.forEach((x, i) => s += vajicko(x, i === 2 ? '#8a8a6a' : '#cfc6a2', 1));
+      if (f === 'rast') EG.forEach(x => s += vajicko(x, '#8a8a6a', 1 - p));
+      if (f === 'dospelec') EG.slice(0, Math.floor(seg(p, .7, .93) * 6.99)).forEach(x => s += vajicko(x, '#f1e9c9', 1));
+      // nymfa
+      if (f === 'liahnutie') {
+        const sc = .3, y = p < .5 ? lerp(ey(265), ey(265) + 14, seg(p, .2, .5)) : lerp(ey(265) + 14, dole(sc), seg(p, .5, 1));
+        s += nymfa(lerp(265, 240, seg(p, .5, 1)), y, Math.sin(c * 3) * 8 * (1 - seg(p, .85, 1)), sc, { cas: c }, seg(p, .2, .35));
+      }
+      if (f === 'rast') {
+        const sc = lerp(.3, .55, seg(p, 0, .5)), x = lerp(240, 330, seg(p, 0, .5)), m = seg(p, .55, .6) * (1 - seg(p, .63, .72));
+        const px = 330 + 115 * .55 * VS, py = dole(.55) + 10 * .55 * VS;
+        if (p < .6) s += komar(px, py, c);
+        else if (p < .7) s += G(tf(lerp(px, 330 + 60 * .55 * VS, seg(p, .6, .7)), py, 0, 1), komar(0, 0, c), 1 - seg(p, .64, .7));
+        s += nymfa(x, dole(sc), 0, sc, { cas: c, pohyb: p < .5 ? 1 : 0, maska: m });
+      }
+      if (f === 'zvliekanie') {
+        if (p < .3) s += nymfa(330, dole(.55), 0, .55, {});
+        else {
+          const sn = lerp(.55, .72, seg(p, .3, .9)), kozka = nymfa(330, dole(.55), 0, .55, { kozka: 1 }, .85, G);
+          const tel = nymfa(lerp(330, 378, seg(p, .3, .9)), dole(sn), 0, sn, { cas: c, pohyb: p < .9 ? 1 : 0, zakl: .2 * seg(p, .3, .9) });
+          s += p < .55 ? tel + kozka : kozka + tel;
+        }
+      }
+      if (f === 'rast2') {
+        s += nymfa(330, dole(.55), 0, .55, { kozka: 1 }, .85 * (1 - seg(p, 0, .5)), G);
+        let x, y, sc, m = 0, poh = 0;
+        if (p < .35) {
+          const k = seg(p, 0, .35); sc = lerp(.72, .9, k); x = lerp(378, 470, k); y = dole(sc) - 25 * Math.sin(k * PI);
+          for (let i = 0; i < 6; i++) { const t = (c * 2 + i / 6) % 1; s += `<circle cx="${r1(x - 97 * sc * VS - 30 * t)}" cy="${r1(y + (rnd(i) - .5) * 10 - 20 * t)}" r="${r1(2 + 3 * t)}" fill="none" stroke="#bfe6ff" opacity="${(1 - t).toFixed(2)}"/>`; }
+        } else if (p < .55) { sc = .9; x = 470; y = dole(sc); m = seg(p, .4, .45) * (1 - seg(p, .48, .55)); }
+        else { const k = seg(p, .55, 1); sc = lerp(.9, 1, k); x = lerp(470, 530, k); y = dole(sc); poh = 1; }
+        if (p < .45) s += pulec(470 + 115 * .9 * VS + 8, dole(.9) + 6, c);
+        else if (p < .55) s += G(tf(lerp(470 + 115 * .9 * VS + 8, 470 + 60 * .9 * VS, seg(p, .45, .55)), dole(.9) + 6, 0, 1), pulec(0, 0, c), 1 - seg(p, .5, .55));
+        s += nymfa(x, y, 0, sc, { cas: c, pohyb: poh, maska: m, zakl: lerp(.2, .8, p) });
+      }
+      const XS = 605 - NL * VS;
+      const exuvia = op => nymfa(XS, 140, -90, 1, { kozka: 1, zakl: .8 }, op, G);
+      if (f === 'vylahnutie') {
+        if (p < .45) {
+          let x, y, r;
+          if (p < .12) { const k = seg(p, 0, .12); x = lerp(530, XS, k); y = lerp(dole(1), 390, k); r = -90 * k; }
+          else { x = XS; y = lerp(390, 140, seg(p, .12, .42)); r = -90; }
+          s += nymfa(x, y, r, 1, { cas: c, pohyb: 1, zakl: .8 });
+        } else {
+          const ad = O(tf(548, lerp(140, 85, seg(p, .5, .95)), -90 - 35 * Math.sin(PI * seg(p, .55, .85)), 1), vazka({ kw: .2, br: .55, farba: 0, vr: 1 }), seg(p, .5, .6));
+          const ex = p < .5 ? nymfa(XS, 140, -90, 1, { zakl: .8 }) : exuvia(.85);
+          s += p < .7 ? ad + ex : ex + ad;
+          if (p < .55) s += `<path d="M${XS - 10},${140 - 48} l0,30" stroke="#f4f0d8" stroke-width="2.5" opacity="${seg(p, .45, .5).toFixed(2)}"/>`;
+        }
+      }
+      if (f === 'kridla') s += exuvia(.85) + O(tf(548, 85, -90, 1), vazka({ kw: lerp(.2, 1, seg(p, 0, .6)), br: lerp(.55, 1, seg(p, .2, .8)), farba: .35 * seg(p, .3, 1), vr: 1 - seg(p, .05, .7) }));
+      if (f === 'dospelec') {
+        s += exuvia(.85);
+        const [tx, ty] = rotPt(124, 0, 40), CX = 280 - tx, CY = ey(280) - ty;
+        let x, y, r, mav = .5 + .5 * Math.sin(c * 40), zrk = true, fa = lerp(.6, 1, seg(p, 0, .3));
+        if (p < .15) { const k = seg(p, 0, .15); x = lerp(548, 480, k); y = lerp(85, 130, k); r = lerp(90, 0, k); if (k < .3) mav = 1; }
+        else if (p < .5) { const k = seg(p, .15, .5); x = lerp(480, 170, k); y = 130 + Math.sin(k * PI * 2) * 25; r = 0; }
+        else if (p < .68) { const k = seg(p, .5, .68); x = lerp(170, CX, k); y = lerp(130, CY, k); r = 40 * k; }
+        else { x = CX; y = CY; r = 40; }
+        if (x - 70 > 262) s += musica(262 + Math.sin(c * 5) * 10, 128 + Math.cos(c * 7) * 6, c);
+        s += O(tf(x, y, r, -1, 1), vazka({ farba: fa, mav }), 1 - seg(p, .95, 1));
+      }
+      return s;
+    }
+  }
+};
+
+/* =====================================================================
+   ČASOVÁ OS A STAV ANIMÁCIE
+   ===================================================================== */
+const KLUCE = ['vajicko', 'liahnutie', 'rast', 'zvliekanie', 'rast2', 'zakuklenie', 'kukla', 'vylahnutie', 'kridla', 'dospelec'];
+const FARBY_ROL = { vaj: '#f3d27a', mlad: '#7fdc8f', kuk: '#b9a3ff', dosp: '#6fb4ff' };
+const TYPY = ['uplna', 'neuplna'];
+/* ktoré štádium patrí k fáze */
+function stadiumFazy(id, typ) {
+  const i = KLUCE.indexOf(id);
+  if (i === 0) return 0;
+  if (i <= 4) return 1;
+  if (typ === 'uplna') return i <= 6 ? 2 : 3;
+  return 2;
+}
+
+const S = {
+  typ: 'uplna', druh: { uplna: 'motyl', neuplna: 'kobylka' }, porovnat: false,
+  beh: !matchMedia('(prefers-reduced-motion: reduce)').matches, rychl: 1, t: 0, ciel: null,
+  infoTyp: 'uplna', spina: true
+};
+let OSA = [], TOT = 1;
+
+/* zostaví časovú os: jeden druh, alebo pri porovnaní spoločnú os podľa kľúčov */
+function zostavOsu() {
+  OSA = []; let st = 0;
+  if (!S.porovnat) {
+    DATA.druhy[S.druh[S.typ]].fazy.forEach(f => { OSA.push({ id: f.id, dur: f.dur, start: st, f: { [S.typ]: f } }); st += f.dur; });
+  } else {
+    const U = DATA.druhy[S.druh.uplna], N = DATA.druhy[S.druh.neuplna];
+    for (const k of KLUCE) {
+      const fu = U.fazy.find(f => f.id === k), fn = N.fazy.find(f => f.id === k);
+      if (!fu && !fn) continue;
+      const dur = Math.max(fu ? fu.dur : 0, fn ? fn.dur : 0);
+      OSA.push({ id: k, dur, start: st, f: { uplna: fu, neuplna: fn } }); st += dur;
+    }
+  }
+  TOT = st;
+}
+function indexOsy(t) { for (let i = OSA.length - 1; i >= 0; i--) if (t >= OSA[i].start) return i; return 0; }
+/* stav pre daný typ: fáza, priebeh p; ak fáza chýba (napr. kukla pri neúplnej), drží sa posledná predchádzajúca */
+function stavPre(typ, i) {
+  const o = OSA[i], p = cl((S.t - o.start) / o.dur);
+  if (o.f[typ]) return { f: o.f[typ], p, chyba: false };
+  for (let j = i - 1; j >= 0; j--) if (OSA[j].f[typ]) return { f: OSA[j].f[typ], p: 1, chyba: true };
+  return { f: DATA.druhy[S.druh[typ]].fazy[0], p: 0, chyba: true };
+}
+
+/* =====================================================================
+   UŽÍVATEĽSKÉ ROZHRANIE
+   ===================================================================== */
+const KARTY = {};
+TYPY.forEach(typ => {
+  const root = $('#karta-' + typ);
+  KARTY[typ] = { root, svg: root.querySelector('svg'), bg: root.querySelector('.bg'), dyn: root.querySelector('.dyn'),
+    st: root.querySelector('.st'), fz: root.querySelector('.fz'), tag: root.querySelector('.tag'), sez: root.querySelector('.sez'), chyba: root.querySelector('.chybaBox'), last: '' };
+  // klik (dotyk) na živočícha → popis štádia
+  KARTY[typ].svg.addEventListener('pointerdown', e => {
+    if (e.target.closest && e.target.closest('.org')) { S.infoTyp = typ; vykresliInfo(true); }
+  });
+});
+
+function vyplnTexty() {
+  document.querySelectorAll('[data-t]').forEach(el => {
+    const v = el.dataset.t.split('.').reduce((o, k) => o && o[k], DATA);
+    if (typeof v === 'string') el.innerHTML = v;
+  });
+  $('#tab-uplna').textContent = DATA.typy.uplna.nazov;
+  $('#tab-neuplna').textContent = DATA.typy.neuplna.nazov;
+  $('#poznList').innerHTML = DATA.pozn.body.map(b => `<li>${b}</li>`).join('');
+  $('#precoPr').innerHTML = DATA.preco.a.pr.map(b => `<li>${b}</li>`).join('');
+}
+
+/* prepínače typu a druhu */
+function vykresliVyber() {
+  TYPY.forEach(typ => {
+    const t = $('#tab-' + typ); t.classList.toggle('on', !S.porovnat && S.typ === typ); t.setAttribute('aria-selected', !S.porovnat && S.typ === typ);
+    const box = $('#druhy-' + typ);
+    box.hidden = !S.porovnat && S.typ !== typ;
+    box.innerHTML = `<span>${S.porovnat ? DATA.ui[typ] + ':' : DATA.ui.druh}</span>` + DATA.typy[typ].druhy.map(id => {
+      const d = DATA.druhy[id];
+      return `<button data-typ="${typ}" data-druh="${id}" class="${S.druh[typ] === id ? 'on' : ''}">${d.nazov} <small>(${d.priklad})</small></button>`;
+    }).join('');
+  });
+  $('#btnPorovnat').textContent = S.porovnat ? DATA.ui.porovnatVyp : DATA.ui.porovnat;
+  $('#btnPorovnat').classList.toggle('on', S.porovnat);
+  $('#schema').innerHTML = S.porovnat
+    ? `<b>${DATA.typy.uplna.nazov}:</b> ${DATA.typy.uplna.schema}<br><b>${DATA.typy.neuplna.nazov}:</b> ${DATA.typy.neuplna.schema}`
+    : DATA.typy[S.typ].schema;
+  $('#sceny').classList.toggle('dve', S.porovnat);
+  TYPY.forEach(typ => { KARTY[typ].root.hidden = !S.porovnat && S.typ !== typ; });
+  $('#porovCard').hidden = !S.porovnat;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.druhy button');
+  if (b) { S.druh[b.dataset.typ] = b.dataset.druh; S.typ = S.porovnat ? S.typ : b.dataset.typ; S.infoTyp = b.dataset.typ; zmenaDruhu(); }
+});
+TYPY.forEach(typ => $('#tab-' + typ).addEventListener('click', () => { S.typ = typ; S.porovnat = false; S.infoTyp = typ; zmenaDruhu(); }));
+$('#btnPorovnat').addEventListener('click', () => { S.porovnat = !S.porovnat; if (!S.porovnat) S.infoTyp = S.typ; zmenaDruhu(); });
+
+function zmenaDruhu() {
+  S.t = 0; S.ciel = null;
+  zostavOsu(); vykresliVyber(); vykresliOsu();
+  TYPY.forEach(typ => { KARTY[typ].bg.innerHTML = SCENY[S.druh[typ]].bg(); KARTY[typ].last = ''; });
+  POSL = {}; S.spina = true;
+}
+
+/* časová os: čipy štádií + pás s úsekmi fáz */
+function vykresliOsu() {
+  TYPY.forEach(typ => {
+    const row = $('#stRow-' + typ), d = DATA.druhy[S.druh[typ]];
+    row.hidden = !S.porovnat && S.typ !== typ;
+    let h = S.porovnat ? `<span class="lab">${DATA.ui[typ]}:</span>` : '';
+    d.stadia.forEach((st, i) => {
+      if (i) h += '<span class="sip">→</span>';
+      if (S.porovnat && typ === 'neuplna' && st.rola === 'dosp') h += `<span class="duch">${DATA.ui.chybaKukla.toLowerCase().replace('toto štádium', 'kukla')}</span><span class="sip">→</span>`;
+      h += `<button data-typ="${typ}" data-st="${i}" class="${S.porovnat && st.rola === 'kuk' ? 'navyse' : ''}"><i style="background:${FARBY_ROL[st.rola]}"></i>${st.nazov}</button>`;
+    });
+    row.innerHTML = h;
+  });
+  const osa = $('#osa');
+  osa.querySelectorAll('button').forEach(b => b.remove());
+  OSA.forEach((o, i) => {
+    const b = document.createElement('button');
+    const typ = S.porovnat ? 'uplna' : S.typ, fz = o.f[typ] || o.f.neuplna;
+    const rola = DATA.druhy[S.druh[typ]].stadia[stadiumFazy(o.id, typ)].rola;
+    b.style.flexGrow = o.dur; b.style.background = FARBY_ROL[rola];
+    if (S.porovnat && (o.id === 'zakuklenie' || o.id === 'kukla')) b.classList.add('navyse');
+    b.title = fz.nazov; b.setAttribute('aria-label', (i + 1) + '. ' + fz.nazov);
+    b.addEventListener('click', () => skok(o.start));
+    osa.insertBefore(b, $('#ukaz'));
+  });
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.stRow button'); if (!b) return;
+  const typ = b.dataset.typ, st = +b.dataset.st;
+  const i = OSA.findIndex(o => o.f[typ] && stadiumFazy(o.id, typ) === st);
+  S.infoTyp = typ;
+  if (i >= 0) skok(OSA[i].start);
+  vykresliInfo(true);
+  if (innerWidth < 1100) $('#stadiumCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+function skok(t) { S.t = t + 0.001; S.ciel = null; S.spina = true; }
+
+/* ovládanie */
+function nastavPlay() { $('#btnPlay').textContent = S.beh ? DATA.ui.pauza : DATA.ui.spustit; }
+$('#btnPlay').addEventListener('click', () => { S.beh = !S.beh; S.ciel = null; nastavPlay(); });
+function krok() {
+  const i = indexOsy(S.t), o = OSA[i];
+  let ciel = o.start + o.dur;
+  if (ciel - S.t < 0.05) {
+    if (i + 1 < OSA.length) ciel = OSA[i + 1].start + OSA[i + 1].dur;
+    else { S.t = 0; ciel = OSA[0].dur; }
+  }
+  S.ciel = ciel - 1e-4; S.beh = true; nastavPlay();
+}
+$('#btnKrok').addEventListener('click', krok);
+$('#rychl').addEventListener('input', e => { S.rychl = +e.target.value; $('#rychlVal').textContent = String(S.rychl).replace('.', ',') + '×'; });
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.code === 'Space' && !e.target.closest('button')) { e.preventDefault(); $('#btnPlay').click(); }
+  if (e.code === 'ArrowRight' && !e.target.closest('input')) krok();
+});
+
+/* „Čo sa práve deje“ */
+let POSL = {};
+function vykresliDeje(i) {
+  const o = OSA[i];
+  let h = `<div id="dejeKrok">${sablona(DATA.ui.krokX, { i: i + 1, n: OSA.length })}</div>`;
+  if (!S.porovnat) {
+    const f = o.f[S.typ];
+    h += `<div id="dejeNazov">${f.nazov}</div><p>${f.text}</p>`;
+  } else {
+    TYPY.forEach(typ => {
+      const d = DATA.druhy[S.druh[typ]], f = o.f[typ];
+      h += `<div class="dejeBlok"><h4>${DATA.typy[typ].nazov} – ${d.nazov}</h4>`
+        + (f ? `<div id="dejeNazov" style="font-size:18px">${f.nazov}</div><p>${f.text}</p>` : `<p>${typ === 'neuplna' && (o.id === 'zakuklenie' || o.id === 'kukla') ? DATA.ui.chyba : '…'}</p>`) + '</div>';
+    });
+  }
+  $('#dejeObsah').innerHTML = h;
+  // porovnávacia tabuľka – zvýraznenie riadku
+  if (S.porovnat) document.querySelectorAll('#porovTab tr[data-k]').forEach(tr => tr.classList.toggle('on', tr.dataset.k.split(',').includes(o.id)));
+}
+function vykresliPorovnanie() {
+  const P = DATA.porovnanie;
+  $('#porovTab').innerHTML = `<tr>${P.hlavicka.map(x => `<th>${x}</th>`).join('')}</tr>` + P.riadky.map(r => `<tr data-k="${r.kluce.join(',')}" class="${r.spol ? 'spol' : 'nav'}"><td>${r.nazov}</td><td>${r.u}</td><td>${r.n}</td></tr>`).join('');
+}
+
+/* karta Štádium */
+function vykresliInfo(flash) {
+  const typ = S.porovnat ? S.infoTyp : S.typ, d = DATA.druhy[S.druh[typ]];
+  const st = stavPre(typ, indexOsy(S.t)), si = stadiumFazy(st.f.id, typ), x = d.stadia[si];
+  const key = typ + d.nazov + si;
+  if (POSL.info !== key) {
+    POSL.info = key;
+    $('#stNazov').innerHTML = `<i style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${FARBY_ROL[x.rola]};margin-right:8px"></i>${x.nazov}${x.odb ? ` <small>(${x.odb})</small>` : ''}`;
+    $('#stPriklad').innerHTML = `${DATA.typy[typ].nazov} · ${DATA.ui.zivocich ? '' : ''}príklad: <b>${d.priklad}</b>`;
+    const P = DATA.ui.polia;
+    $('#stInfo').innerHTML = Object.keys(P).map(k => `<dt>${P[k]}</dt><dd>${x[k]}</dd>`).join('');
+  }
+  if (flash) { const c = $('#stadiumCard'); c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash'); }
+}
+
+/* vykreslenie jedného snímku hlavnej animácie */
+function vykresli() {
+  const i = indexOsy(S.t), o = OSA[i];
+  const typy = S.porovnat ? TYPY : [S.typ];
+  typy.forEach(typ => {
+    const k = KARTY[typ], st = stavPre(typ, i), d = DATA.druhy[S.druh[typ]];
+    k.dyn.innerHTML = SCENY[S.druh[typ]].dyn(st.f.id, st.p, S.t);
+    const kuk = S.porovnat && (o.id === 'zakuklenie' || o.id === 'kukla');
+    const key = typ + S.druh[typ] + st.f.id + S.porovnat + o.id;
+    if (k.last !== key) {
+      k.last = key;
+      const sx = d.stadia[stadiumFazy(st.f.id, typ)];
+      k.st.textContent = `${d.nazov}: ${sx.rola === 'dosp' ? 'dospelec (imágo)' : sx.nazov + (sx.odb ? ' (' + sx.odb + ')' : '')}`;
+      k.fz.textContent = st.f.nazov;
+      k.sez.textContent = st.f.sezona || '';
+      const chyba = kuk && typ === 'neuplna';
+      k.root.classList.toggle('chyba', chyba);
+      k.root.classList.toggle('navyse', kuk && typ === 'uplna');
+      k.root.classList.toggle('spol', S.porovnat && !kuk);
+      k.chyba.hidden = !chyba; k.chyba.innerHTML = DATA.ui.chyba;
+      k.tag.className = 'tag' + (S.porovnat ? (kuk ? (typ === 'uplna' ? ' navyse' : ' chyba') : ' spol') : '');
+      k.tag.textContent = S.porovnat ? (kuk ? (typ === 'uplna' ? DATA.ui.navyse : DATA.ui.chybaKukla) : DATA.ui.spolocne) : '';
+    }
+  });
+  $('#ukaz').style.left = (S.t / TOT * 100) + '%';
+  if (POSL.i !== i || POSL.osa !== OSA) {
+    POSL.i = i; POSL.osa = OSA;
+    $('#osa').querySelectorAll('button').forEach((b, j) => b.classList.toggle('on', j === i));
+    TYPY.forEach(typ => {
+      const st = stavPre(typ, i), si = stadiumFazy(st.f.id, typ);
+      document.querySelectorAll('#stRow-' + typ + ' button').forEach(b => b.classList.toggle('on', +b.dataset.st === si));
+    });
+    vykresliDeje(i);
+  }
+  vykresliInfo(false);
+}
+
+/* =====================================================================
+   MALÉ ANIMÁCIE (Prečo, Omyly) – bežia stále, len keď sú na obrazovke
+   ===================================================================== */
+const MINI = {
+  mPreco1(c) {
+    let s = '<rect width="400" height="230" fill="#0b1626"/>';
+    s += `<path d="M10,205 C40,120 150,112 192,140 C200,182 120,220 10,205Z" fill="#4b9650" stroke="#3b7a40" stroke-width="2"/>`;
+    const k = (c * .12) % 1;
+    for (let i = 0; i < 4; i++) { const v = cl(k * 5 - i); if (v > 0) s += `<ellipse cx="${60 + i * 26}" cy="${183}" rx="${r1(9 * v)}" ry="${r1(6 * v)}" fill="#0b1626" stroke="#2f6b37" stroke-width="1.5"/>`; }
+    s += G(tf(70 + 105 * k, 168, 0, .55), housenica({ cas: c, pohyb: 1 }), Math.min(1, k * 8, (1 - k) * 8));
+    s += `<line x1="200" y1="44" x2="200" y2="222" stroke="#3a4a6a" stroke-width="2" stroke-dasharray="6 6"/>`;
+    s += `<path d="M300,150 C296,180 290,200 285,230" stroke="#4f8a3a" stroke-width="5" fill="none"/>`;
+    for (let i = 0; i < 8; i++) s += `<ellipse cx="300" cy="${150 - 17}" rx="9" ry="17" fill="${i % 2 ? '#b56cc8' : '#c77dd8'}" transform="rotate(${i * 45} 300 150)"/>`;
+    s += `<circle cx="300" cy="150" r="10" fill="#f2c94c"/>` + G(tf(300, 138, 0, .8), motyl({ k: 1, mav: .62 + .35 * Math.sin(c * 2.5), prob: 1 }));
+    s += `<text x="100" y="30" text-anchor="middle" font-size="20" fill="#7fdc8f" font-weight="700">Larva: listy</text><text x="300" y="30" text-anchor="middle" font-size="20" fill="#6fb4ff" font-weight="700">Dospelec: nektár</text>`;
+    return s;
+  },
+  mPreco2(c) {
+    const T = DATA.preco.b.os, X0 = 46, Y0 = 200, XS = [90, 130, 172, 216, 262], YS = [182, 164, 142, 116, 86, 52];
+    let s = '<rect width="400" height="240" fill="#0b1626"/>';
+    s += `<path d="M${X0},20 L${X0},${Y0} L300,${Y0}" stroke="#a3adc6" stroke-width="2" fill="none"/><path d="M${X0 - 5},28 L${X0},18 L${X0 + 5},28 M292,${Y0 - 5} L302,${Y0} L292,${Y0 + 5}" stroke="#a3adc6" stroke-width="2" fill="none"/>`;
+    s += `<text x="${X0 + 8}" y="22" font-size="17" fill="#a3adc6">${T.y}</text><text x="296" y="${Y0 + 26}" font-size="17" fill="#a3adc6" text-anchor="end">${T.x}</text>`;
+    const u = (c * .1) % 1, xe = X0 + u * 250;
+    let d = `M${X0},${YS[0]}`; let akt = 0;
+    for (let i = 0; i < XS.length; i++) {
+      if (xe < XS[i]) { d += ` L${r1(xe)},${YS[i]}`; break; }
+      d += ` L${XS[i]},${YS[i]} L${XS[i]},${YS[i + 1]}`; akt = i + 1;
+      if (i === XS.length - 1) d += ` L${r1(xe)},${YS[i + 1]}`;
+    }
+    XS.forEach((x, i) => s += `<line x1="${x}" y1="${Y0}" x2="${x}" y2="${YS[i + 1]}" stroke="#ffd88a" stroke-width="1" stroke-dasharray="3 4" opacity=".5"/>`);
+    s += `<path d="${d}" stroke="#7fdc8f" stroke-width="4" fill="none" stroke-linejoin="round"/>`;
+    s += `<circle cx="${r1(xe)}" cy="${YS[akt]}" r="6" fill="#ffd88a"/>`;
+    s += `<text x="${XS[0] + 4}" y="${Y0 - 6}" font-size="16" fill="#ffd88a">↑ ${T.z}</text><text x="${XS[4] + 6}" y="${YS[5] - 10}" font-size="16" fill="#6fb4ff">${T.d}</text>`;
+    // vpravo kobylka – veľkosť podľa aktuálneho stupňa, pri zvlečení blysne
+    const blik = XS.some(x => Math.abs(xe - x) < 6);
+    const sc = .32 + akt * .1;
+    s += G(tf(352, 150, 0, sc), kobylka({ nymfa: akt < 5, kw: akt >= 5 ? 1 : 0, zakl: akt >= 3 && akt < 5 ? .3 * (akt - 2) : 0, klad: akt >= 5 }));
+    if (blik) s += `<circle cx="352" cy="150" r="46" fill="none" stroke="#ffd88a" stroke-width="3" opacity=".8"/>`;
+    return s;
+  },
+  mKukla(c) {
+    const p = (c * .09) % 1;
+    let s = '<rect width="400" height="230" fill="#0b1626"/><rect x="62" y="0" width="12" height="230" fill="#6b7d3a"/>';
+    s += G(tf(68, 205, 0, 1.6), kuklaMotyl({ farba: '#8db35a', pas: 1 })) + lupa(265, 112, 92, p, 'motyl', 80, 120);
+    const P = DATA.omyly.polozky[0].popisy, idx = p < .3 ? 0 : p < .62 ? 1 : 2;
+    const cap = document.getElementById('capKukla'); if (cap && cap.dataset.i != idx) { cap.dataset.i = idx; cap.textContent = P[idx]; }
+    return s;
+  },
+  mNohy(c) {
+    const T = DATA.omyly.polozky[1].stitky;
+    let s = '<rect width="400" height="250" fill="#0b1626"/>';
+    s += G(tf(340, 72, 0, 1.45), housenica({ cas: c, pohyb: .6, zvyraz: 1 }));
+    s += `<text x="300" y="128" text-anchor="middle" font-size="18" fill="#ffd88a" font-weight="700">${T.prave}</text>`;
+    s += `<text x="170" y="128" text-anchor="middle" font-size="18" fill="#6fb4ff" font-weight="700">${T.panozky}</text>`;
+    s += `<path d="M300,110 L300,96 M170,110 L170,100 M120,110 L120,100" stroke="#a3adc6" stroke-width="1.5"/>`;
+    s += dazdovka(60, 340, 190, c) + `<text x="200" y="236" text-anchor="middle" font-size="18" fill="#e3a3a0" font-weight="700">${T.dazdovka}</text>`;
+    return s;
+  },
+  mZamotok(c) {
+    const T = DATA.omyly.polozky[2].stitky;
+    let s = '<rect width="400" height="260" fill="#0b1626"/><rect x="94" y="0" width="12" height="190" fill="#6b7d3a"/>';
+    s += G(tf(100, 180, 0, 1.25), kuklaMotyl({ farba: '#8db35a', pas: 1 }));
+    s += `<text x="100" y="218" text-anchor="middle" font-size="18" fill="#7fdc8f" font-weight="700">${T.kukla}</text><text x="100" y="242" text-anchor="middle" font-size="17" fill="#a3adc6">${T.kukla2}</text>`;
+    s += `<path d="M220,48 L390,40" stroke="#6b5a3a" stroke-width="8" stroke-linecap="round"/>`;
+    let nit = ''; for (let i = 0; i < 18; i++) { const a = rnd(i) * PI, b = a + 1.2 + rnd(i + 3); nit += `<path d="M${r1(300 + 34 * Math.cos(a))},${r1(120 + 54 * Math.sin(a))} Q300,${r1(120 + (rnd(i + 5) - .5) * 60)} ${r1(300 + 34 * Math.cos(b))},${r1(120 + 54 * Math.sin(b))}" stroke="#d8cfa8" stroke-width="1" fill="none" opacity=".7"/>`; }
+    s += `<path d="M296,46 L300,68 M306,45 L302,68" stroke="#e8e0c0" stroke-width="1.5"/><ellipse cx="300" cy="120" rx="36" ry="56" fill="#f1ead2" stroke="#cfc49c" stroke-width="2"/>${nit}`;
+    s += `<path d="M300,64 A36,56 0 0 1 300,176 Z" fill="#20180c" opacity=".85"/><ellipse cx="304" cy="122" rx="14" ry="30" fill="#8a5a2a"/>` + [-14, -4, 6, 16].map(y => `<path d="M291,${122 + y} Q304,${126 + y} 317,${122 + y}" stroke="#5a3a1a" stroke-width="1.2" fill="none"/>`).join('');
+    s += `<path d="M300,64 A36,56 0 0 1 300,176" stroke="#ffd88a" stroke-width="1.5" fill="none" stroke-dasharray="4 4" opacity="${(.5 + .4 * Math.sin(c * 3)).toFixed(2)}"/>`;
+    s += `<text x="300" y="214" text-anchor="middle" font-size="18" fill="#ffd88a" font-weight="700">${T.zamotok}</text><text x="300" y="238" text-anchor="middle" font-size="17" fill="#a3adc6">${T.zamotok2}</text>`;
+    return s;
+  }
+};
+const VIDNO = {};
+function vykresliOmyly() {
+  const box = $('#omylyGrid'), ids = { kukla: ['mKukla', '0 0 400 230'], nohy: ['mNohy', '0 0 400 250'], zamotok: ['mZamotok', '0 0 400 260'] };
+  box.innerHTML = DATA.omyly.polozky.map(o => {
+    const [id, vb] = ids[o.anim];
+    return `<div><figure><svg id="${id}" viewBox="${vb}"></svg>${o.anim === 'kukla' ? '<figcaption id="capKukla"></figcaption>' : ''}</figure>`
+      + `<div class="box omyl"><b class="h">Omyl</b>${o.omyl}</div><div class="box pravda"><b class="h">Ako je to naozaj</b>${o.pravda}</div></div>`;
+  }).join('');
+}
+
+/* =====================================================================
+   KVÍZ
+   ===================================================================== */
+function kviz() {
+  const box = $('#kvizBox'), K = DATA.kviz, n = K.otazky.length;
+  box.innerHTML = ''; $('#kvizVysl').textContent = '';
+  let skore = 0, hotovo = 0;
+  K.otazky.forEach((q, i) => {
+    const div = document.createElement('div'); div.className = 'otazka';
+    div.innerHTML = `<p class="q"><b>${i + 1}.</b> ${q.otazka}</p>`;
+    const opts = document.createElement('div'); opts.className = 'moznosti';
+    const fb = document.createElement('div'); fb.className = 'fb';
+    // možnosti zamiešame, aby správna nebola vždy prvá
+    const poradie = q.moznosti.map((_, j) => j).sort(() => Math.random() - .5);
+    const tlac = [];
+    poradie.forEach(j => {
+      const b = document.createElement('button'); b.textContent = q.moznosti[j]; tlac[j] = b;
+      b.addEventListener('click', () => {
+        if (div.dataset.hotovo) return;
+        div.dataset.hotovo = 1; hotovo++;
+        const ok = j === q.spravna; if (ok) skore++;
+        b.classList.add(ok ? 'ok' : 'zle'); tlac[q.spravna].classList.add('ok');
+        [...opts.children].forEach(x => x.disabled = true);
+        fb.className = 'fb ' + (ok ? 'ok' : 'zle');
+        fb.innerHTML = `<b>${ok ? K.spravne : K.nespravne}</b> ${q.vysvetlenie}`;
+        if (hotovo === n) $('#kvizVysl').textContent = sablona(K.vysledok, { s: skore, n });
+      });
+      opts.appendChild(b);
+    });
+    div.appendChild(opts); div.appendChild(fb); box.appendChild(div);
+  });
+}
+$('#kvizZnova').addEventListener('click', kviz);
+
+/* =====================================================================
+   ŠTART A HLAVNÁ SLUČKA (requestAnimationFrame, časovanie podľa skutočného času)
+   ===================================================================== */
+vyplnTexty();
+vykresliOmyly();
+vykresliPorovnanie();
+kviz();
+zmenaDruhu();
+nastavPlay();
+if ('IntersectionObserver' in window) {
+  const io = new IntersectionObserver(es => es.forEach(e => VIDNO[e.target.id] = e.isIntersecting));
+  Object.keys(MINI).forEach(id => { const el = document.getElementById(id); if (el) io.observe(el); });
+} else Object.keys(MINI).forEach(id => VIDNO[id] = true);
+
+let posledny = performance.now(), realny = 0;
+function snimka(now) {
+  const dt = Math.min(0.1, (now - posledny) / 1000); posledny = now; realny += dt;
+  if (S.beh) {
+    S.t += dt * S.rychl;
+    if (S.ciel != null && S.t >= S.ciel) { S.t = S.ciel; S.ciel = null; S.beh = false; nastavPlay(); }
+    if (S.t >= TOT) S.t -= TOT;
+    S.spina = true;
+  }
+  if (S.spina) { S.spina = false; vykresli(); }
+  for (const id in MINI) if (VIDNO[id]) { const el = document.getElementById(id); if (el) el.innerHTML = MINI[id](realny); }
+  requestAnimationFrame(snimka);
+}
+requestAnimationFrame(snimka);
+</script>
+   <script data-goatcounter="https://tvojnazov.goatcounter.com/count"
+           async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
