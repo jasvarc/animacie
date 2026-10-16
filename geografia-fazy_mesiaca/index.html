@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fázy Mesiaca</title>
+<link rel="icon" href="data:,">
+<script>
+/* =====================================================================
+   TEXTY – všetko, čo žiak číta, je na jednom mieste. Upravuj len texty v úvodzovkách.
+   HTML značky (<b>, <br>) sú povolené.
+   {x} – sem program doplní číslo alebo slovo.
+   ===================================================================== */
+const TEXTY = {
+  titul: 'Fázy Mesiaca',
+  podtitul: 'Mesiac sám nesvieti. Svieti naň Slnko. Osvetlená je vždy polovica Mesiaca. Zo Zeme z nej vidíme raz viac, raz menej.',
+  pata: 'Fázy Mesiaca · interaktívna animácia pre 4. – 6. ročník ZŠ · funguje aj offline',
+  karty: {
+    scena: 'Fázy Mesiaca',
+    obloha: 'Obloha: kedy Mesiac vidíme',
+    coje: 'Čo je čo',
+    omyly: 'Časté omyly',
+    kviz: 'Kvíz'
+  },
+
+  ui: {
+    spustit: '▶ Spustiť', pauza: '❚❚ Pauza', dnes: '📅 Aká je fáza dnes?',
+    den: 'Deň cyklu', rychlost: 'Rýchlosť (dni za 1 sekundu)',
+    pologula: 'Pologuľa:', sever: 'Severná (Slovensko)', juh: 'Južná (Austrália)',
+    znacka: 'Značka na Mesiaci:', zap: '⊙ Zapnutá', vyp: 'Vypnutá',
+    polohy: 'Osem polôh Mesiaca – klikni na jednu:',
+    hint: '✋ Mesiac môžeš chytiť a ťahať po dráhe. Môžeš klikať aj na malé mesiačiky okolo dráhy.',
+    mierka: 'Pozor: vzdialenosti a veľkosti nie sú v mierke. Mesiac je od Zeme asi 384 000 km.',
+    dnesInfo: 'Dnes je <b>{datum}</b>. Vek Mesiaca je asi <b>{vek} dňa</b>.<br>Je to priemerný výpočet. Skutočná fáza sa môže líšiť najviac o 1 deň.'
+  },
+
+  /* ---------- SCÉNA (pohľad zhora) ---------- */
+  scena: {
+    slnko: 'Slnko', zem: 'Zem', mesiac: 'Mesiac', luce: 'svetlo zo Slnka →',
+    aria: 'Pohľad zhora. Slnko je vľavo, Zem v strede a Mesiac na dráhe okolo Zeme. Teraz: {faza}.',
+    nahlad: '{faza} – klikni a Mesiac sa presunie sem'
+  },
+  legenda: {
+    osvetlena: 'Svetlá polovica Mesiaca je obrátená k Slnku.',
+    viditelna: 'Čiarkovaná čiara: polovica Mesiaca obrátená k Zemi. Len túto polovicu vidíme.',
+    znacka: 'Značka: k Zemi je stále obrátená tá istá strana Mesiaca. Prečo, to nájdeš v karte „Časté omyly“.',
+    smer: 'Smer obehu Mesiaca okolo Zeme.'
+  },
+  akoTo: '<b class="h">Ako to funguje</b>Slnko vždy osvetľuje polovicu Mesiaca. My zo Zeme vidíme tiež len polovicu Mesiaca. Svieti nám tá časť, kde sa tieto dve polovice prekrývajú.',
+
+  /* ---------- PANEL POHĽAD ZO ZEME ---------- */
+  pohlad: {
+    nadpis: 'Pohľad zo Zeme',
+    popis: 'Takto vidíme Mesiac na oblohe.',
+    vek: 'Vek Mesiaca', osvetlene: 'Osvetlená časť disku', faza: 'Fáza',
+    dni: '{d} dňa',
+    dorasta: '▲ Dorastá – svetla pribúda.',
+    cuva: '▼ Cúva – svetla ubúda.',
+    nic: '● Práve teraz sa obracia.',
+    stranaSever: 'Na severnej pologuli svieti dorastajúci Mesiac <b>vpravo</b>.',
+    stranaJuh: 'Na južnej pologuli svieti dorastajúci Mesiac <b>vľavo</b>. Mesiac je tam akoby otočený hore nohami.',
+    aria: 'Mesiac zo Zeme: {faza}, osvetlená časť {p} percent.'
+  },
+
+  /* Osem fáz – v poradí od novu. */
+  fazy: ['nov', 'dorastajúci kosáčik', 'prvá štvrť', 'dorastajúci Mesiac', 'spln', 'cúvajúci Mesiac', 'posledná štvrť', 'cúvajúci kosáčik'],
+  popisFaz: [
+    'Mesiac je medzi Zemou a Slnkom. K Zemi je obrátená jeho neosvetlená polovica. Mesiac nevidíme.',
+    'Zo Zeme vidíme len úzky kúsok osvetlenej polovice.',
+    'Vidíme presne polovicu disku. Mesiac prešiel štvrtinu cesty okolo Zeme.',
+    'Svieti už viac ako polovica disku. Svetla stále pribúda.',
+    'Zem je medzi Slnkom a Mesiacom. K Zemi je obrátená celá osvetlená polovica.',
+    'Svieti viac ako polovica disku, ale svetla už ubúda.',
+    'Znova vidíme polovicu disku. Svieti však druhá polovica ako pri prvej štvrti.',
+    'Zostal už len úzky kosáčik. Čoskoro bude nov.'
+  ],
+  /* tvary slova „deň“: 1 deň, 2 – 4 dni, 5 a viac dní */
+  dniTvar: ['deň', 'dni', 'dní'],
+
+  /* ---------- KARTA: OBLOHA ---------- */
+  obloha: {
+    nadpis: 'Kedy Mesiac vidíme na oblohe',
+    uvod: 'Slnko aj Mesiac vychádzajú na východe a zapadajú na západe. Mesiac však vychádza každý deň asi o <b>{min} minút</b> neskôr. Preto ho niekedy vidno v noci a niekedy aj cez deň.',
+    hodina: 'Hodina',
+    den: 'Deň cyklu (rovnaký ako na prvej karte)',
+    spustit: '▶ Spustiť čas', pauza: '❚❚ Zastaviť čas',
+    vychod: 'V – východ', zapad: 'Z – západ', naJuh: 'pohľad na juh', naSever: 'pohľad na sever',
+    stav: {
+      oba: '☀ ☾ <b>Mesiac vidno aj cez deň!</b> Slnko aj Mesiac sú nad obzorom.',
+      noc: '☾ <b>Mesiac svieti na nočnej oblohe.</b>',
+      nov: '● <b>Mesiac je nad obzorom, ale nevidíme ho.</b> Je blízko Slnka a k Zemi obracia neosvetlenú polovicu.',
+      dole: '▽ <b>Mesiac je pod obzorom.</b> Vyjde asi o {h}.'
+    },
+    slnkoHore: 'Slnko je nad obzorom, je deň.', slnkoDole: 'Slnko je pod obzorom, je noc.',
+    casy: '{f}: Mesiac vychádza asi o <b>{v}</b> a zapadá asi o <b>{z}</b>.',
+    trvanie: '{h} h {m} min', trvanieH: '{h} h',
+    tabNadpis: 'Osem fáz – orientačné časy',
+    stlpFaza: 'Fáza', stlpVychod: 'Východ', stlpZapad: 'Západ', stlpDen: 'Cez deň?',
+    cezDenAno: '☀ áno', cezDenNie: '—', cezDenNov: 'nevidno',
+    tabTip: 'Klikni na riadok a fáza sa nastaví.',
+    kedy: [
+      'Je na oblohe cez deň spolu so Slnkom, ale nevidno ho.',
+      'Doobeda až večer. Najlepšie ho vidno po západe Slnka.',
+      'Popoludní a v prvej polovici noci.',
+      'Od popoludnia skoro celú noc.',
+      'Celú noc – od západu Slnka do východu Slnka.',
+      'Od večera do rána, ráno aj na dennej oblohe.',
+      'V druhej polovici noci a doobeda.',
+      'Nad ránom na východe a potom doobeda.'
+    ],
+    zvyraz: '<b class="h">☀ Mesiac vidno aj cez deň</b>Prvá štvrť vychádza okolo <b>{v}</b>, takže popoludní je na oblohe spolu so Slnkom. Posledná štvrť vychádza okolo <b>{p}</b> a doobeda ju tiež vidno na dennej oblohe.',
+    poznamka: 'Časy sú len orientačné. Je to zjednodušená schéma pre deň rovnodennosti (v marci a v septembri). Skutočné časy sa menia podľa ročného obdobia a podľa miesta na Zemi.',
+    aria: 'Obloha o {c}. {s}'
+  },
+
+  /* ---------- KARTA: ČO JE ČO ---------- */
+  coje: {
+    nadpis: 'Čo je čo',
+    uvod: 'Klikni na pojem alebo na časť obrázka. Dozvieš sa, čo to je.',
+    pojmyNadpis: 'Pojmy', fazyNadpis: 'Fázy',
+    pojmy: {
+      slnko: { n: 'Slnko', t: 'Hviezda, ktorá svieti vlastným svetlom. Osvetľuje Zem aj Mesiac.' },
+      zem: { n: 'Zem', t: 'Naša planéta. Mesiac obieha okolo nej asi za mesiac.' },
+      mesiac: { n: 'Mesiac', t: 'Prirodzená družica Zeme. Sám nesvieti, iba odráža svetlo Slnka.' },
+      osvetlena: { n: 'Osvetlená polovica', t: 'Polovica Mesiaca obrátená k Slnku. Je osvetlená vždy, pri každej fáze.' },
+      terminator: { n: 'Terminátor', t: 'Hranica medzi svetlom a tmou na Mesiaci. Zo Zeme ju vidíme ako vnútorný okraj kosáčika alebo ako rovnú čiaru pri štvrti.' },
+      privratena: { n: 'Privrátená strana', t: 'Polovica Mesiaca, ktorá je stále obrátená k Zemi. Zo Zeme vidíme len túto stranu.' },
+      odvratena: { n: 'Odvrátená strana', t: 'Polovica Mesiaca, ktorú zo Zeme nikdy nevidíme. Nie je stále tmavá, Slnko na ňu svieti rovnako ako na privrátenú. Preto sa jej nehovorí „tmavá strana“.' }
+    },
+    fazaInfo: 'Vek asi {d} dňa · svieti {p} % disku.',
+    dcNadpis: 'Pomôcka: D a C',
+    dcSever: 'Na <b>severnej</b> pologuli (u nás) pripomína dorastajúci Mesiac písmeno <b>D</b> a cúvajúci písmeno <b>C</b>. D ako dorastá, C ako cúva.',
+    dcJuh: 'Na <b>južnej</b> pologuli je to <b>naopak</b>: dorastajúci Mesiac vyzerá ako C a cúvajúci ako D. Tam pomôcka neplatí.',
+    dcCiara: 'Prerušovaná čiara doplní kosáčik na písmeno D.',
+    slnko: 'Slnko', zem: 'Zem', mesiac: 'Mesiac'
+  },
+
+  /* ---------- KARTA: ČASTÉ OMYLY ---------- */
+  omyly: {
+    nadpis: 'Časté omyly',
+    uvod: 'Tieto omyly sú veľmi časté. Pozri si animáciu a opravu.',
+    hra: '▶ Spustiť animácie', pauza: '❚❚ Zastaviť animácie',
+    omyl: '✘ Omyl:', oprava: '✔ Oprava:', zvedavi: '🔭 Pre zvedavých',
+    zoznam: [
+      { nazov: 'Fázy robí tieň Zeme.',
+        oprava: 'Tieň Zeme dopadá na Mesiac len pri zatmení Mesiaca. Pri nove je Mesiac medzi Slnkom a Zemou a tieň Zeme ho vôbec nezasahuje. Fázy vznikajú tak, že zo Zeme vidíme rôznu časť osvetlenej polovice.',
+        popis: 'Pohľad zhora. Sivý pás je tieň Zeme. Vpravo hore: Mesiac, ako ho vidíme zo Zeme.' },
+      { nazov: 'Mesiac vidno len v noci.',
+        oprava: 'Mesiac je často na oblohe aj cez deň. Napríklad prvá štvrť vychádza okolo poludnia a popoludní je na oblohe spolu so Slnkom.',
+        popis: 'Obloha počas dňa pri prvej štvrti.' },
+      { nazov: 'Odvrátená strana Mesiaca je stále tmavá.',
+        oprava: 'Odvrátená strana dostáva svetlo rovnako ako privrátená. Len ju zo Zeme nevidíme. Pri nove je odvrátená strana osvetlená celá.',
+        popis: 'Fialová čiarkovaná čiara: odvrátená strana. Modrá: privrátená strana (tú vidíme).' },
+      { nazov: 'Mesiac sa neotáča.',
+        oprava: 'Mesiac sa otáča. Otočí sa raz za jeden obeh okolo Zeme. Preto k nám ukazuje stále tú istú stranu. Keby sa neotáčal, videli by sme postupne celý jeho povrch.',
+        popis: 'Vľavo: keby sa Mesiac neotáčal. Vpravo: skutočnosť. Sleduj značku.' },
+      { nazov: 'Zatmenie Mesiaca by malo byť pri každom splne.',
+        oprava: 'Dráha Mesiaca je naklonená asi o 5° voči dráhe Zeme okolo Slnka. Preto Mesiac pri splne väčšinou prejde nad alebo pod tieňom Zeme. Zatmenie nastane len vtedy, keď je spln blízko roviny dráhy Zeme.',
+        popis: 'Bočný pohľad. Sklon dráhy Mesiaca je na obrázku zväčšený. Modrá čiarkovaná čiara: dráha Mesiaca.' },
+      { nazov: 'Mesiac obehne Zem za taký istý čas, ako trvá cyklus fáz.', zvedavi: true,
+        oprava: 'Mesiac obehne Zem asi za <b>{hv} dňa</b>. Cyklus fáz trvá asi <b>{sy} dňa</b>. Medzitým sa totiž Zem posunie po dráhe okolo Slnka. Mesiac musí prejsť ešte kúsok, aby bol znova medzi Zemou a Slnkom.',
+        popis: 'Pohľad zhora, Slnko je vľavo dole. Sivá čiara mieri stále tým istým smerom (ku hviezdam), žltá k Slnku.' }
+    ],
+    st1: {
+      nov: '<b>Nov:</b> Mesiac je medzi Slnkom a Zemou. Tieň Zeme mieri na opačnú stranu.',
+      spln: '<b>Spln:</b> Mesiac je za Zemou. Do tieňa vojde len pri zatmení (pozri omyl 5).',
+      inak: '<b>{f}:</b> Mesiac je mimo tieňa Zeme. Fázu robí to, z akej strany sa pozeráme na osvetlenú polovicu.'
+    },
+    st2: 'Čas <b>{c}</b> · Slnko: {s} · Mesiac: {m}',
+    hore: 'nad obzorom ▲', dole: 'pod obzorom ▽',
+    oba: '<br><b>☀ ☾ Mesiac vidno aj cez deň!</b>',
+    st3: 'Odvrátenú stranu teraz osvetľuje Slnko z <b>{o} %</b>. Privrátenú stranu (tú vidíme) z <b>{p} %</b>.',
+    st3nov: ' <b>Pri nove je odvrátená strana osvetlená celá!</b>',
+    st4: 'Vidno značku zo Zeme? Vľavo: <b>{a}</b>. Vpravo: <b>{b}</b>.',
+    ano: 'áno', nie: 'nie',
+    st4L: 'Keby sa neotáčal', st4P: 'Skutočnosť',
+    st5: 'Spln č. {k}: {stav} Zatmení zatiaľ: <b>{z}</b> z {k}.',
+    st5zat: '<b>🌑 Zatmenie Mesiaca!</b> Mesiac vošiel do tieňa Zeme.',
+    st5nad: 'Mesiac prešiel <b>nad</b> tieňom Zeme.',
+    st5pod: 'Mesiac prešiel <b>pod</b> tieňom Zeme.',
+    st6: 'Deň <b>{d}</b>. {t}',
+    st6beh: 'Mesiac obieha okolo Zeme a Zem sa posúva okolo Slnka.',
+    st6obeh: '<b>{hv} dňa:</b> Mesiac obehol Zem raz dookola (je znova na sivej čiare). Nov to však ešte nie je!',
+    st6nov: '<b>{sy} dňa:</b> Mesiac je znova medzi Zemou a Slnkom (na žltej čiare). Je <b>nov</b>.',
+    tien: 'tieň Zeme', drahaZeme: 'rovina dráhy Zeme', kSlnku: 'k Slnku', kHviezdam: 'ku hviezdam'
+  },
+
+  /* ---------- KARTA: KVÍZ ---------- */
+  kviz: {
+    nadpis: 'Kvíz',
+    uvod: 'Desať otázok. Každá sa vytvorí náhodne. Po kliknutí hneď uvidíš, či je odpoveď správna. Nič sa neukladá ani neodosiela.',
+    uroven: 'Úroveň:',
+    urovne: { 1: '1 – ľahká', 2: '2 – stredná', 3: '3 – ťažká' },
+    nova: '🎲 Nový kvíz',
+    skore: 'Správne: <b>{s}</b> z {n}', hotovo: ' – hotovo! Skús aj inú úroveň.',
+    spravne: '✔ Správne!', zle: '✘ Nie. Správne je: <b>{x}</b>.', zleObr: '✘ Nie. Správny obrázok má zelený rámik.',
+    q: {
+      nazovObr: 'Akú fázu Mesiaca vidíš na obrázku?',
+      nazovObrJuh: 'Toto je pohľad z <b>južnej</b> pologule. Akú fázu vidíš?',
+      poloha: 'Kde na dráhe je Mesiac pri fáze <b>{f}</b>? Slnko svieti zľava.',
+      polohaSpat: 'Mesiac je na dráhe tam, kde je žltý krúžok. Akú fázu vidíme zo Zeme?',
+      oX: 'Dnes je <b>{f}</b>. Aká fáza bude asi o <b>{x}</b>?',
+      oXDen: 'Mesiac je <b>{d}</b> po nove. Aká fáza bude asi o <b>{x}</b>?',
+      vychod: 'Kedy asi vychádza Mesiac pri fáze <b>{f}</b>?',
+      zapad: 'Kedy asi zapadá Mesiac pri fáze <b>{f}</b>?',
+      vychodDni: 'Mesiac je <b>{n}</b> po nove. Kedy asi vychádza? (zaokrúhlené na celé hodiny)',
+      zapadDni: 'Mesiac je <b>{n}</b> po nove. Kedy asi zapadá? (zaokrúhlené na celé hodiny)',
+      juhObr: 'U nás (sever) vidíme Mesiac takto. Ako ho v tú istú noc uvidí kamarát v Austrálii (juh)?',
+      juhStrana: 'Na <b>južnej</b> pologuli je <b>{f}</b>. Na ktorej strane disku svieti?',
+      dc: 'Mesiac dorastá, alebo cúva?',
+      dcJuh: 'Toto je pohľad z <b>južnej</b> pologule. Mesiac dorastá, alebo cúva?',
+      percento: 'Koľko percent disku svieti pri fáze <b>{f}</b>?'
+    },
+    odp: { dorasta: '▲ dorastá', cuva: '▼ cúva', vlavo: '◐ vľavo', vpravo: '◑ vpravo', cely: '● svieti celý disk', nic: '○ nesvieti nič' },
+    obrLabel: 'Mesiac: svieti {p} % disku, {s}.', obrVlavo: 'vľavo', obrVpravo: 'vpravo', obrCely: 'celý', obrNic: 'nič',
+    vys: {
+      nazov: 'Svieti asi {p} % disku.{t} To je <b>{f}</b>.',
+      pribuda: ' Svetla pribúda.', ubuda: ' Svetla ubúda.',
+      juh: ' Pozor, na juhu svieti dorastajúci Mesiac vľavo.',
+      poloha: 'Pri fáze {f} je Mesiac {kde}.',
+      oX: 'Vek je asi {d0} dňa. {d0} + {x} = {s}.{odp} Vek bude asi {t} dňa, to je <b>{f}</b>.',
+      oXOdp: ' Celý cyklus má 29,5 dňa, odpočítame ho ({c}×) a dostaneme {t}.',
+      vychod: 'Orientačne platí: východ ≈ 6:00 + θ/15 hodín. Tu je θ = {u}°, θ/15 = {h} h, preto východ asi o <b>{c}</b>.',
+      zapad: 'Orientačne platí: západ ≈ 18:00 + θ/15 hodín. Tu je θ = {u}°, θ/15 = {h} h, preto západ asi o <b>{c}</b>.',
+      zaokr: ' Zaokrúhlené na celé hodiny.',
+      juhObr: 'Na južnej pologuli vidia ľudia Mesiac otočený hore nohami. Ľavá a pravá strana sa vymenia, veľkosť svetlej časti ostane rovnaká.',
+      juhStrana: 'Na severe svieti {f} {s}. Na juhu je to naopak, teda <b>{j}</b>.',
+      dc: 'Mesiac vyzerá ako písmeno {l}. {pravidlo} Mesiac teda <b>{t}</b>.',
+      dcSever: 'Na severe: D = dorastá, C = cúva.',
+      dcJuh: 'Na juhu je to naopak: D = cúva, C = dorastá.',
+      dorasta: 'dorastá', cuva: 'cúva',
+      percento: 'Pri fáze {f} vidíme svietiť asi <b>{p} %</b> disku.'
+    },
+    kde: [
+      'medzi Zemou a Slnkom',
+      'ôsminu cesty za novom',
+      'štvrtinu cesty za novom, bokom od Zeme',
+      'tri ôsminy cesty za novom',
+      'za Zemou, na opačnej strane ako Slnko',
+      'päť ôsmin cesty za novom',
+      'tri štvrtiny cesty za novom, z druhej strany Zeme',
+      'sedem ôsmin cesty, tesne pred novom'
+    ]
+  }
+};
+</script>
+<style>
+/* ===== Farby a základ – rovnaká paleta ako Slnečná sústava ===== */
+:root{
+  --bg:#04060c;--panel:rgba(12,16,28,.86);--line:rgba(140,160,215,.22);
+  --text:#e2e8f5;--muted:#a3adc6;--gold:#f3b453;--gold2:#ffd88a;--blue:#6fb4ff;--red:#ff7a6b;--green:#7fdc8f;--violet:#b9a3ff;
+  --mesiac:#f2ecd6;--mesiacTma:#262c3a;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--text);background:var(--bg);
+  background-image:radial-gradient(ellipse at 50% -10%,#14204a 0%,#070b18 50%,#04060c 100%);background-attachment:fixed;
+  font:17px/1.5 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1440px;margin:0 auto;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 12px 40px rgba(0,0,0,.45);padding:16px;min-width:0}
+h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+h2{margin:0 0 10px;font-size:23px;line-height:1.25}
+h3{margin:0 0 6px;font-size:16px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:650}
+p{margin:0 0 10px}
+.sub{color:var(--muted);margin:4px 0 0;font-size:17px}
+button{font:inherit;font-size:16px;color:var(--text);background:rgba(255,255,255,.07);border:1px solid var(--line);
+  border-radius:10px;padding:8px 14px;min-height:44px;cursor:pointer;transition:background .15s,border-color .15s,color .15s;touch-action:manipulation}
+button:hover{background:rgba(255,255,255,.13);border-color:rgba(160,180,230,.4)}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
+button.on{background:rgba(243,180,83,.2);border-color:rgba(243,180,83,.65);color:var(--gold2)}
+button.primary{background:linear-gradient(135deg,#f3b453,#d9772f);color:#1a0e02;border:none;font-weight:700;min-width:140px}
+button.primary:hover{filter:brightness(1.08)}
+.mini{color:var(--muted);font-size:16px;margin:10px 0 4px}
+
+/* ===== Hlavička a karty ===== */
+header.top{margin-bottom:12px}
+nav.karty{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+nav.karty button{border-radius:999px;padding:8px 15px}
+[data-karta]{animation:prechod .25s ease-out}
+@keyframes prechod{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){[data-karta]{animation:none}}
+
+/* ===== Rozloženie: scéna, pohľad zo Zeme, ovládanie ===== */
+.sek{display:grid;grid-template-columns:minmax(0,1fr) 400px;grid-template-areas:"scena pohlad" "ovl pohlad";gap:16px;align-items:start}
+.oblScena{grid-area:scena}.oblPohlad{grid-area:pohlad}.oblOvl{grid-area:ovl}
+@media (max-width:1000px){.sek{grid-template-columns:minmax(0,1fr);grid-template-areas:"scena" "pohlad" "ovl"}}
+
+/* ===== Scéna zhora ===== */
+.stageCard{padding:10px}
+.stage{border-radius:10px;background:#060a14;overflow:hidden}
+.stage svg{display:block;width:100%;height:auto;max-height:78vh;user-select:none;-webkit-user-select:none}
+svg .stxt{font-size:var(--fs,16px);font-family:system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-weight:600}
+#svgScena .chyt{cursor:grab;touch-action:none}
+#svgScena.tah .chyt,#svgScena.tah{cursor:grabbing}
+#svgScena .nahlad{cursor:pointer}
+#svgScena .nahlad:focus{outline:none}
+#svgScena .nahlad:focus-visible .kruh{stroke:var(--gold2);stroke-width:3}
+.leg{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:8px 16px;margin:10px 4px 0;font-size:16px;color:var(--muted)}
+.leg span{display:flex;align-items:flex-start;gap:8px}
+.leg svg{flex:none;width:30px;height:30px}
+.box{margin:12px 4px 0;padding:10px 13px;border-radius:10px;border:1px solid}
+.box b.h{display:block;font-size:16px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.box.info{background:rgba(111,180,255,.08);border-color:rgba(111,180,255,.4)}.box.info b.h{color:var(--blue)}
+.box.pozor{background:rgba(243,180,83,.1);border-color:rgba(243,180,83,.55)}
+.stageCard>.mini{margin:10px 4px 0}
+
+/* ===== Pohľad zo Zeme ===== */
+.oblPohlad .stage{max-width:320px;margin:0 auto}
+.seg{display:inline-flex;align-items:stretch;flex-wrap:wrap}
+.seg button{border-radius:0;margin-left:-1px}
+.seg button:first-of-type{border-radius:10px 0 0 10px;margin-left:0}
+.seg button:last-of-type{border-radius:0 10px 10px 0}
+.prep{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:12px}
+.prep>span{color:var(--muted);min-width:7.5em}
+#pFaza{font-size:28px;font-weight:750;color:var(--gold2);margin:12px 0 0;line-height:1.2}
+#pTrend{margin:4px 0 0;font-weight:650}
+dl.udaje{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:12px 0 0;font-size:17px}
+dl.udaje dt{color:var(--muted)}
+dl.udaje dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+dl.udaje dd b{color:var(--gold2);font-size:20px}
+.pruh{height:14px;border-radius:7px;background:var(--mesiacTma);border:1px solid var(--line);overflow:hidden;margin-top:6px}
+.pruh i{display:block;height:100%;background:var(--mesiac);width:0}
+#pPopis{margin:12px 0 0}
+#pStrana{margin:8px 0 0}
+
+/* ===== Ovládanie ===== */
+.tlac{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sl{display:block;margin-top:12px}
+.sl .lbl{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sl .lbl b{color:var(--gold2);font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:40px;background:transparent;margin:2px 0 0;cursor:pointer;touch-action:pan-y}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;margin-top:-10px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02;box-shadow:0 0 0 2px var(--gold)}
+input[type=range]::-moz-range-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02}
+.kluc{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}
+.kluc button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;line-height:1.2}
+.kluc button svg{width:36px;height:36px}
+@media (max-width:560px){.kluc{grid-template-columns:repeat(2,1fr)}.kluc button{flex-direction:row;justify-content:flex-start;text-align:left;gap:10px;padding:6px 10px}}
+#dnesInfo{margin-top:12px}
+footer{color:var(--muted);text-align:center;font-size:16px;padding:20px 0 10px}
+@media (max-width:600px){
+  .wrap{padding:10px}
+  .card{padding:12px}
+  .stageCard{padding:6px}
+  h2{font-size:21px}
+  .tlac button{flex:1 1 auto}
+}
+
+/* ===== Časť 2: spoločné ===== */
+.sek2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,440px);gap:16px;align-items:start}
+.stlpec{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:1000px){.sek2{grid-template-columns:minmax(0,1fr)}}
+.hlaska{margin:10px 4px 0;padding:10px 13px;border-radius:10px;border:1px solid var(--line);min-height:3em}
+.hlaska.ok{background:rgba(127,220,143,.08);border-color:rgba(127,220,143,.45)}
+.hlaska.info{background:rgba(111,180,255,.08);border-color:rgba(111,180,255,.45)}
+.box.zlty{background:rgba(243,180,83,.09);border-color:rgba(243,180,83,.45)}.box.zlty b.h{color:var(--gold2)}
+svg.disk{display:block}
+
+/* ===== Obloha ===== */
+table.fazy{width:100%;border-collapse:collapse;font-size:16px;margin-top:6px}
+table.fazy th{color:var(--muted);font-weight:600;text-align:left;padding:6px 4px;border-bottom:1px solid var(--line)}
+table.fazy td{padding:6px 4px;border-bottom:1px solid rgba(140,160,215,.12);vertical-align:middle;font-variant-numeric:tabular-nums}
+table.fazy td.cas,table.fazy th.cas{text-align:right;white-space:nowrap}
+table.fazy td.nm{display:flex;align-items:center;gap:8px}
+table.fazy td.nm svg{width:30px;height:30px;flex:none}
+table.fazy td.nm small{display:block;color:var(--muted);font-size:16px;line-height:1.3}
+table.fazy tbody tr{cursor:pointer}
+table.fazy tbody tr:hover td{background:rgba(255,255,255,.04)}
+table.fazy tbody tr.on td{background:rgba(243,180,83,.12)}
+table.fazy tbody tr.on td.nm b{color:var(--gold2)}
+table.fazy td.den{white-space:nowrap}
+@media (max-width:600px){table.fazy td.nm small{display:none}}
+
+/* ===== Čo je čo ===== */
+#svgCoje [data-hit]{cursor:pointer}
+#svgCoje [data-pojem]{transition:opacity .2s}
+#svgCoje.vyber [data-pojem]:not(.zvyr){opacity:.3}
+#svgCoje .ovr{opacity:0}
+#svgCoje .ovr.zvyr{opacity:1}
+.pojmy{display:flex;flex-wrap:wrap;gap:6px}
+.pojmy.fazyB{display:grid;grid-template-columns:repeat(4,1fr)}
+.pojmy.fazyB button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;line-height:1.2}
+.pojmy.fazyB button svg{width:34px;height:34px}
+@media (max-width:560px){.pojmy.fazyB{grid-template-columns:repeat(2,1fr)}.pojmy.fazyB button{flex-direction:row;justify-content:flex-start;text-align:left;gap:10px;padding:6px 10px}}
+.popisBox{margin-top:14px;padding:12px 14px;border-radius:10px;border:1px solid rgba(243,180,83,.45);background:rgba(243,180,83,.07);display:flex;gap:14px;align-items:flex-start;min-height:5em}
+.popisBox svg{width:96px;height:96px;flex:none}
+.popisBox h3{color:var(--gold2);text-transform:none;letter-spacing:0;font-size:20px;margin:0 0 4px}
+.popisBox p{margin:0}
+.dc{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0 10px}
+.dc figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+.dc .riadokDC{display:flex;align-items:center;gap:12px}
+.dc svg{width:90px;height:90px}
+.dc .pismeno{font-size:56px;font-weight:800;color:var(--gold2);line-height:1;font-family:Georgia,"Times New Roman",serif}
+.dc figcaption{color:var(--muted);font-size:16px}
+
+/* ===== Časté omyly ===== */
+.omylyHore{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.omylyHore p{margin:0}
+.omylyMr{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:16px}
+.omyl h3{color:var(--text);text-transform:none;letter-spacing:0;font-size:19px;margin:0 0 8px}
+.omyl h3 .zle{color:var(--red)}
+.omyl h3 .zv{display:inline-block;font-size:16px;color:var(--violet);border:1px solid rgba(185,163,255,.5);border-radius:999px;padding:0 10px;margin-right:6px}
+.omyl .oprava{margin:10px 0 0}
+.omyl .oprava b.ok{color:var(--green)}
+.omyl .hlaska{margin:8px 0 0}
+.omyl .mini{margin:6px 0 0}
+
+/* ===== Kvíz ===== */
+.otazka{padding:14px 0;border-bottom:1px solid var(--line)}
+.otazka:last-child{border-bottom:none}
+.otazka .q{font-size:19px;margin-bottom:8px}
+.otazka .q .por{color:var(--muted)}
+.otazka .viz{max-width:320px;margin:4px 0 10px;border-radius:10px;background:#060a14;overflow:hidden;padding:8px}
+.otazka .viz svg{display:block;width:100%;height:auto;max-height:240px}
+.otazka .viz.maly{max-width:150px}
+.moznosti{display:flex;flex-wrap:wrap;gap:8px}
+.moznosti button{min-height:52px;font-size:18px}
+.moznosti.obr button{padding:6px}
+.moznosti.obr button svg{width:72px;height:72px}
+.otazka button:disabled{cursor:default;opacity:.7}
+.otazka button.ok{background:rgba(127,220,143,.2);border:3px solid var(--green);color:#d7ffdf;opacity:1}
+.otazka button.zle{background:rgba(255,122,107,.2);border:3px solid var(--red);color:#ffe0dc;opacity:1}
+.fb{margin-top:10px;font-size:17px}
+.fb.ok>b:first-child{color:var(--green)}.fb.zle>b:first-child{color:var(--red)}
+#kvSkore{font-size:21px;font-weight:700;color:var(--gold2);margin:12px 0 0;min-height:1.5em}
+#kvSkore b{color:var(--green)}
+@media (max-width:600px){.moznosti button{flex:1 1 auto}.popisBox svg{width:72px;height:72px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top"><h1 data-t="titul"></h1><p class="sub" data-t="podtitul"></p></header>
+<nav class="karty" id="karty" role="tablist"></nav>
+
+<!-- ============ KARTA: FÁZY MESIACA ============ -->
+<section id="scena" class="sek" data-karta hidden>
+
+  <!-- Scéna zhora -->
+  <div class="card stageCard oblScena">
+    <div class="stage"><svg id="svgScena" viewBox="0 0 640 560" role="img" aria-label=""></svg></div>
+    <p class="mini" data-t="ui.hint"></p>
+    <div class="leg">
+      <span><svg viewBox="-15 -15 30 30" aria-hidden="true"><circle r="11" fill="#262c3a" stroke="rgba(255,255,255,.3)"/><path d="M0 -11 A11 11 0 0 0 0 11 Z" fill="#f2ecd6"/></svg><span data-t="legenda.osvetlena"></span></span>
+      <span><svg viewBox="-15 -15 30 30" aria-hidden="true"><path d="M-4 -12 A12 12 0 0 1 -4 12" fill="none" stroke="#6fb4ff" stroke-width="2.5" stroke-dasharray="4 3"/></svg><span data-t="legenda.viditelna"></span></span>
+      <span><svg viewBox="-15 -15 30 30" aria-hidden="true"><circle r="9" fill="#fff"/><circle r="6" fill="none" stroke="#e8483a" stroke-width="2.5"/><circle r="2.2" fill="#e8483a"/></svg><span data-t="legenda.znacka"></span></span>
+      <span><svg viewBox="-15 -15 30 30" aria-hidden="true"><path d="M0 -11 A11 11 0 1 0 11 0" fill="none" stroke="#a3adc6" stroke-width="2.5"/><path d="M5.5 3 L11 -5 L16.5 3 Z" fill="#a3adc6"/></svg><span data-t="legenda.smer"></span></span>
+    </div>
+    <div class="box info" data-t="akoTo"></div>
+    <div class="box pozor" data-t="ui.mierka"></div>
+  </div>
+
+  <!-- Pohľad zo Zeme a údaje -->
+  <div class="card oblPohlad" aria-live="polite">
+    <h2 data-t="pohlad.nadpis"></h2>
+    <p class="mini" data-t="pohlad.popis" style="margin-top:0"></p>
+    <div class="stage"><svg id="svgPohlad" viewBox="-130 -130 260 260" role="img" aria-label=""></svg></div>
+    <div id="pFaza"></div>
+    <div id="pTrend"></div>
+    <dl class="udaje">
+      <dt data-t="pohlad.vek"></dt><dd id="pVek"></dd>
+      <dt data-t="pohlad.osvetlene"></dt><dd id="pOsv"></dd>
+    </dl>
+    <div class="pruh" aria-hidden="true"><i id="pPruh"></i></div>
+    <p id="pPopis"></p>
+    <div class="prep"><span data-t="ui.pologula"></span>
+      <div class="seg"><button data-pol="sever" class="on" data-t="ui.sever"></button><button data-pol="juh" data-t="ui.juh"></button></div></div>
+    <p class="mini" id="pStrana"></p>
+  </div>
+
+  <!-- Ovládanie -->
+  <div class="card oblOvl">
+    <div class="tlac">
+      <button id="bHra" class="primary"></button>
+      <button id="bDnes" data-t="ui.dnes"></button>
+    </div>
+    <div class="box info" id="dnesInfo" hidden></div>
+    <label class="sl"><span class="lbl"><span data-t="ui.den"></span><b id="denVal"></b></span>
+      <input type="range" id="den" min="0" max="29.53" step="0.01" value="3.69"></label>
+    <label class="sl"><span class="lbl"><span data-t="ui.rychlost"></span><b id="rychVal"></b></span>
+      <input type="range" id="rych" min="0.2" max="6" step="0.1" value="2"></label>
+    <div class="mini" data-t="ui.polohy"></div>
+    <div class="kluc" id="kluc"></div>
+    <div class="prep"><span data-t="ui.znacka"></span>
+      <div class="seg"><button id="bZnZap" class="on" data-t="ui.zap"></button><button id="bZnVyp" data-t="ui.vyp"></button></div></div>
+  </div>
+</section>
+
+<!-- ============ KARTA: OBLOHA ============ -->
+<section id="obloha" class="sek2" data-karta hidden>
+  <div class="stlpec">
+    <div class="card stageCard">
+      <div class="stage"><svg id="svgObloha" viewBox="0 0 640 320" role="img" aria-label=""></svg></div>
+      <div class="hlaska" id="obStav" aria-live="polite"></div>
+      <p class="mini" id="obCasy"></p>
+    </div>
+    <div class="card">
+      <div class="tlac"><button id="obHra" class="primary"></button></div>
+      <label class="sl"><span class="lbl"><span data-t="obloha.hodina"></span><b id="obHodVal"></b></span>
+        <input type="range" id="obHod" min="0" max="24" step="0.25" value="20"></label>
+      <label class="sl"><span class="lbl"><span data-t="obloha.den"></span><b id="obDenVal"></b></span>
+        <input type="range" id="obDen" min="0" max="29.53" step="0.01" value="3.69"></label>
+      <div class="prep"><span data-t="ui.pologula"></span>
+        <div class="seg"><button data-pol="sever" data-t="ui.sever"></button><button data-pol="juh" data-t="ui.juh"></button></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2 data-t="obloha.nadpis"></h2>
+    <p id="obUvod"></p>
+    <h3 data-t="obloha.tabNadpis"></h3>
+    <table class="fazy">
+      <thead><tr><th data-t="obloha.stlpFaza"></th><th class="cas" data-t="obloha.stlpVychod"></th><th class="cas" data-t="obloha.stlpZapad"></th><th data-t="obloha.stlpDen"></th></tr></thead>
+      <tbody id="obTab"></tbody>
+    </table>
+    <p class="mini" data-t="obloha.tabTip"></p>
+    <div class="box zlty" id="obZvyraz"></div>
+    <div class="box pozor" data-t="obloha.poznamka"></div>
+  </div>
+</section>
+
+<!-- ============ KARTA: ČO JE ČO ============ -->
+<section id="coje" class="sek2" data-karta hidden>
+  <div class="stlpec">
+    <div class="card stageCard"><div class="stage"><svg id="svgCoje" viewBox="0 0 640 340" role="img" aria-label=""></svg></div></div>
+    <div class="card">
+      <h2 data-t="coje.dcNadpis"></h2>
+      <div class="dc" id="cjDC"></div>
+      <p id="cjDCText"></p>
+      <p class="mini" data-t="coje.dcCiara"></p>
+      <div class="prep"><span data-t="ui.pologula"></span>
+        <div class="seg"><button data-pol="sever" data-t="ui.sever"></button><button data-pol="juh" data-t="ui.juh"></button></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2 data-t="coje.nadpis"></h2>
+    <p data-t="coje.uvod"></p>
+    <h3 data-t="coje.pojmyNadpis"></h3>
+    <div class="pojmy" id="cjPojmy"></div>
+    <h3 data-t="coje.fazyNadpis" style="margin-top:14px"></h3>
+    <div class="pojmy fazyB" id="cjFazy"></div>
+    <div class="popisBox" id="cjPopis" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ============ KARTA: ČASTÉ OMYLY ============ -->
+<section id="omyly" data-karta hidden>
+  <div class="card omylyHore">
+    <div><h2 data-t="omyly.nadpis"></h2><p data-t="omyly.uvod"></p></div>
+    <button id="omHra" class="primary"></button>
+  </div>
+  <div class="omylyMr" id="omZoznam"></div>
+</section>
+
+<!-- ============ KARTA: KVÍZ ============ -->
+<section id="kviz" data-karta hidden>
+  <div class="card">
+    <h2 data-t="kviz.nadpis"></h2>
+    <p data-t="kviz.uvod"></p>
+    <div class="tlac"><span class="mini" data-t="kviz.uroven" style="margin:0"></span><div class="seg" id="kvUrovne"></div><button id="kvNova" data-t="kviz.nova"></button></div>
+    <div id="kvBox"></div>
+    <div id="kvSkore" aria-live="polite"></div>
+  </div>
+</section>
+
+<footer data-t="pata"></footer>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   VÝPOČTY – začiatok. Čistá matematika bez kreslenia (dá sa testovať samostatne).
+   Uhly sú v stupňoch, čas v dňoch.
+   ===================================================================== */
+const DEG = Math.PI / 180;
+const PERIODA = 29.530589;                    // synodický mesiac – od novu po nov (dni)
+const SYNOD = 29.530588853;                   // to isté, presnejšie – na výpočet dnešnej fázy
+const EPOCHA_NOVU = Date.UTC(2000, 0, 6, 18, 14); // známy nov: 6. 1. 2000 18:14 UTC
+const HRANICA = 0.0005;                       // osvetlená časť pod touto hodnotou = nov (nad 1 − hodnota = spln)
+const POLSIRKA_HLAVNEJ = 1;                   // nov, štvrte a spln nazývame tak ±1 deň okolo presného okamihu
+
+/* Uhol Mesiaca od Slnka (pri pohľade zo Zeme): θ = 0° nov, 90° prvá štvrť, 180° spln, 270° posledná štvrť. */
+function uholFazy(den) { return 360 * den / PERIODA; }
+function do360(u) { return ((u % 360) + 360) % 360; }
+
+/* Osvetlená časť disku (0 až 1) = (1 − cos θ) / 2. */
+function osvetlenaCast(theta) { return (1 - Math.cos(theta * DEG)) / 2; }
+
+/* Dorastá, ak je Mesiac na ceste od novu ku splnu (0° < θ < 180°). */
+function dorasta(theta) { const t = do360(theta); return t > 0 && t < 180; }
+
+/* Tvar osvetlenej časti disku s polomerom R (stred v 0,0).
+   Kreslíme vždy tak, akoby svetlo bolo VPRAVO. Doľava ho otočí kresliaci kód (zrkadlenie).
+   Okraj: pravá polkružnica (horný bod → pravý okraj → dolný bod).
+   Terminátor: polelipsa s vodorovným polomerom R·|cos θ| (dolný bod → horný bod).
+   Pri kosáčiku (cos θ > 0) vedie terminátor vpravo od stredu, pri väčšom Mesiaci (cos θ < 0) vľavo. */
+function cestaFazy(theta, R) {
+  const k = Math.cos(theta * DEG), f = (1 - k) / 2;
+  if (f < HRANICA) return { typ: 'nov', d: '' };
+  if (f > 1 - HRANICA) return { typ: 'spln', d: `M0 ${-R} A${R} ${R} 0 1 1 0 ${R} A${R} ${R} 0 1 1 0 ${-R} Z` };
+  const rx = R * Math.abs(k);
+  return { typ: 'cast', d: `M0 ${-R} A${R} ${R} 0 0 1 0 ${R} A${rx} ${R} 0 0 ${k > 0 ? 0 : 1} 0 ${-R} Z` };
+}
+
+/* Index fázy 0 – 7 podľa veku. Nov, štvrte a spln platia ±1 deň, medzi nimi sú „medzifázy“. */
+function indexFazy(vek) {
+  const v = ((vek % PERIODA) + PERIODA) % PERIODA, q = PERIODA / 4;
+  for (let i = 0; i < 4; i++) {
+    let d = Math.abs(v - i * q); d = Math.min(d, PERIODA - d);
+    if (d <= POLSIRKA_HLAVNEJ) return i * 2;
+  }
+  return Math.min(3, Math.floor(v / q)) * 2 + 1;
+}
+
+/* Vek Mesiaca (dni od posledného novu) pre čas v milisekundách (UTC).
+   Priemerný výpočet – skutočný nov môže nastať až asi o 1 deň skôr alebo neskôr. */
+function vekPodlaDatumu(ms) {
+  const dni = (ms - EPOCHA_NOVU) / 86400000;
+  return ((dni % SYNOD) + SYNOD) % SYNOD;
+}
+
+/* Svieti Mesiac na obrazovke vpravo? Na severe svieti dorastajúci vpravo, na juhu naopak. */
+function svietiVpravo(theta, sever) { return dorasta(theta) === sever; }
+
+/* --- Obloha (časť 2) – orientačná schéma pri rovnodennosti --- */
+function mod24(h) { return ((h % 24) + 24) % 24; }
+function vychodMesiaca(theta) { return mod24(6 + do360(theta) / 15); }   // východ ≈ 6:00 + θ/15 h
+function zapadMesiaca(theta) { return mod24(18 + do360(theta) / 15); }   // západ ≈ 18:00 + θ/15 h
+/* Kde je teleso na dennom oblúku: 0 = práve vyšlo, 1 = práve zapadá, null = je pod obzorom.
+   Teleso je nad obzorom 12 hodín od východu. Slnko vychádza o 6:00. */
+function polohaNaOblohe(vychod, hod) { const u = mod24(hod - vychod) / 12; return u <= 1 ? u : null; }
+/* Koľko hodín je Mesiac nad obzorom v čase, keď je nad obzorom aj Slnko (6:00 – 18:00). */
+function hodinyCezDen(theta) {
+  const r = 6 + do360(theta) / 15, prekryv = (a, b, c, d) => Math.max(0, Math.min(b, d) - Math.max(a, c));
+  return prekryv(r, r + 12, 6, 18) + prekryv(r, r + 12, 30, 42);
+}
+
+/* --- Pre zvedavých (časť 2) --- */
+const HVIEZDNY = 27.321661;      // obeh Mesiaca okolo Zeme voči hviezdam (dni)
+const ZATMENNY_ROK = 346.62;     // po tomto čase je Slnko znova v smere priesečníka dráh (dni)
+const SKLON_DRAHY = 5.1;         // sklon dráhy Mesiaca voči dráhe Zeme (°)
+/* =====================================================================
+   VÝPOČTY – koniec
+   ===================================================================== */
+
+/* ===== Pomocné funkcie ===== */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const NS = 'http://www.w3.org/2000/svg';
+const nf = (x, d = 0) => (Math.abs(x) < 0.5 * Math.pow(10, -d) ? 0 : x).toLocaleString('sk-SK', { minimumFractionDigits: d, maximumFractionDigits: d });
+const sablona = (s, o) => s.replace(/\{(\w+)\}/g, (m, k) => k in o ? o[k] : m);
+function cesta(o, p) { return p.split('.').reduce((x, k) => x == null ? x : x[k], o); }
+/* Vytvorí SVG prvok s atribútmi a vloží ho do rodiča. */
+function el(tag, at = {}, rodic) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in at) e.setAttribute(k, at[k]);
+  if (rodic) rodic.appendChild(e);
+  return e;
+}
+const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
+const nahodne = n => Math.floor(Math.random() * n);
+const vyber = a => a[nahodne(a.length)];
+function zamiesaj(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = nahodne(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const velke = s => s.charAt(0).toUpperCase() + s.slice(1);
+/* Čas v hodinách → „12:00“ */
+function fmtCas(h) { const m = Math.round(mod24(h) * 60) % 1440; return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); }
+/* Trvanie v hodinách → „3 h 15 min“ */
+function fmtTrvanie(h) {
+  const m = Math.round(h * 60), H = Math.floor(m / 60), M = m % 60;
+  return sablona(M ? TEXTY.obloha.trvanie : TEXTY.obloha.trvanieH, { h: H, m: M });
+}
+/* 1 deň, 2 dni, 5 dní */
+function tvarDni(n) { const t = TEXTY.dniTvar; return n + ' ' + (n === 1 ? t[0] : n >= 2 && n <= 4 ? t[1] : t[2]); }
+/* Písmo v SVG nech je na obrazovke vždy aspoň 16 px (SVG sa na malom displeji zmenšuje). */
+function sledujPismo(svg, sirka) {
+  const f = () => {
+    const w = svg.getBoundingClientRect().width;
+    if (w) svg.style.setProperty('--fs', Math.max(16, 16 * sirka / w).toFixed(1) + 'px');
+  };
+  if (window.ResizeObserver) new ResizeObserver(f).observe(svg); else window.addEventListener('resize', f);
+  f();
+}
+
+/* ===== Stav animácie ===== */
+const S = {
+  den: 3.69,          // deň cyklu (vek Mesiaca)
+  hra: false,         // beží animácia?
+  rych: 2,            // dni za sekundu
+  sever: true,        // severná pologuľa?
+  znacka: true,       // ukázať značku na Mesiaci?
+  tah: false,         // ťahá žiak práve Mesiac?
+  prekreslit: true
+};
+
+/* ===== Rozmery scény zhora (jednotky viewBoxu 640 × 560) ===== */
+const ZX = 350, ZY = 280;   // stred Zeme
+const RD = 180;             // polomer dráhy Mesiaca
+const RN = 240;             // polomer, kde sú náhľady fáz
+const RM = 17;              // polomer Mesiaca
+const RZ = 34;              // polomer Zeme
+/* Poloha na dráhe pre uhol θ. Slnko je vľavo, pri novu je Mesiac vľavo od Zeme.
+   Pri pohľade zhora (od severného pólu) obieha Mesiac proti smeru hodinových ručičiek. */
+function poloha(theta, r) { return [ZX - r * Math.cos(theta * DEG), ZY + r * Math.sin(theta * DEG)]; }
+
+/* Farby Mesiaca */
+const F_SVETLO = '#f2ecd6', F_TMA = '#262c3a', F_MORE = '#cdc4a6', F_MORE_TMA = '#1f2431';
+
+/* Moria (tmavé škvrny) na privrátenej strane Mesiaca, ako ich vidno zo severnej pologule. R = 110. */
+const MORIA = [
+  [-30, -45, 28, 22], [18, -42, 16, 15], [32, -8, 20, 17], [70, -30, 11, 9],
+  [-62, 0, 24, 44], [-14, 40, 20, 14], [60, 12, 11, 18], [-38, 52, 14, 10]
+];
+
+/* ===== Scéna zhora ===== */
+const SC = {};
+function initScena() {
+  const svg = $('#svgScena');
+  const defs = el('defs', {}, svg);
+  const gr = el('radialGradient', { id: 'gSlnko' }, defs);
+  el('stop', { offset: '0%', 'stop-color': '#fff6d6' }, gr);
+  el('stop', { offset: '55%', 'stop-color': '#ffd166' }, gr);
+  el('stop', { offset: '100%', 'stop-color': '#f39a2b' }, gr);
+  const mk = el('marker', { id: 'mSipka', viewBox: '0 0 10 10', refX: 5, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, defs);
+  el('path', { d: 'M0 0 L10 5 L0 10 Z', fill: '#a3adc6' }, mk);
+  const mk2 = el('marker', { id: 'mLuc', viewBox: '0 0 10 10', refX: 5, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, defs);
+  el('path', { d: 'M0 0 L10 5 L0 10 Z', fill: 'rgba(243,180,83,.55)' }, mk2);
+
+  // Rovnobežné lúče zo Slnka (zľava doprava)
+  for (let y = 30; y <= 530; y += 50) {
+    el('line', { x1: 44, y1: y, x2: 632, y2: y, stroke: 'rgba(243,180,83,.18)', 'stroke-width': 2 }, svg);
+    el('line', { x1: 60, y1: y, x2: 92, y2: y, stroke: 'rgba(243,180,83,.55)', 'stroke-width': 2, 'marker-end': 'url(#mLuc)' }, svg);
+  }
+  // Slnko – vidno len jeho kúsok na ľavom okraji
+  el('circle', { cx: -40, cy: ZY, r: 112, fill: 'rgba(255,200,90,.12)' }, svg);
+  el('circle', { cx: -40, cy: ZY, r: 82, fill: 'url(#gSlnko)' }, svg);
+  el('text', { x: 8, y: 400, fill: '#ffd88a', class: 'stxt' }, svg).textContent = TEXTY.scena.slnko;
+  el('text', { x: 100, y: 26, fill: 'rgba(255,216,138,.85)', class: 'stxt' }, svg).textContent = TEXTY.scena.luce;
+
+  // Dráha Mesiaca
+  el('circle', { cx: ZX, cy: ZY, r: RD, fill: 'none', stroke: 'rgba(163,173,198,.4)', 'stroke-width': 2, 'stroke-dasharray': '3 6' }, svg);
+  // Šípka smeru obehu (zvonka dráhy, medzi prvou štvrťou a dorastajúcim Mesiacom)
+  const RS = RD + 28, [ax, ay] = poloha(100, RS), [bx, by] = poloha(125, RS);
+  el('path', { d: `M${ax} ${ay} A${RS} ${RS} 0 0 0 ${bx} ${by}`, fill: 'none', stroke: '#a3adc6', 'stroke-width': 2.5, 'marker-end': 'url(#mSipka)' }, svg);
+
+  // Osem polôh: bodka na dráhe + náhľad fázy (dá sa kliknúť)
+  SC.nahlady = [];
+  for (let i = 0; i < 8; i++) {
+    const th = i * 45, [dx, dy] = poloha(th, RD), [nx, ny] = poloha(th, RN);
+    el('circle', { cx: dx, cy: dy, r: 4, fill: 'rgba(163,173,198,.8)' }, svg);
+    const g = el('g', { class: 'nahlad', transform: `translate(${nx} ${ny})`, tabindex: 0, role: 'button' }, svg);
+    const nazov = sablona(TEXTY.scena.nahlad, { faza: TEXTY.fazy[i] });
+    g.setAttribute('aria-label', nazov);
+    el('title', {}, g).textContent = nazov;
+    el('circle', { r: 28, fill: 'transparent' }, g);                    // väčšia plocha pre prst
+    const kruh = el('circle', { class: 'kruh', r: 21, fill: 'rgba(8,12,24,.85)', stroke: 'rgba(140,160,215,.35)', 'stroke-width': 1.5 }, g);
+    const vnut = el('g', {}, g);
+    el('circle', { r: 16, fill: F_TMA, stroke: 'rgba(255,255,255,.25)' }, vnut);
+    const p = el('path', { fill: F_SVETLO }, vnut);
+    const ff = () => { nastavDen(i * PERIODA / 8, true); };
+    g.addEventListener('click', ff);
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ff(); } });
+    SC.nahlady.push({ kruh, vnut, p, th });
+  }
+
+  // Zem (pohľad zhora na severný pól): ľavá polovica je deň, pravá noc
+  kresliZem(svg, ZX, ZY, RZ);
+  el('text', { x: ZX, y: ZY + RZ + 26, fill: '#e2e8f5', 'text-anchor': 'middle', class: 'stxt' }, svg).textContent = TEXTY.scena.zem;
+
+  // Čiara pohľadu Zem → Mesiac a popis Mesiaca
+  SC.ciara = el('line', { stroke: 'rgba(111,180,255,.45)', 'stroke-width': 1.5, 'stroke-dasharray': '4 5' }, svg);
+  SC.popis = el('text', { fill: '#e2e8f5', 'text-anchor': 'middle', 'dominant-baseline': 'middle', class: 'stxt' }, svg);
+  SC.popis.textContent = TEXTY.scena.mesiac;
+
+  // Plocha na chytenie dráhy (neviditeľný hrubý prstenec)
+  const prsten = el('circle', { cx: ZX, cy: ZY, r: RD, fill: 'none', stroke: 'transparent', 'stroke-width': 36, class: 'chyt', 'pointer-events': 'stroke' }, svg);
+
+  // Mesiac: tmavý kotúč, ľavá (k Slnku) polovica svetlá, čiarkovaná polovica k Zemi, značka
+  const m = el('g', {}, svg);
+  el('circle', { r: RM, fill: F_TMA, stroke: 'rgba(255,255,255,.3)' }, m);
+  el('path', { d: `M0 ${-RM} A${RM} ${RM} 0 0 0 0 ${RM} Z`, fill: F_SVETLO }, m);
+  const smer = el('g', {}, m);
+  el('path', { d: `M0 ${-RM - 5} A${RM + 5} ${RM + 5} 0 0 1 0 ${RM + 5}`, fill: 'none', stroke: '#6fb4ff', 'stroke-width': 2.5, 'stroke-dasharray': '4 3' }, smer);
+  const zn = el('g', { transform: `translate(${RM * 0.52} 0)` }, smer);
+  el('circle', { r: 6.5, fill: '#fff' }, zn);
+  el('circle', { r: 4.2, fill: 'none', stroke: '#e8483a', 'stroke-width': 2 }, zn);
+  el('circle', { r: 1.6, fill: '#e8483a' }, zn);
+  const chyt = el('circle', { r: 32, fill: 'transparent', class: 'chyt' }, m);
+  Object.assign(SC, { svg, m, smer, zn });
+
+  // Ťahanie Mesiaca myšou aj prstom
+  const naUhol = e => {
+    const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+    const q = pt.matrixTransform(svg.getScreenCTM().inverse());
+    // z rovníc polohy: cos θ = −dx / r, sin θ = dy / r
+    const th = do360(Math.atan2(q.y - ZY, -(q.x - ZX)) / DEG);
+    nastavDen(th / 360 * PERIODA, true);
+  };
+  [prsten, chyt].forEach(t => {
+    t.addEventListener('pointerdown', e => {
+      e.preventDefault(); S.tah = true; svg.classList.add('tah');
+      try { svg.setPointerCapture(e.pointerId); } catch (er) { /* nič */ }
+      naUhol(e);
+    });
+    t.addEventListener('touchstart', e => { e.preventDefault(); }, { passive: false }); // pri ťahaní neposúvať stránku
+  });
+  svg.addEventListener('pointermove', e => { if (S.tah) naUhol(e); });
+  const koniec = () => { S.tah = false; svg.classList.remove('tah'); };
+  svg.addEventListener('pointerup', koniec);
+  svg.addEventListener('pointercancel', koniec);
+
+  sledujPismo(svg, 640);
+}
+
+/* Zem zhora (stred = severný pól), Slnko je vľavo: ľavá polovica deň, pravá noc. */
+function kresliZem(rodic, x, y, r) {
+  const z = el('g', { transform: `translate(${x} ${y}) scale(${r / 34})` }, rodic);
+  el('circle', { r: 34, fill: '#2f6fc4' }, z);
+  el('path', { d: 'M-8 -30 C4 -26 14 -20 12 -8 C10 2 20 6 26 14 C18 24 6 20 2 12 C-4 4 -14 6 -20 -4 C-24 -14 -18 -26 -8 -30 Z', fill: '#5fae6a' }, z);
+  el('path', { d: 'M-28 12 C-20 10 -12 18 -14 26 C-20 30 -28 24 -28 12 Z', fill: '#5fae6a' }, z);
+  el('circle', { r: 7, fill: 'rgba(255,255,255,.92)' }, z);
+  el('path', { d: 'M0 -34 A34 34 0 0 1 0 34 Z', fill: 'rgba(2,4,10,.6)' }, z);
+  el('circle', { r: 34, fill: 'none', stroke: 'rgba(255,255,255,.3)', 'stroke-width': 34 / r }, z);
+  return z;
+}
+/* Mesiac zhora so Slnkom vľavo: tmavý kotúč, ľavá polovica osvetlená. */
+function mesiacZhora(rodic, r) {
+  const g = el('g', {}, rodic);
+  el('circle', { r, fill: F_TMA, stroke: 'rgba(255,255,255,.3)' }, g);
+  el('path', { d: `M0 ${-r} A${r} ${r} 0 0 0 0 ${r} Z`, fill: F_SVETLO }, g);
+  return g;
+}
+/* Malý disk Mesiaca, ako ho vidno zo Zeme (pre tabuľky, kvíz, popisy). */
+function miniDisk(theta, sever, R = 30, opt = {}) {
+  const m = R + 4, svg = el('svg', { viewBox: `${-m} ${-m} ${2 * m} ${2 * m}`, class: 'disk', 'aria-hidden': 'true' });
+  const g = el('g', { transform: sever ? '' : 'rotate(180)' }, svg);
+  el('circle', { r: R, fill: F_TMA, stroke: 'rgba(255,255,255,.35)', 'stroke-width': R / 20 }, g);
+  const p = el('path', { fill: F_SVETLO, class: 'svetlo' }, g);
+  const typ = kresliFazu(p, theta, R);
+  if (opt.terminator && typ === 'cast') {   // terminátor – tá istá polelipsa ako v cestaFazy
+    const k = Math.cos(theta * DEG);
+    el('path', { d: `M0 ${R} A${R * Math.abs(k)} ${R} 0 0 ${k > 0 ? 0 : 1} 0 ${-R}`, fill: 'none', stroke: '#ff7a6b', 'stroke-width': R / 12, 'stroke-dasharray': `${R / 8} ${R / 12}`, transform: p.getAttribute('transform') }, g);
+  }
+  return svg;
+}
+
+/* ===== Pohľad zo Zeme ===== */
+const PO = {};
+const RP = 110;  // polomer disku Mesiaca v paneli
+function initPohlad() {
+  const svg = $('#svgPohlad');
+  const defs = el('defs', {}, svg);
+  const klip = el('clipPath', { id: 'klipSvetlo' }, defs);
+  PO.cesta = el('path', { id: 'litCesta' }, klip);
+  // pár hviezd v pozadí
+  [[-110, -96], [-84, 104], [96, -110], [114, 70], [-118, 30], [70, 118], [118, -20], [-40, -124]].forEach(([x, y], i) =>
+    el('circle', { cx: x, cy: y, r: i % 3 ? 1.2 : 1.8, fill: 'rgba(226,232,245,.7)' }, svg));
+  PO.otoc = el('g', {}, svg);                     // pri južnej pologuli otočený o 180°
+  el('circle', { r: RP, fill: F_TMA, stroke: 'rgba(255,255,255,.25)', 'stroke-width': 1.5 }, PO.otoc);
+  MORIA.forEach(([x, y, rx, ry]) => el('ellipse', { cx: x, cy: y, rx, ry, fill: F_MORE_TMA }, PO.otoc));
+  PO.svetlo = el('g', { 'clip-path': 'url(#klipSvetlo)' }, PO.otoc);
+  el('circle', { r: RP, fill: F_SVETLO }, PO.svetlo);
+  MORIA.forEach(([x, y, rx, ry]) => el('ellipse', { cx: x, cy: y, rx, ry, fill: F_MORE }, PO.svetlo));
+  el('circle', { cx: -10, cy: 84, r: 5, fill: '#fffbea' }, PO.svetlo);   // jasný kráter Tycho
+  el('circle', { cx: -10, cy: 84, r: 5, fill: 'none', stroke: '#d9d0b2' }, PO.svetlo);
+  PO.zn = el('g', {}, PO.otoc);                     // značka v strede – k Zemi je stále tá istá strana
+  el('circle', { r: 10, fill: '#fff' }, PO.zn);
+  el('circle', { r: 6.5, fill: 'none', stroke: '#e8483a', 'stroke-width': 3 }, PO.zn);
+  el('circle', { r: 2.5, fill: '#e8483a' }, PO.zn);
+}
+
+/* Nakreslí tvar fázy do cesty p. Svetlo vpravo pri dorastaní, vľavo pri cúvaní (pohľad zo severu).
+   Pre južnú pologuľu sa otáča celý rodičovský prvok o 180°. */
+function kresliFazu(p, theta, R) {
+  const c = cestaFazy(theta, R);
+  p.setAttribute('d', c.d);
+  p.setAttribute('transform', dorasta(theta) ? '' : 'scale(-1 1)');
+  return c.typ;
+}
+
+/* ===== Tlačidlá ôsmich fáz ===== */
+const KL = [];
+function initKluc() {
+  const box = $('#kluc');
+  for (let i = 0; i < 8; i++) {
+    const b = document.createElement('button');
+    const svg = el('svg', { viewBox: '-20 -20 40 40', 'aria-hidden': 'true' }, b);
+    const g = el('g', {}, svg);
+    el('circle', { r: 17, fill: F_TMA, stroke: 'rgba(255,255,255,.3)' }, g);
+    const p = el('path', { fill: F_SVETLO }, g);
+    const s = document.createElement('span'); s.textContent = TEXTY.fazy[i]; b.appendChild(s);
+    b.onclick = () => nastavDen(i * PERIODA / 8, true);
+    box.appendChild(b);
+    KL.push({ b, g, p });
+  }
+}
+
+/* Nastaví deň cyklu. ruka = zmenil to žiak (vtedy animáciu zastavíme). */
+function nastavDen(d, ruka) {
+  S.den = Math.max(0, Math.min(PERIODA, d));
+  if (ruka) { zastav(); $('#dnesInfo').hidden = true; }
+  S.prekreslit = true;
+}
+function zastav() { S.hra = false; $('#bHra').textContent = TEXTY.ui.spustit; }
+
+/* ===== Hlavné kreslenie ===== */
+function kresli() {
+  const th = uholFazy(S.den), f = osvetlenaCast(th), idx = indexFazy(S.den);
+  const otoc = S.sever ? '' : 'rotate(180)';
+
+  // Scéna zhora
+  const [mx, my] = poloha(th, RD);
+  SC.m.setAttribute('transform', `translate(${mx.toFixed(2)} ${my.toFixed(2)})`);
+  const k = Math.atan2(ZY - my, ZX - mx) / DEG;    // smer od Mesiaca k Zemi
+  SC.smer.setAttribute('transform', `rotate(${k.toFixed(2)})`);
+  SC.zn.style.display = S.znacka ? '' : 'none';
+  const [z1x, z1y] = poloha(th, RZ + 4), [z2x, z2y] = poloha(th, RD - RM - 6);
+  Object.entries({ x1: z1x, y1: z1y, x2: z2x, y2: z2y }).forEach(([a, v]) => SC.ciara.setAttribute(a, v.toFixed(2)));
+  const [px, py] = poloha(th, RD - 46);
+  SC.popis.setAttribute('x', px.toFixed(1)); SC.popis.setAttribute('y', py.toFixed(1));
+  SC.nahlady.forEach((n, i) => {
+    kresliFazu(n.p, n.th, 16);
+    n.vnut.setAttribute('transform', otoc);
+    const on = i === idx;
+    n.kruh.setAttribute('stroke', on ? '#f3b453' : 'rgba(140,160,215,.35)');
+    n.kruh.setAttribute('stroke-width', on ? 3.5 : 1.5);
+    n.kruh.setAttribute('r', on ? 23 : 21);
+  });
+  SC.svg.setAttribute('aria-label', sablona(TEXTY.scena.aria, { faza: TEXTY.fazy[idx] }));
+
+  // Pohľad zo Zeme
+  const typ = kresliFazu(PO.cesta, th, RP);
+  PO.svetlo.style.display = typ === 'nov' ? 'none' : '';
+  PO.otoc.setAttribute('transform', otoc);
+  PO.zn.style.display = S.znacka ? '' : 'none';
+  $('#svgPohlad').setAttribute('aria-label', sablona(TEXTY.pohlad.aria, { faza: TEXTY.fazy[idx], p: nf(f * 100) }));
+
+  // Údaje
+  $('#pFaza').textContent = TEXTY.fazy[idx].charAt(0).toUpperCase() + TEXTY.fazy[idx].slice(1);
+  $('#pTrend').textContent = typ !== 'cast' ? TEXTY.pohlad.nic : dorasta(th) ? TEXTY.pohlad.dorasta : TEXTY.pohlad.cuva;
+  $('#pTrend').style.color = typ !== 'cast' ? 'var(--muted)' : dorasta(th) ? 'var(--green)' : 'var(--violet)';
+  $('#pVek').innerHTML = '<b>' + sablona(TEXTY.pohlad.dni, { d: nf(S.den, 1) }) + '</b>';
+  $('#pOsv').innerHTML = '<b>' + nf(f * 100) + ' %</b>';
+  $('#pPruh').style.width = (f * 100).toFixed(2) + '%';
+  $('#pPopis').textContent = TEXTY.popisFaz[idx];
+  $('#pStrana').innerHTML = S.sever ? TEXTY.pohlad.stranaSever : TEXTY.pohlad.stranaJuh;
+
+  // Ovládanie
+  const sl = $('#den');
+  if (document.activeElement !== sl) sl.value = S.den.toFixed(2);
+  $('#denVal').textContent = nf(S.den, 1);
+  KL.forEach((o, i) => {
+    kresliFazu(o.p, i * 45, 17);
+    o.g.setAttribute('transform', otoc);
+    o.b.classList.toggle('on', i === idx);
+    o.b.setAttribute('aria-pressed', i === idx);
+  });
+}
+
+/* ===== Ovládacie prvky ===== */
+function initOvladanie() {
+  const hra = $('#bHra');
+  hra.textContent = TEXTY.ui.spustit;
+  hra.onclick = () => {
+    S.hra = !S.hra;
+    if (S.hra && S.den >= PERIODA - 0.01) S.den = 0;
+    hra.textContent = S.hra ? TEXTY.ui.pauza : TEXTY.ui.spustit;
+    $('#dnesInfo').hidden = true;
+  };
+  $('#den').addEventListener('input', e => nastavDen(+e.target.value, true));
+  const rych = $('#rych');
+  const ukazRych = () => { S.rych = +rych.value; $('#rychVal').textContent = nf(S.rych, 1); };
+  rych.addEventListener('input', ukazRych); ukazRych();
+
+  $('#bDnes').onclick = () => {
+    const teraz = Date.now(), vek = vekPodlaDatumu(teraz);
+    nastavDen(vek, true);
+    const datum = new Date(teraz).toLocaleDateString('sk-SK', { day: 'numeric', month: 'long', year: 'numeric' });
+    const box = $('#dnesInfo');
+    box.innerHTML = sablona(TEXTY.ui.dnesInfo, { datum, vek: nf(vek, 1) });
+    box.hidden = false;
+  };
+
+  // Prepínače pologule sú na viacerých kartách – všetky menia ten istý stav
+  $$('[data-pol]').forEach(b => { b.onclick = () => nastavPologulu(b.dataset.pol === 'sever'); });
+
+  const znacka = zap => {
+    S.znacka = zap; S.prekreslit = true;
+    $('#bZnZap').classList.toggle('on', zap); $('#bZnVyp').classList.toggle('on', !zap);
+    $('#bZnZap').setAttribute('aria-pressed', zap); $('#bZnVyp').setAttribute('aria-pressed', !zap);
+  };
+  $('#bZnZap').onclick = () => znacka(true);
+  $('#bZnVyp').onclick = () => znacka(false);
+  znacka(true);
+}
+
+/* Severná / južná pologuľa – spoločné pre všetky karty. */
+function nastavPologulu(sever) {
+  S.sever = sever; S.prekreslit = true; OB.prekreslit = true;
+  $$('[data-pol]').forEach(b => { const on = (b.dataset.pol === 'sever') === sever; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  if (OB.sky) { obTabulka(); kresliCoje(); }
+}
+
+/* =====================================================================
+   KARTA: OBLOHA – kedy Mesiac vidíme
+   ===================================================================== */
+const OB = { hod: 20, hra: false, rych: 2, prekreslit: true, kluc: '' };
+const OBZ = 260;   // výška obzoru vo viewBoxe 640 × 320
+
+/* Pás oblohy so Slnkom a Mesiacom. Použije sa aj v karte Omyly. */
+function vytvorOblohu(svg) {
+  const O = {};
+  O.bg = el('rect', { x: 0, y: 0, width: 640, height: 320 }, svg);
+  O.hviezdy = el('g', {}, svg);
+  [[60, 40], [130, 92], [210, 30], [300, 72], [380, 26], [450, 104], [520, 50], [600, 86], [92, 160], [560, 170], [250, 140], [420, 190]]
+    .forEach(([x, y], i) => el('circle', { cx: x, cy: y, r: i % 3 ? 1.3 : 2, fill: '#e2e8f5' }, O.hviezdy));
+  el('path', { d: `M50 ${OBZ} A270 210 0 0 1 590 ${OBZ}`, fill: 'none', stroke: 'rgba(226,232,245,.3)', 'stroke-width': 2, 'stroke-dasharray': '4 6' }, svg);
+  O.slnko = el('g', {}, svg);
+  el('circle', { r: 36, fill: 'rgba(255,200,90,.25)' }, O.slnko);
+  el('circle', { r: 22, fill: '#ffd166', stroke: '#fff3c4', 'stroke-width': 2 }, O.slnko);
+  O.mesiac = el('g', {}, svg);
+  O.mOtoc = el('g', {}, O.mesiac);
+  O.mTma = el('circle', { r: 20, fill: F_TMA }, O.mOtoc);
+  O.mSvetlo = el('path', { fill: F_SVETLO }, O.mOtoc);
+  O.mObrys = el('circle', { r: 20, fill: 'none', stroke: 'rgba(255,255,255,.4)' }, O.mOtoc);
+  el('rect', { x: 0, y: OBZ, width: 640, height: 320 - OBZ, fill: '#13221a' }, svg);
+  el('line', { x1: 0, y1: OBZ, x2: 640, y2: OBZ, stroke: '#3f6b4c', 'stroke-width': 2 }, svg);
+  O.tL = el('text', { x: 12, y: OBZ + 38, class: 'stxt', fill: '#e2e8f5' }, svg);
+  O.tR = el('text', { x: 628, y: OBZ + 38, class: 'stxt', fill: '#e2e8f5', 'text-anchor': 'end' }, svg);
+  O.tS = el('text', { x: 320, y: OBZ + 38, class: 'stxt', fill: '#a3adc6', 'text-anchor': 'middle' }, svg);
+  sledujPismo(svg, 640);
+
+  /* Nakreslí oblohu o hodine hod pri uhle fázy theta. Na severe sa pozeráme na juh (východ vľavo),
+     na juhu na sever (východ vpravo). */
+  O.kresli = (hod, theta, sever) => {
+    const T = TEXTY.obloha;
+    const xu = u => sever ? 50 + 540 * u : 590 - 540 * u, yu = u => OBZ - 210 * Math.sin(Math.PI * u);
+    const vys = Math.sin(2 * Math.PI * (hod - 6) / 24);           // kladné = Slnko nad obzorom
+    const b = clamp((vys + 0.12) / 0.4, 0, 1);                      // jas oblohy 0 – 1
+    const mix = (n, d) => Math.round(n + (d - n) * b);
+    O.bg.setAttribute('fill', `rgb(${mix(6, 70)},${mix(10, 126)},${mix(22, 190)})`);
+    O.hviezdy.setAttribute('opacity', ((1 - b) * 0.9).toFixed(2));
+    const uS = polohaNaOblohe(6, hod);
+    O.slnko.style.display = uS === null ? 'none' : '';
+    if (uS !== null) O.slnko.setAttribute('transform', `translate(${xu(uS).toFixed(1)} ${yu(uS).toFixed(1)})`);
+    const vM = vychodMesiaca(theta), uM = polohaNaOblohe(vM, hod);
+    O.mesiac.style.display = uM === null ? 'none' : '';
+    if (uM !== null) O.mesiac.setAttribute('transform', `translate(${xu(uM).toFixed(1)} ${yu(uM).toFixed(1)})`);
+    kresliFazu(O.mSvetlo, theta, 20);
+    O.mOtoc.setAttribute('transform', sever ? '' : 'rotate(180)');
+    O.mTma.setAttribute('opacity', (1 - 0.85 * b).toFixed(2));     // cez deň tmavá časť splýva s oblohou
+    O.mObrys.setAttribute('opacity', (1 - 0.8 * b).toFixed(2));
+    O.tL.textContent = sever ? T.vychod : T.zapad;
+    O.tR.textContent = sever ? T.zapad : T.vychod;
+    O.tS.textContent = sever ? T.naJuh : T.naSever;
+    return { slnkoHore: uS !== null, mesiacHore: uM !== null, vychod: vM };
+  };
+  return O;
+}
+
+function initObloha() {
+  OB.sky = vytvorOblohu($('#svgObloha'));
+  const T = TEXTY.obloha;
+  $('#obUvod').innerHTML = sablona(T.uvod, { min: nf(24 * 60 / PERIODA) });
+  $('#obZvyraz').innerHTML = sablona(T.zvyraz, { v: fmtCas(vychodMesiaca(90)), p: fmtCas(vychodMesiaca(270)) });
+  const hra = $('#obHra');
+  const ukazHra = () => { hra.textContent = OB.hra ? T.pauza : T.spustit; };
+  hra.onclick = () => { OB.hra = !OB.hra; ukazHra(); };
+  OB.ukazHra = ukazHra; ukazHra();
+  $('#obHod').addEventListener('input', e => { OB.hod = +e.target.value; OB.hra = false; ukazHra(); OB.prekreslit = true; });
+  $('#obDen').addEventListener('input', e => nastavDen(+e.target.value, true));
+  obTabulka();
+}
+
+/* Tabuľka ôsmich fáz – časy sa počítajú z tých istých funkcií ako obloha. */
+function obTabulka() {
+  const T = TEXTY.obloha, tb = $('#obTab');
+  tb.innerHTML = '';
+  for (let i = 0; i < 8; i++) {
+    const th = i * 45, tr = document.createElement('tr');
+    tr.tabIndex = 0; tr.setAttribute('role', 'button');
+    const nm = document.createElement('td'); nm.className = 'nm';
+    nm.appendChild(miniDisk(th, S.sever, 16));
+    const sp = document.createElement('span'); sp.innerHTML = `<b>${velke(TEXTY.fazy[i])}</b><small>${T.kedy[i]}</small>`;
+    nm.appendChild(sp);
+    const cezDen = osvetlenaCast(th) < 0.03 ? T.cezDenNov : hodinyCezDen(th) >= 3 ? T.cezDenAno : T.cezDenNie;
+    tr.appendChild(nm);
+    tr.insertAdjacentHTML('beforeend', `<td class="cas">${fmtCas(vychodMesiaca(th))}</td><td class="cas">${fmtCas(zapadMesiaca(th))}</td><td class="den">${cezDen}</td>`);
+    const ff = () => nastavDen(i * PERIODA / 8, true);
+    tr.onclick = ff;
+    tr.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ff(); } };
+    tb.appendChild(tr);
+  }
+  OB.prekreslit = true;
+}
+
+function tikObloha(dt) {
+  if (OB.hra) { OB.hod = (OB.hod + OB.rych * dt) % 24; }
+  const kluc = OB.hod.toFixed(3) + '|' + S.den.toFixed(3) + '|' + S.sever;
+  if (kluc === OB.kluc && !OB.prekreslit) return;
+  OB.kluc = kluc; OB.prekreslit = false;
+  const T = TEXTY.obloha, th = uholFazy(S.den), idx = indexFazy(S.den);
+  const r = OB.sky.kresli(OB.hod, th, S.sever);
+  let st, cls = 'hlaska';
+  if (!r.mesiacHore) st = sablona(T.stav.dole, { h: fmtTrvanie(mod24(r.vychod - OB.hod)) });
+  else if (osvetlenaCast(th) < 0.03) st = T.stav.nov;
+  else if (r.slnkoHore) { st = T.stav.oba; cls += ' ok'; }
+  else { st = T.stav.noc; cls += ' info'; }
+  const veta = st === T.stav.oba ? st : st + ' ' + (r.slnkoHore ? T.slnkoHore : T.slnkoDole);
+  const stav = $('#obStav');
+  if (stav.innerHTML !== veta) { stav.innerHTML = veta; stav.className = cls; }
+  $('#svgObloha').setAttribute('aria-label', sablona(T.aria, { c: fmtCas(OB.hod), s: stav.textContent }));
+  $('#obCasy').innerHTML = sablona(T.casy, { f: velke(TEXTY.fazy[idx]), v: fmtCas(vychodMesiaca(th)), z: fmtCas(zapadMesiaca(th)) });
+  $('#obHodVal').textContent = fmtCas(OB.hod);
+  const hs = $('#obHod'); if (document.activeElement !== hs) hs.value = OB.hod;
+  const ds = $('#obDen'); if (document.activeElement !== ds) ds.value = S.den.toFixed(2);
+  $('#obDenVal').textContent = nf(S.den, 1) + ' · ' + TEXTY.fazy[idx];
+  [...$('#obTab').children].forEach((tr, i) => tr.classList.toggle('on', i === idx));
+}
+
+/* =====================================================================
+   KARTA: ČO JE ČO
+   ===================================================================== */
+const CJ = { vyber: 'osvetlena' };
+function initCoje() {
+  const svg = $('#svgCoje'), T = TEXTY.coje;
+  const MX = 470, MY = 240, MR = 62;      // Mesiac (je na mieste prvej štvrte – pod Zemou)
+  for (let y = 40; y <= 300; y += 52) el('line', { x1: 40, y1: y, x2: 632, y2: y, stroke: 'rgba(243,180,83,.16)', 'stroke-width': 2 }, svg);
+  // Slnko
+  const sl = el('g', { 'data-pojem': 'slnko' }, svg);
+  el('circle', { cx: -40, cy: 170, r: 112, fill: 'rgba(255,200,90,.14)' }, sl);
+  el('circle', { cx: -40, cy: 170, r: 82, fill: '#ffd166' }, sl);
+  el('text', { x: 8, y: 334, class: 'stxt', fill: '#ffd88a' }, sl).textContent = T.slnko;
+  // Zem
+  const zm = el('g', { 'data-pojem': 'zem' }, svg);
+  kresliZem(zm, MX, 80, 36);
+  el('text', { x: MX + 48, y: 88, class: 'stxt', fill: '#e2e8f5' }, zm).textContent = T.zem;
+  el('line', { x1: MX, y1: 120, x2: MX, y2: MY - MR - 16, stroke: 'rgba(111,180,255,.45)', 'stroke-width': 1.5, 'stroke-dasharray': '4 5' }, svg);
+  // Mesiac (tmavý kotúč + osvetlená ľavá polovica)
+  const ms = el('g', { 'data-pojem': 'mesiac' }, svg);
+  el('circle', { cx: MX, cy: MY, r: MR, fill: F_TMA, stroke: 'rgba(255,255,255,.3)' }, ms);
+  el('path', { d: `M${MX} ${MY - MR} A${MR} ${MR} 0 0 0 ${MX} ${MY + MR} Z`, fill: F_SVETLO }, ms);
+  el('text', { x: MX, y: 334, class: 'stxt', fill: '#e2e8f5', 'text-anchor': 'middle' }, ms).textContent = T.mesiac;
+  // Zvýraznenie osvetlenej polovice (vidno len po výbere)
+  el('path', { d: `M${MX} ${MY - MR} A${MR} ${MR} 0 0 0 ${MX} ${MY + MR} Z`, fill: 'none', stroke: '#ffd88a', 'stroke-width': 5, class: 'ovr', 'data-pojem': 'osvetlena' }, svg);
+  // Terminátor – hranica svetla a tmy
+  el('line', { x1: MX, y1: MY - MR, x2: MX, y2: MY + MR, stroke: '#ff7a6b', 'stroke-width': 3.5, 'stroke-dasharray': '7 5', 'data-pojem': 'terminator' }, svg);
+  // Privrátená (k Zemi, hore) a odvrátená (od Zeme, dole) strana
+  const R2 = MR + 11;
+  el('path', { d: `M${MX - R2} ${MY} A${R2} ${R2} 0 0 1 ${MX + R2} ${MY}`, fill: 'none', stroke: '#6fb4ff', 'stroke-width': 3.5, 'stroke-dasharray': '6 5', 'data-pojem': 'privratena' }, svg);
+  el('path', { d: `M${MX + R2} ${MY} A${R2} ${R2} 0 0 1 ${MX - R2} ${MY}`, fill: 'none', stroke: '#b9a3ff', 'stroke-width': 3.5, 'stroke-dasharray': '6 5', 'data-pojem': 'odvratena' }, svg);
+  // Neviditeľné plochy na klikanie
+  const hit = (p, at, tag = 'path') => { const e = el(tag, Object.assign({ fill: 'transparent', 'data-hit': p }, at), svg); return e; };
+  hit('slnko', { cx: -40, cy: 170, r: 112 }, 'circle');
+  hit('zem', { cx: MX, cy: 80, r: 40 }, 'circle');
+  hit('privratena', { d: `M${MX - R2} ${MY} A${R2} ${R2} 0 0 1 ${MX + R2} ${MY}`, fill: 'none', stroke: 'transparent', 'stroke-width': 20 });
+  hit('odvratena', { d: `M${MX + R2} ${MY} A${R2} ${R2} 0 0 1 ${MX - R2} ${MY}`, fill: 'none', stroke: 'transparent', 'stroke-width': 20 });
+  hit('osvetlena', { d: `M${MX - 8} ${MY - MR} A${MR} ${MR} 0 0 0 ${MX - 8} ${MY + MR} Z` });
+  hit('mesiac', { d: `M${MX + 8} ${MY - MR} A${MR} ${MR} 0 0 1 ${MX + 8} ${MY + MR} Z` });
+  hit('terminator', { x1: MX, y1: MY - MR, x2: MX, y2: MY + MR, stroke: 'transparent', 'stroke-width': 18 }, 'line');
+  hit('mesiac', { x: MX - 70, y: 306, width: 140, height: 34 }, 'rect');
+  $$('#svgCoje [data-hit]').forEach(h => h.addEventListener('click', () => { CJ.vyber = h.dataset.hit; kresliCoje(); }));
+  sledujPismo(svg, 640);
+
+  // Tlačidlá pojmov a fáz
+  const pj = $('#cjPojmy');
+  for (const k in T.pojmy) {
+    const b = document.createElement('button'); b.dataset.p = k; b.textContent = T.pojmy[k].n;
+    b.onclick = () => { CJ.vyber = k; kresliCoje(); };
+    pj.appendChild(b);
+  }
+  const fz = $('#cjFazy');
+  for (let i = 0; i < 8; i++) {
+    const b = document.createElement('button'); b.dataset.p = 'f' + i;
+    const s = document.createElement('span'); s.textContent = TEXTY.fazy[i];
+    b.append(miniDisk(i * 45, S.sever, 17), s);
+    b.onclick = () => { CJ.vyber = 'f' + i; nastavDen(i * PERIODA / 8, true); kresliCoje(); };
+    fz.appendChild(b);
+  }
+}
+
+function kresliCoje() {
+  const T = TEXTY.coje, v = CJ.vyber, svg = $('#svgCoje');
+  const jePojem = !!T.pojmy[v];
+  svg.classList.toggle('vyber', jePojem);
+  $$('#svgCoje [data-pojem]').forEach(e => e.classList.toggle('zvyr', e.dataset.pojem === v));
+  $$('#cjPojmy button, #cjFazy button').forEach(b => { const on = b.dataset.p === v; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  // ikony fáz podľa pologule
+  $$('#cjFazy button').forEach((b, i) => b.replaceChild(miniDisk(i * 45, S.sever, 17), b.querySelector('svg')));
+  // popis
+  const box = $('#cjPopis'); box.innerHTML = '';
+  const txt = document.createElement('div');
+  if (jePojem) {
+    txt.innerHTML = `<h3>${T.pojmy[v].n}</h3><p>${T.pojmy[v].t}</p>`;
+    if (v === 'terminator') box.appendChild(miniDisk(60, S.sever, 44, { terminator: true }));
+    svg.setAttribute('aria-label', T.pojmy[v].n + ': ' + T.pojmy[v].t);
+  } else {
+    const i = +v.slice(1), th = i * 45;
+    box.appendChild(miniDisk(th, S.sever, 44));
+    txt.innerHTML = `<h3>${velke(TEXTY.fazy[i])}</h3><p>${TEXTY.popisFaz[i]}</p><p class="mini">${sablona(T.fazaInfo, { d: nf(i * PERIODA / 8, 1), p: nf(osvetlenaCast(th) * 100) })}</p>`;
+  }
+  box.appendChild(txt);
+  // Pomôcka D a C – písmeno sa určí z toho, na ktorej strane disk naozaj svieti
+  const dc = $('#cjDC'); dc.innerHTML = '';
+  [60, 300].forEach(th => {
+    const vpravo = svietiVpravo(th, S.sever), f = document.createElement('figure');
+    const r = document.createElement('div'); r.className = 'riadokDC';
+    const d = miniDisk(th, S.sever, 40);
+    if (vpravo) el('line', { x1: 0, y1: -40, x2: 0, y2: 40, stroke: '#ffd88a', 'stroke-width': 3, 'stroke-dasharray': '6 4' }, d);
+    const p = document.createElement('span'); p.className = 'pismeno'; p.textContent = vpravo ? 'D' : 'C';
+    r.append(d, p);
+    const c = document.createElement('figcaption'); c.textContent = TEXTY.fazy[indexFazy(th / 360 * PERIODA)];
+    f.append(r, c); dc.appendChild(f);
+  });
+  $('#cjDCText').innerHTML = S.sever ? T.dcSever : T.dcJuh;
+}
+
+/* =====================================================================
+   KARTA: ČASTÉ OMYLY – každý omyl má malú animáciu
+   ===================================================================== */
+const OM = { hra: !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches), anim: [] };
+
+/* Slnko na ľavom okraji a rovnobežné lúče */
+function slnkoVlavo(svg, cy, vyska) {
+  for (let y = 25; y < vyska; y += 50) el('line', { x1: 40, y1: y, x2: 636, y2: y, stroke: 'rgba(243,180,83,.15)', 'stroke-width': 2 }, svg);
+  el('circle', { cx: -60, cy, r: 120, fill: 'rgba(255,200,90,.12)' }, svg);
+  el('circle', { cx: -60, cy, r: 92, fill: '#ffd166' }, svg);
+}
+function nastavText(e, html) { if (e.innerHTML !== html) e.innerHTML = html; }
+
+/* 1. Fázy robí tieň Zeme */
+function omyl1(svg, st) {
+  const T = TEXTY.omyly, EX = 300, EY = 150, R = 115;
+  slnkoVlavo(svg, EY, 300);
+  el('polygon', { points: `${EX},${EY - 24} 640,${EY - 17} 640,${EY + 17} ${EX},${EY + 24}`, fill: 'rgba(0,0,0,.6)', stroke: 'rgba(163,173,198,.35)' }, svg);
+  el('text', { x: 632, y: EY - 30, class: 'stxt', fill: '#a3adc6', 'text-anchor': 'end' }, svg).textContent = T.tien;
+  el('circle', { cx: EX, cy: EY, r: R, fill: 'none', stroke: 'rgba(163,173,198,.4)', 'stroke-width': 2, 'stroke-dasharray': '3 6' }, svg);
+  kresliZem(svg, EX, EY, 24);
+  const m = mesiacZhora(svg, 14);
+  const pz = el('g', { transform: 'translate(590 50)' }, svg);
+  el('circle', { r: 38, fill: '#060a14', stroke: 'rgba(140,160,215,.35)' }, pz);
+  const pg = el('g', {}, pz);
+  el('circle', { r: 30, fill: F_TMA, stroke: 'rgba(255,255,255,.3)' }, pg);
+  const pp = el('path', { fill: F_SVETLO }, pg);
+  let th = 300;
+  return {
+    tik(dt) { th = do360(th + 30 * dt); },
+    kresli() {
+      const x = EX - R * Math.cos(th * DEG), y = EY + R * Math.sin(th * DEG);
+      m.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+      kresliFazu(pp, th, 30); pg.setAttribute('transform', S.sever ? '' : 'rotate(180)');
+      const f = TEXTY.fazy[indexFazy(th / 360 * PERIODA)];
+      nastavText(st, th < 20 || th > 340 ? T.st1.nov : Math.abs(th - 180) < 15 ? T.st1.spln : sablona(T.st1.inak, { f: velke(f) }));
+    }
+  };
+}
+
+/* 2. Mesiac vidno len v noci – obloha pri prvej štvrti */
+function omyl2(svg, st) {
+  const T = TEXTY.omyly, sky = vytvorOblohu(svg);
+  let hod = 10;
+  return {
+    tik(dt) { hod += 1.6 * dt; if (hod > 23) hod = 9; },
+    kresli() {
+      const r = sky.kresli(hod, 90, S.sever);
+      nastavText(st, sablona(T.st2, { c: fmtCas(hod), s: r.slnkoHore ? T.hore : T.dole, m: r.mesiacHore ? T.hore : T.dole }) + (r.slnkoHore && r.mesiacHore ? T.oba : ''));
+      st.className = 'hlaska' + (r.slnkoHore && r.mesiacHore ? ' ok' : '');
+    }
+  };
+}
+
+/* 3. Odvrátená strana je stále tmavá */
+function omyl3(svg, st) {
+  const T = TEXTY.omyly, EX = 390, EY = 150, R = 105, r = 28;
+  slnkoVlavo(svg, EY, 300);
+  el('circle', { cx: EX, cy: EY, r: R, fill: 'none', stroke: 'rgba(163,173,198,.4)', 'stroke-width': 2, 'stroke-dasharray': '3 6' }, svg);
+  kresliZem(svg, EX, EY, 22);
+  const m = mesiacZhora(svg, r);
+  const smer = el('g', {}, m);
+  const r2 = r + 7;
+  el('path', { d: `M0 ${-r2} A${r2} ${r2} 0 0 1 0 ${r2}`, fill: 'none', stroke: '#6fb4ff', 'stroke-width': 3, 'stroke-dasharray': '5 4' }, smer);
+  el('path', { d: `M0 ${r2} A${r2} ${r2} 0 0 1 0 ${-r2}`, fill: 'none', stroke: '#b9a3ff', 'stroke-width': 4, 'stroke-dasharray': '8 4' }, smer);
+  let th = 200;
+  return {
+    tik(dt) { th = do360(th + 24 * dt); },
+    kresli() {
+      const x = EX - R * Math.cos(th * DEG), y = EY + R * Math.sin(th * DEG);
+      m.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+      smer.setAttribute('transform', `rotate(${(Math.atan2(EY - y, EX - x) / DEG).toFixed(1)})`);
+      const p = osvetlenaCast(th);
+      nastavText(st, sablona(T.st3, { o: nf((1 - p) * 100), p: nf(p * 100) }) + (th < 15 || th > 345 ? T.st3nov : ''));
+    }
+  };
+}
+
+/* 4. Mesiac sa neotáča – vľavo bez otáčania, vpravo skutočnosť */
+function omyl4(svg, st) {
+  const T = TEXTY.omyly, R = 92, CY = 170, pan = [];
+  [[160, false], [480, true]].forEach(([cx, otaca]) => {
+    el('text', { x: cx, y: 30, class: 'stxt', fill: otaca ? '#7fdc8f' : '#ff7a6b', 'text-anchor': 'middle' }, svg).textContent = otaca ? T.st4P : T.st4L;
+    el('circle', { cx, cy: CY, r: R, fill: 'none', stroke: 'rgba(163,173,198,.4)', 'stroke-width': 2, 'stroke-dasharray': '3 6' }, svg);
+    kresliZem(svg, cx, CY, 18);
+    const m = el('g', {}, svg), rot = el('g', {}, m);
+    el('circle', { r: 21, fill: '#c9c2a8', stroke: 'rgba(255,255,255,.4)' }, rot);
+    el('ellipse', { cx: -6, cy: -7, rx: 7, ry: 5, fill: '#a39c84' }, rot);
+    el('ellipse', { cx: -4, cy: 9, rx: 5, ry: 4, fill: '#a39c84' }, rot);
+    const zn = el('g', { transform: 'translate(11 0)' }, rot);
+    el('circle', { r: 6.5, fill: '#fff' }, zn);
+    el('circle', { r: 4.2, fill: 'none', stroke: '#e8483a', 'stroke-width': 2 }, zn);
+    el('circle', { r: 1.6, fill: '#e8483a' }, zn);
+    pan.push({ cx, otaca, m, rot });
+  });
+  let fi = 180;
+  return {
+    tik(dt) { fi = do360(fi + 30 * dt); },
+    kresli() {
+      const vidno = pan.map(p => {
+        const x = p.cx + R * Math.cos(fi * DEG), y = CY - R * Math.sin(fi * DEG);
+        const kZemi = Math.atan2(CY - y, p.cx - x) / DEG;          // smer od Mesiaca k Zemi
+        const uhol = p.otaca ? kZemi : 0;                           // bez otáčania mieri značka stále doprava
+        p.m.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+        p.rot.setAttribute('transform', `rotate(${uhol.toFixed(1)})`);
+        return Math.cos((uhol - kZemi) * DEG) > 0.3;
+      });
+      nastavText(st, sablona(T.st4, { a: vidno[0] ? T.ano : T.nie, b: vidno[1] ? T.ano : T.nie }));
+    }
+  };
+}
+
+/* 5. Prečo nie je zatmenie pri každom splne – bočný pohľad */
+function omyl5(svg, st) {
+  const T = TEXTY.omyly, EX = 300, EY = 150, D = 200, A = 110, RM5 = 9;
+  const KROK = 360 * PERIODA / ZATMENNY_ROK;          // o koľko sa pootočí smer k Slnku za jeden spln (°)
+  const HW = 18 - 8 * D / 340;                        // polovičná šírka tieňa vo vzdialenosti Mesiaca
+  el('circle', { cx: -70, cy: EY, r: 112, fill: 'rgba(255,200,90,.12)' }, svg);
+  el('circle', { cx: -70, cy: EY, r: 100, fill: '#ffd166' }, svg);
+  el('line', { x1: 30, y1: EY, x2: 640, y2: EY, stroke: 'rgba(226,232,245,.35)', 'stroke-width': 1.5, 'stroke-dasharray': '6 6' }, svg);
+  // legenda vľavo hore: vzorka čiary + popis
+  el('line', { x1: 44, y1: 20, x2: 74, y2: 20, stroke: 'rgba(226,232,245,.6)', 'stroke-width': 1.5, 'stroke-dasharray': '6 6' }, svg);
+  el('text', { x: 82, y: 26, class: 'stxt', fill: '#a3adc6' }, svg).textContent = T.drahaZeme;
+  el('polygon', { points: `${EX},${EY - 18} 640,${EY - 10} 640,${EY + 10} ${EX},${EY + 18}`, fill: 'rgba(0,0,0,.65)', stroke: 'rgba(163,173,198,.35)' }, svg);
+  el('text', { x: 632, y: EY + 44, class: 'stxt', fill: '#a3adc6', 'text-anchor': 'end' }, svg).textContent = T.tien;
+  const draha = el('line', { stroke: '#6fb4ff', 'stroke-width': 2, 'stroke-dasharray': '6 5' }, svg);
+  const zem = el('g', { transform: `translate(${EX} ${EY})` }, svg);
+  el('circle', { r: 18, fill: '#2f6fc4' }, zem);
+  el('path', { d: 'M0 -18 A18 18 0 0 1 0 18 Z', fill: 'rgba(2,4,10,.6)' }, zem);
+  const nov = el('circle', { r: RM5, fill: F_TMA, stroke: 'rgba(255,255,255,.35)' }, svg);
+  const spln = el('circle', { r: RM5, stroke: 'rgba(255,255,255,.5)' }, svg);
+  const S5 = { k: 0, p: 1, cas: 0, zat: 0 };
+  const fi = k => 40 + k * KROK;
+  const vyska = k => A * Math.sin(fi(k) * DEG);
+  const jeZatmenie = k => Math.abs(vyska(k)) < HW + RM5;
+  S5.zat = jeZatmenie(0) ? 1 : 0;
+  return {
+    tik(dt) {
+      S5.cas += dt;
+      if (S5.p < 1) S5.p = Math.min(1, S5.p + dt / 0.6);
+      else if (S5.cas > 1.8) {               // ďalší spln
+        S5.cas = 0; S5.p = 0; S5.k++;
+        if (S5.k >= 24) { S5.k = 0; S5.zat = 0; }
+        if (jeZatmenie(S5.k)) S5.zat++;
+      }
+    },
+    kresli() {
+      const p = S5.p, e = p * p * (3 - 2 * p);
+      const h = S5.k === 0 ? vyska(0) : vyska(S5.k - 1) + (vyska(S5.k) - vyska(S5.k - 1)) * e;
+      draha.setAttribute('x1', EX - D); draha.setAttribute('y1', (EY + h).toFixed(1));
+      draha.setAttribute('x2', EX + D); draha.setAttribute('y2', (EY - h).toFixed(1));
+      nov.setAttribute('cx', EX - D); nov.setAttribute('cy', (EY + h).toFixed(1));
+      spln.setAttribute('cx', EX + D); spln.setAttribute('cy', (EY - h).toFixed(1));
+      const zat = p >= 1 && jeZatmenie(S5.k);
+      spln.setAttribute('fill', zat ? '#a8432f' : F_SVETLO);
+      const stav = !(p >= 1) ? '…' : zat ? T.st5zat : vyska(S5.k) > 0 ? T.st5nad : T.st5pod;
+      nastavText(st, sablona(T.st5, { k: S5.k + 1, stav, z: S5.zat }));
+      st.className = 'hlaska' + (zat ? ' ok' : '');
+    }
+  };
+}
+
+/* 6. Pre zvedavých: 27,3 dňa obeh, 29,5 dňa cyklus fáz */
+function omyl6(svg, st) {
+  const T = TEXTY.omyly, SX = 40, SY = 330, RZD = 400, RMD = 58;
+  el('circle', { cx: SX, cy: SY, r: 62, fill: 'rgba(255,200,90,.14)' }, svg);
+  el('circle', { cx: SX, cy: SY, r: 46, fill: '#ffd166' }, svg);
+  el('circle', { cx: SX, cy: SY, r: RZD, fill: 'none', stroke: 'rgba(163,173,198,.35)', 'stroke-width': 2, 'stroke-dasharray': '3 6' }, svg);
+  // Zem a Mesiac na začiatku (bledé)
+  const duch = el('g', { opacity: 0.3 }, svg);
+  kresliZem(duch, SX + RZD, SY, 16);
+  mesiacZhora(duch, 9).setAttribute('transform', `translate(${SX + RZD - RMD} ${SY})`);
+  const kHv = el('line', { stroke: '#a3adc6', 'stroke-width': 2.5, 'stroke-dasharray': '6 5' }, svg);
+  const tHv = el('text', { class: 'stxt', fill: '#a3adc6', 'text-anchor': 'end' }, svg); tHv.textContent = T.kHviezdam;
+  const kSl = el('line', { stroke: '#f3b453', 'stroke-width': 2.5, 'stroke-dasharray': '6 5' }, svg);
+  const tSl = el('text', { class: 'stxt', fill: '#ffd88a', 'text-anchor': 'end' }, svg); tSl.textContent = T.kSlnku;
+  const draha = el('circle', { r: RMD, fill: 'none', stroke: 'rgba(163,173,198,.4)', 'stroke-width': 1.5, 'stroke-dasharray': '3 5' }, svg);
+  const zem = el('g', {}, svg); kresliZem(zem, 0, 0, 16);
+  const m = el('g', {}, svg), mr = el('g', {}, m);
+  el('circle', { r: 10, fill: F_TMA, stroke: 'rgba(255,255,255,.35)' }, mr);
+  el('path', { d: 'M0 -10 A10 10 0 0 1 0 10 Z', fill: F_SVETLO }, mr);   // osvetlená polovica smeruje k Slnku (+x po otočení)
+  let d = 0, pauza = 0;
+  return {
+    tik(dt) {
+      if (pauza > 0) { pauza -= dt; if (pauza <= 0) d = 0; return; }
+      d += dt * (d > 25.5 && d < 30.2 ? 0.9 : 4);
+      if (d > 31.5) pauza = 1.2;
+    },
+    kresli() {
+      const a = 360 * d / 365.25 * DEG, ex = SX + RZD * Math.cos(a), ey = SY - RZD * Math.sin(a);
+      const b = (180 + 360 * d / HVIEZDNY) * DEG, mx = ex + RMD * Math.cos(b), my = ey - RMD * Math.sin(b);
+      zem.setAttribute('transform', `translate(${ex.toFixed(1)} ${ey.toFixed(1)})`);
+      draha.setAttribute('cx', ex.toFixed(1)); draha.setAttribute('cy', ey.toFixed(1));
+      const kS = Math.atan2(SY - ey, SX - ex);                         // smer od Zeme k Slnku
+      m.setAttribute('transform', `translate(${mx.toFixed(1)} ${my.toFixed(1)})`);
+      mr.setAttribute('transform', `rotate(${(Math.atan2(SY - my, SX - mx) / DEG).toFixed(1)})`);
+      const L = 92;
+      kHv.setAttribute('x1', ex); kHv.setAttribute('y1', ey); kHv.setAttribute('x2', ex - L); kHv.setAttribute('y2', ey);
+      tHv.setAttribute('x', (ex - L - 4).toFixed(1)); tHv.setAttribute('y', (ey - 10).toFixed(1));
+      const sx2 = ex + L * Math.cos(kS), sy2 = ey + L * Math.sin(kS);
+      kSl.setAttribute('x1', ex); kSl.setAttribute('y1', ey); kSl.setAttribute('x2', sx2.toFixed(1)); kSl.setAttribute('y2', sy2.toFixed(1));
+      tSl.setAttribute('x', (sx2 - 4).toFixed(1)); tSl.setAttribute('y', (sy2 + 30).toFixed(1));
+      const dd = Math.min(d, PERIODA + 0.0001);
+      const t = d >= PERIODA ? T.st6nov : d >= HVIEZDNY ? T.st6obeh : T.st6beh;
+      kHv.setAttribute('stroke', d >= HVIEZDNY && d < PERIODA ? '#ffffff' : '#a3adc6');
+      nastavText(st, sablona(T.st6, { d: nf(dd, 1), t: sablona(t, { hv: nf(HVIEZDNY, 1), sy: nf(PERIODA, 1) }) }));
+      st.className = 'hlaska' + (d >= PERIODA ? ' ok' : d >= HVIEZDNY ? ' info' : '');
+    }
+  };
+}
+
+function initOmyly() {
+  const T = TEXTY.omyly, box = $('#omZoznam');
+  const tvorcovia = [omyl1, omyl2, omyl3, omyl4, omyl5, omyl6];
+  const vysky = [300, 320, 300, 300, 300, 360];
+  T.zoznam.forEach((o, i) => {
+    const c = document.createElement('div'); c.className = 'card omyl';
+    c.innerHTML = `<h3>${o.zvedavi ? `<span class="zv">${T.zvedavi}</span>` : ''}${i + 1}. <span class="zle">${T.omyl}</span> ${o.nazov}</h3>`;
+    const stg = document.createElement('div'); stg.className = 'stage';
+    const svg = el('svg', { viewBox: `0 0 640 ${vysky[i]}`, role: 'img', 'aria-label': o.popis }, stg);
+    const pop = document.createElement('p'); pop.className = 'mini'; pop.textContent = o.popis;
+    const st = document.createElement('div'); st.className = 'hlaska'; st.setAttribute('aria-live', 'off');
+    const op = document.createElement('p'); op.className = 'oprava';
+    op.innerHTML = `<b class="ok">${T.oprava}</b> ` + sablona(o.oprava, { hv: nf(HVIEZDNY, 1), sy: nf(PERIODA, 1) });
+    c.append(stg, pop, st, op); box.appendChild(c);
+    if (i !== 1) sledujPismo(svg, 640);      // obloha (omyl 2) si písmo sleduje sama
+    OM.anim.push(tvorcovia[i](svg, st));
+  });
+  const hra = $('#omHra');
+  const ukaz = () => { hra.textContent = OM.hra ? T.pauza : T.hra; };
+  hra.onclick = () => { OM.hra = !OM.hra; ukaz(); };
+  ukaz();
+  OM.anim.forEach(a => a.kresli());
+}
+function tikOmyly(dt) {
+  if (!OM.hra && !OM.prekreslit) return;
+  OM.prekreslit = false;
+  OM.anim.forEach(a => { if (OM.hra) a.tik(dt); a.kresli(); });
+}
+
+/* =====================================================================
+   KARTA: KVÍZ – otázky sa tvoria náhodne, správna odpoveď sa vždy počíta
+   z tých istých funkcií ako animácia (indexFazy, uholFazy, osvetlenaCast,
+   dorasta, svietiVpravo, vychodMesiaca, zapadMesiaca).
+   ===================================================================== */
+const KV = { uroven: 1, otazky: [] };
+const ZLOZENIE = {
+  1: ['nazovObr', 'nazovObr', 'nazovObr', 'dc', 'dc', 'percento', 'percento', 'poloha', 'poloha', 'poloha'],
+  2: ['nazovObr', 'nazovObr', 'polohaSpat', 'polohaSpat', 'oX', 'oX', 'vychod', 'vychod', 'juhStrana', 'juhStrana'],
+  3: ['nazovObr', 'nazovObr', 'oX', 'oX', 'vychod', 'vychod', 'juhObr', 'juhObr', 'dc', 'poloha']
+};
+/* Je deň bezpečne vnútri jednej fázy (nie na hranici medzi dvoma názvami)? */
+function bezpecne(den) { const i = indexFazy(den); return indexFazy(den - 0.6) === i && indexFazy(den + 0.6) === i; }
+/* Štyri rôzne textové možnosti: správna + najprv „podobné“, potom náhodné. */
+function moznosti(spravna, podobne, vsetky) {
+  const out = [spravna];
+  for (const x of zamiesaj(podobne).concat(zamiesaj(vsetky))) if (out.length < 4 && !out.includes(x)) out.push(x);
+  const z = zamiesaj(out);
+  return { moznosti: z.map(t => ({ text: t })), spravna: z.indexOf(spravna) };
+}
+/* Popis obrázka Mesiaca pre čítačky obrazovky */
+function popisObrazka(theta, sever) {
+  const K = TEXTY.kviz, f = osvetlenaCast(theta);
+  const s = f < HRANICA ? K.obrNic : f > 1 - HRANICA ? K.obrCely : svietiVpravo(theta, sever) ? K.obrVpravo : K.obrVlavo;
+  return sablona(K.obrLabel, { p: nf(f * 100), s });
+}
+/* Malá dráha pre kvíz: 8 polôh s písmenami (perm) alebo Mesiac na polohe k. */
+function miniDraha(opt) {
+  const svg = el('svg', { viewBox: '0 0 320 240', 'aria-hidden': 'true' });
+  const cx = 190, cy = 120, r = 82;
+  for (let y = 20; y <= 220; y += 40) el('line', { x1: 26, y1: y, x2: 316, y2: y, stroke: 'rgba(243,180,83,.2)', 'stroke-width': 2 }, svg);
+  el('circle', { cx: -30, cy, r: 56, fill: '#ffd166' }, svg);
+  el('circle', { cx, cy, r, fill: 'none', stroke: 'rgba(163,173,198,.45)', 'stroke-width': 2, 'stroke-dasharray': '3 5' }, svg);
+  kresliZem(svg, cx, cy, 18);
+  const pos = k => [cx - r * Math.cos(k * 45 * DEG), cy + r * Math.sin(k * 45 * DEG)];   // rovnaká poloha ako v scéne
+  if (opt.perm) opt.perm.forEach((pis, k) => {
+    const [x, y] = pos(k);
+    el('circle', { cx: x, cy: y, r: 14, fill: '#0c1220', stroke: '#a3adc6', 'stroke-width': 1.5 }, svg);
+    const t = el('text', { x, y: y + 1, fill: '#ffd88a', 'font-size': 19, 'font-weight': 700, 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-family': 'system-ui,sans-serif' }, svg);
+    t.textContent = pis;
+  });
+  if (opt.k != null) {
+    const [x, y] = pos(opt.k);
+    el('circle', { cx: x, cy: y, r: 20, fill: 'none', stroke: '#f3b453', 'stroke-width': 3.5 }, svg);
+    mesiacZhora(svg, 12).setAttribute('transform', `translate(${x} ${y})`);
+  }
+  return svg;
+}
+
+const GEN = {
+  /* Pomenuj fázu podľa obrázka */
+  nazovObr(u) {
+    const K = TEXTY.kviz;
+    let den, sever = true;
+    if (u < 3) den = nahodne(8) * PERIODA / 8;
+    else { do { den = Math.random() * PERIODA; } while (!bezpecne(den)); sever = Math.random() < 0.5; }
+    const th = uholFazy(den), i = indexFazy(den), f = TEXTY.fazy[i];
+    const m = moznosti(velke(f), [i + 1, i + 7, 8 - i].map(j => velke(TEXTY.fazy[j % 8])), TEXTY.fazy.map(velke));
+    const t = osvetlenaCast(th) < 0.03 || osvetlenaCast(th) > 0.97 ? '' : dorasta(th) ? K.vys.pribuda : K.vys.ubuda;
+    return Object.assign(m, {
+      typ: 'nazovObr', data: { den, sever },
+      text: sever ? K.q.nazovObr : K.q.nazovObrJuh,
+      viz: miniDisk(th, sever, 50), vizMaly: true, vizPopis: popisObrazka(th, sever),
+      vysvetlenie: sablona(K.vys.nazov, { p: nf(osvetlenaCast(th) * 100), t, f }) + (sever ? '' : K.vys.juh)
+    });
+  },
+  /* Kde je Mesiac na dráhe pri danej fáze */
+  poloha() {
+    const K = TEXTY.kviz, i = nahodne(8), perm = zamiesaj(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']);
+    let k = -1;
+    for (let j = 0; j < 8; j++) if (indexFazy(j * PERIODA / 8) === i) k = j;   // poloha, kde animácia ukáže túto fázu
+    const m = moznosti(perm[k], [perm[(k + 1) % 8], perm[(k + 7) % 8], perm[(k + 4) % 8]], perm);
+    return Object.assign(m, {
+      typ: 'poloha', data: { i, perm },
+      text: sablona(K.q.poloha, { f: TEXTY.fazy[i] }), viz: miniDraha({ perm }),
+      vysvetlenie: sablona(K.vys.poloha, { f: TEXTY.fazy[i], kde: K.kde[k] })
+    });
+  },
+  /* Mesiac je na dráhe tu – akú fázu vidíme */
+  polohaSpat() {
+    const K = TEXTY.kviz, k = nahodne(8), i = indexFazy(k * PERIODA / 8), f = velke(TEXTY.fazy[i]);
+    const m = moznosti(f, [i + 1, i + 7, i + 4].map(j => velke(TEXTY.fazy[j % 8])), TEXTY.fazy.map(velke));
+    return Object.assign(m, {
+      typ: 'polohaSpat', data: { k },
+      text: K.q.polohaSpat, viz: miniDraha({ k }),
+      vysvetlenie: sablona(K.vys.poloha, { f: TEXTY.fazy[i], kde: K.kde[k] })
+    });
+  },
+  /* Aká fáza bude o X dní */
+  oX(u) {
+    const K = TEXTY.kviz;
+    let d0, x, t, text;
+    for (;;) {
+      if (u < 3) { d0 = nahodne(8) * PERIODA / 8; x = 2 + nahodne(26); }
+      else { d0 = nahodne(30); x = 3 + nahodne(40); }
+      t = (d0 + x) % PERIODA;
+      if (bezpecne(t)) break;
+    }
+    text = u < 3 ? sablona(K.q.oX, { f: TEXTY.fazy[indexFazy(d0)], x: tvarDni(x) }) : sablona(K.q.oXDen, { d: tvarDni(d0), x: tvarDni(x) });
+    const i = indexFazy(t), f = velke(TEXTY.fazy[i]), c = Math.floor((d0 + x) / PERIODA);
+    const m = moznosti(f, [i + 1, i + 7, i + 4].map(j => velke(TEXTY.fazy[j % 8])), TEXTY.fazy.map(velke));
+    return Object.assign(m, {
+      typ: 'oX', data: { d0, x }, text,
+      vysvetlenie: sablona(K.vys.oX, { d0: nf(d0, 1), x, s: nf(d0 + x, 1), odp: c ? sablona(K.vys.oXOdp, { c, t: nf(t, 1) }) : '', t: nf(t, 1), f: TEXTY.fazy[i] })
+    });
+  },
+  /* Kedy asi vyjde / zapadne Mesiac */
+  vychod(u) {
+    const K = TEXTY.kviz, co = Math.random() < 0.5 ? 'vychod' : 'zapad';
+    let th, text, zaokr = u >= 3;
+    if (!zaokr) { const i = nahodne(8); th = i * 45; text = sablona(K.q[co], { f: TEXTY.fazy[i] }); }
+    else { const n = 1 + nahodne(28); th = uholFazy(n); text = sablona(K.q[co + 'Dni'], { n: tvarDni(n) }); }
+    const h = co === 'vychod' ? vychodMesiaca(th) : zapadMesiaca(th);
+    const hh = zaokr ? Math.round(h) : h, spravna = fmtCas(hh);
+    const m = moznosti(spravna, [3, 6, 9, 12, -3, -6].map(z => fmtCas(hh + z)), []);
+    return Object.assign(m, {
+      typ: 'vychod', data: { th, co, zaokr }, text,
+      vysvetlenie: sablona(K.vys[co], { u: nf(th), h: nf(th / 15, 1), c: spravna }) + (zaokr ? K.vys.zaokr : '')
+    });
+  },
+  /* Ako uvidí Mesiac kamarát na južnej pologuli (obrázky) */
+  juhObr(u) {
+    const K = TEXTY.kviz;
+    let th = vyber([45, 90, 135, 225, 270, 315]);
+    if (u >= 3) th += Math.random() * 20 - 10;
+    const kluc = o => { const f = osvetlenaCast(o.th); return f < 0.03 ? 'nov' : f > 0.97 ? 'spln' : Math.round(f * 20) + (svietiVpravo(o.th, o.sever) ? 'P' : 'L'); };
+    const spravna = { th, sever: false }, kl = [kluc(spravna)], vsetky = [spravna];
+    for (const o of [{ th, sever: true }, { th: th + 180, sever: true }, { th: th + 90, sever: true }, { th: th - 90, sever: true }, { th: th + 135, sever: true }]) {
+      if (vsetky.length < 4 && !kl.includes(kluc(o))) { vsetky.push(o); kl.push(kluc(o)); }
+    }
+    const z = zamiesaj(vsetky);
+    return {
+      typ: 'juhObr', data: { th }, obrazky: true,
+      text: K.q.juhObr, viz: miniDisk(th, true, 50), vizMaly: true, vizPopis: popisObrazka(th, true),
+      moznosti: z.map(o => ({ svg: miniDisk(o.th, o.sever, 30), text: popisObrazka(o.th, o.sever), o })),
+      spravna: z.indexOf(spravna),
+      vysvetlenie: K.vys.juhObr
+    };
+  },
+  /* Na ktorej strane svieti Mesiac na juhu */
+  juhStrana() {
+    const K = TEXTY.kviz, i = vyber([1, 2, 3, 5, 6, 7]), th = i * 45;
+    const opts = [K.odp.vlavo, K.odp.vpravo, K.odp.cely, K.odp.nic];
+    const spravna = svietiVpravo(th, false) ? K.odp.vpravo : K.odp.vlavo;
+    return {
+      typ: 'juhStrana', data: { th }, text: sablona(K.q.juhStrana, { f: TEXTY.fazy[i] }),
+      moznosti: opts.map(t => ({ text: t })), spravna: opts.indexOf(spravna),
+      vysvetlenie: sablona(K.vys.juhStrana, { f: TEXTY.fazy[i], s: svietiVpravo(th, true) ? K.odp.vpravo : K.odp.vlavo, j: spravna })
+    };
+  },
+  /* Dorastá alebo cúva (pomôcka D a C) */
+  dc(u) {
+    const K = TEXTY.kviz;
+    let th = vyber([45, 90, 135, 225, 270, 315]);
+    const sever = u >= 3 ? Math.random() < 0.5 : true;
+    if (u >= 3) th += Math.random() * 20 - 10;
+    const opts = [K.odp.dorasta, K.odp.cuva], spravna = dorasta(th) ? K.odp.dorasta : K.odp.cuva;
+    return {
+      typ: 'dc', data: { th, sever }, text: sever ? K.q.dc : K.q.dcJuh,
+      viz: miniDisk(th, sever, 50), vizMaly: true, vizPopis: popisObrazka(th, sever),
+      moznosti: opts.map(t => ({ text: t })), spravna: opts.indexOf(spravna),
+      vysvetlenie: sablona(K.vys.dc, { l: svietiVpravo(th, sever) ? 'D' : 'C', pravidlo: sever ? K.vys.dcSever : K.vys.dcJuh, t: dorasta(th) ? K.vys.dorasta : K.vys.cuva })
+    };
+  },
+  /* Koľko percent disku svieti */
+  percento() {
+    const K = TEXTY.kviz, i = nahodne(8), p = Math.round(osvetlenaCast(i * 45) * 100);
+    const vsetky = [...new Set([0, 1, 2, 3, 4].map(j => Math.round(osvetlenaCast(j * 45) * 100)))].map(x => x + ' %');
+    const m = moznosti(p + ' %', [], vsetky);
+    return Object.assign(m, {
+      typ: 'percento', data: { i }, text: sablona(K.q.percento, { f: TEXTY.fazy[i] }),
+      vysvetlenie: sablona(K.vys.percento, { f: TEXTY.fazy[i], p })
+    });
+  }
+};
+
+function novyKviz() {
+  KV.otazky = zamiesaj(ZLOZENIE[KV.uroven]).map(t => GEN[t](KV.uroven));
+  $$('#kvUrovne button').forEach(b => { const on = +b.dataset.u === KV.uroven; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  const box = $('#kvBox'); box.innerHTML = '';
+  KV.otazky.forEach((q, n) => {
+    const d = document.createElement('div'); d.className = 'otazka';
+    d.innerHTML = `<div class="q"><span class="por">${n + 1}.</span> ${q.text}</div>`;
+    if (q.viz) {
+      const v = document.createElement('div'); v.className = 'viz' + (q.vizMaly ? ' maly' : '');
+      if (q.vizPopis) { v.setAttribute('role', 'img'); v.setAttribute('aria-label', q.vizPopis); }
+      v.appendChild(q.viz); d.appendChild(v);
+    }
+    const m = document.createElement('div'); m.className = 'moznosti' + (q.obrazky ? ' obr' : '');
+    const fb = document.createElement('div'); fb.className = 'fb';
+    q.moznosti.forEach((o, j) => {
+      const b = document.createElement('button');
+      if (o.svg) { b.appendChild(o.svg); b.setAttribute('aria-label', o.text); } else b.innerHTML = o.text;
+      b.onclick = () => odpovedz(q, j, m, fb);
+      m.appendChild(b);
+    });
+    d.append(m, fb); box.appendChild(d);
+  });
+  skore();
+}
+function odpovedz(q, j, m, fb) {
+  if (q.hotovo) return;
+  const K = TEXTY.kviz, ok = j === q.spravna;
+  q.hotovo = true; q.ok = ok;
+  [...m.children].forEach((b, x) => {
+    b.disabled = true;
+    if (x === q.spravna) { b.classList.add('ok'); b.insertAdjacentHTML('beforeend', ' ✔'); }
+    else if (x === j) { b.classList.add('zle'); b.insertAdjacentHTML('beforeend', ' ✘'); }
+  });
+  fb.className = 'fb ' + (ok ? 'ok' : 'zle');
+  fb.innerHTML = (ok ? `<b>${K.spravne}</b>` : q.obrazky ? `<b>${K.zleObr}</b>` : sablona(K.zle, { x: q.moznosti[q.spravna].text })) + ' ' + q.vysvetlenie;
+  skore();
+}
+function skore() {
+  const K = TEXTY.kviz, n = KV.otazky.length, s = KV.otazky.filter(q => q.ok).length, hot = KV.otazky.every(q => q.hotovo);
+  $('#kvSkore').innerHTML = sablona(K.skore, { s, n }) + (hot ? K.hotovo : '');
+}
+function initKviz() {
+  const box = $('#kvUrovne');
+  for (const u in TEXTY.kviz.urovne) {
+    const b = document.createElement('button'); b.dataset.u = u; b.textContent = TEXTY.kviz.urovne[u];
+    b.onclick = () => { KV.uroven = +u; novyKviz(); };
+    box.appendChild(b);
+  }
+  $('#kvNova').onclick = novyKviz;
+  novyKviz();
+}
+
+/* ===== Karty ===== */
+let AKT = 'scena';
+function ukazKartu(k) {
+  AKT = k;
+  $$('[data-karta]').forEach(s => { s.hidden = s.id !== k; });
+  $$('#karty button').forEach(b => { const on = b.dataset.k === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  if (k !== 'scena') zastav();          // hlavná animácia nebeží na pozadí
+  S.prekreslit = true; OB.prekreslit = true; OM.prekreslit = true;
+  if (k === 'coje') kresliCoje();
+  try { history.replaceState(null, '', '#' + k); } catch (e) { /* nič */ }
+}
+
+function init() {
+  $$('[data-t]').forEach(el => { const v = cesta(TEXTY, el.dataset.t); if (typeof v === 'string') el.innerHTML = v; });
+  const nav = $('#karty');
+  for (const k in TEXTY.karty) {
+    const b = document.createElement('button'); b.dataset.k = k; b.setAttribute('role', 'tab');
+    b.textContent = TEXTY.karty[k]; b.onclick = () => ukazKartu(k); nav.appendChild(b);
+  }
+  initScena(); initPohlad(); initKluc(); initOvladanie();
+  initObloha(); initCoje(); initOmyly(); initKviz();
+  nastavPologulu(true);
+  const h = (location.hash || '').slice(1);
+  ukazKartu(TEXTY.karty[h] ? h : 'scena');
+
+  // Jedna slučka pre všetky animácie, časovanie podľa skutočného času. Kreslí sa len viditeľná karta.
+  let posl = performance.now();
+  const snimka = now => {
+    const dt = Math.min(0.1, Math.max(0, (now - posl) / 1000)); posl = now;
+    if (AKT === 'scena') {
+      if (S.hra && !S.tah) { S.den = (S.den + S.rych * dt) % PERIODA; S.prekreslit = true; }
+      if (S.prekreslit) { S.prekreslit = false; kresli(); }
+    } else if (AKT === 'obloha') tikObloha(dt);
+    else if (AKT === 'omyly') tikOmyly(dt);
+    requestAnimationFrame(snimka);
+  };
+  requestAnimationFrame(snimka);
+}
+init();
+</script>
+<script data-goatcounter="https://jasvarc.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
