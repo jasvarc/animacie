@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Triedenie</title>
+<link rel="icon" href="data:,">
+<script id="texty">
+'use strict';
+/* =====================================================================
+   TEXTY – všetko, čo žiak číta, je na jednom mieste. Upravuj len texty v úvodzovkách.
+   HTML značky (<b>, <br>) sú povolené.
+   {x} – sem program doplní hodnotu (napr. {a} a {b} = porovnávané čísla, {i} = pozícia).
+   Pseudokód (kod) – každý riadok je jeden reťazec, medzery na začiatku = odsadenie.
+   ===================================================================== */
+const TEXTY = {
+  titul: 'Triedenie: ako počítač usporiada údaje',
+  podtitul: 'Počítač nevidí všetky čísla naraz – vie vždy <b>porovnať len dve</b>. Aby usporiadal celé pole, musí presne dodržať postup krokov: <b>algoritmus</b>. Rôzne algoritmy dôjdu k rovnakému výsledku, ale s veľmi rozdielnym počtom krokov.',
+  karty: { hra: 'Skús to sám', bub: 'Bublinové', vyb: 'Výberom', vkl: 'Vkladaním', zl: 'Zlučovaním ★', qs: 'Rýchle ★', sutaz: 'Súťaž', graf: 'Rast krokov', omyly: 'Časté omyly', kviz: 'Kvíz', pozn: 'Poznámky' },
+
+  ui: {
+    spustit: '▶ Spustiť', pauza: '❚❚ Pauza', krokVpred: 'Krok vpred ▶', krokSpat: '◀ Krok späť', reset: '⏮ Reset',
+    rychlost: 'Rýchlosť', pocet: 'Počet prvkov', noveNahodne: '🎲 Nové náhodné pole', udaje: 'Údaje', typUdajov: 'Počiatočné údaje:',
+    vlastne: 'Vlastné pole (celé čísla 0 – 99, najviac 30, oddelené čiarkou alebo medzerou):', vlastnePlaceholder: 'napr. 7, 3, 12, 5, 1', pouzit: 'Použiť',
+    vlastneOk: 'Používam tvoje pole ({n}).',
+    krokX: 'Krok animácie {i} z {n}', porovnania: 'Porovnania', kroky: 'Kroky spolu', krokyPozn: 'porovnania + {druh}',
+    pseudokod: 'Pseudokód', pseudoPozn: 'Pseudokód je zjednodušený zápis postupu, nie presný program. Zvýraznený riadok sa práve vykonáva. Pozície číslujeme od 1.',
+    legenda: 'Čo znamenajú značky', doplnkova: '★ Pre zvedavých', pomocne: 'pomocné pole', hranica: 'hranica',
+    chyby: {
+      prazdne: 'Napíš aspoň jedno číslo.',
+      necele: 'Toto nie je celé číslo: „{x}“. Píš len celé čísla oddelené čiarkou alebo medzerou.',
+      rozsah: 'Číslo {x} je mimo rozsahu. Povolené sú celé čísla od {min} do {max}.',
+      vela: 'Najviac {max} čísel (ty ich máš {n}).'
+    }
+  },
+
+  data: { nahodne: 'náhodné', uspor: 'usporiadané', opacne: 'opačne usporiadané', takmer: 'takmer usporiadané', rovnake: 'veľa rovnakých' },
+
+  // tvary slov podľa počtu: [1, 2–4, 0 a 5+]
+  jednotky: {
+    p: ['porovnanie', 'porovnania', 'porovnaní'], swap: ['výmena', 'výmeny', 'výmen'], shift: ['posun', 'posuny', 'posunov'],
+    write: ['presun', 'presuny', 'presunov'], k: ['krok', 'kroky', 'krokov'], kolo: ['kolo', 'kolá', 'kôl'], prvok: ['prvok', 'prvky', 'prvkov']
+  },
+  druhyNazov: { swap: 'Výmeny', shift: 'Posuny', write: 'Presuny' },
+  druhyMale: { swap: 'výmeny', shift: 'posuny', write: 'presuny' },
+
+  // legenda značiek pri stĺpcoch
+  legenda: {
+    cmp: 'porovnávam (prerušovaný rámik, „?“)', swp: 'vymieňam (šikmé pruhy, „⇄“)', posun: 'posúvam doprava (šikmé pruhy, „→“)',
+    presun: 'presúvam späť do poľa (šikmé pruhy, „↑“)', ok: 'na svojom mieste (bodky, „✓“)', okCast: 'usporiadaná časť (bodky, „✓“)',
+    min: 'zatiaľ najmenší (vodorovné pruhy, „min“)', pivot: 'pivot (vodorovné pruhy, „P“)', vloz: 'vkladaný prvok – nadvihnutý (vodorovné pruhy, „V“)',
+    dim: 'mimo práve spracovaného úseku (vyblednuté)', pasmo: 'práve spracovaný úsek', delic: 'rozdelenie úseku na polovice',
+    hranica: 'hranica: vľavo od nej sú čísla menšie ako pivot', pomocne: 'pomocné pole pri zlučovaní'
+  },
+
+  spolocne: {
+    start: '{uvod} Stlač <b>Spustiť</b> alebo <b>Krok vpred</b>.',
+    done: 'Hotovo! Pole je usporiadané. Spolu {p} a {v}, teda {k}.'
+  },
+
+  /* ---------- ALGORITMY ---------- */
+  alg: {
+    bub: {
+      nazov: 'Bublinové triedenie', en: 'Bubble sort', kratko: 'bublinové', siedmy: 'bublinovým triedením',
+      popis: 'Prechádzam pole zľava doprava a porovnávam <b>dva susedné prvky</b>. Ak je ľavý väčší, vymením ich. Po každom kole sa najväčší ešte neusporiadaný prvok dostane na koniec – ako bublina, ktorá vystúpi na hladinu. Ak v kole nebola žiadna výmena, pole je usporiadané a končím.',
+      legenda: ['cmp', 'swp', 'ok'],
+      kod: [
+        'koniec ← posledná pozícia',
+        'opakuj, kým koniec > 1:',
+        '  vymenil som ← nie',
+        '  pre j od 1 po koniec − 1:',
+        '    ak pole[j] > pole[j + 1]:',
+        '      vymeň ich; vymenil som ← áno',
+        '  pole[koniec] je na svojom mieste; koniec ← koniec − 1',
+        '  ak vymenil som = nie: skonči'
+      ],
+      txt: {
+        start: 'Bublinové triedenie porovnáva vždy dva susedné prvky a väčší posúva doprava.',
+        kolo: 'Začína {k}. kolo: porovnávam susedov od pozície 1 po pozíciu {hi}.',
+        cmpV: 'Porovnávam {a} a {b}. {a} je väčšie, preto ich vymením.',
+        cmpN: 'Porovnávam {a} a {b}. {a} nie je väčšie ako {b}, nechám ich tak.',
+        swap: 'Vymenil som {a} a {b}. Väčšie číslo {a} je teraz vpravo.',
+        naMieste: 'Koniec {k}. kola. Číslo {a} je na svojom mieste – ďalej ho už neporovnávam.',
+        ziadna: 'V tomto kole nebola žiadna výmena, takže pole je už usporiadané. Končím skôr.'
+      }
+    },
+    vyb: {
+      nazov: 'Triedenie výberom', en: 'Selection sort', kratko: 'výberom', siedmy: 'triedením výberom',
+      popis: 'Nájdem <b>najmenší prvok</b> v neusporiadanej časti a vymením ho na jej začiatok. Potom to zopakujem so zvyškom poľa. Na nájdenie minima musím prvky porovnávať jeden po druhom – vždy nový prvok s doterajším minimom.',
+      legenda: ['cmp', 'min', 'swp', 'ok'],
+      kod: [
+        'pre i od 1 po n − 1:',
+        '  min ← i   (zatiaľ najmenší je pole[i])',
+        '  pre j od i + 1 po n:',
+        '    ak pole[j] < pole[min]: min ← j',
+        '  ak min ≠ i: vymeň pole[i] a pole[min]',
+        '  pole[i] je na svojom mieste'
+      ],
+      txt: {
+        start: 'Triedenie výberom nájde najmenší prvok a dá ho na začiatok. Potom to zopakuje so zvyškom poľa.',
+        min0: 'Hľadám najmenší prvok od pozície {i} po koniec. Zatiaľ najmenší je {a}.',
+        cmpM: 'Porovnávam {a} s doterajším minimom {b}. {a} je menšie – je to nové minimum.',
+        cmpN: 'Porovnávam {a} s doterajším minimom {b}. {a} nie je menšie, minimum ostáva {b}.',
+        swap: 'Najmenší je {a}. Vymením ho s číslom {b} na pozícii {i}.',
+        bez: 'Najmenší je {a} a už stojí na pozícii {i}. Nič nevymieňam.',
+        naMieste: 'Číslo {a} je na svojom mieste (pozícia {i}).'
+      }
+    },
+    vkl: {
+      nazov: 'Triedenie vkladaním', en: 'Insertion sort', kratko: 'vkladaním', siedmy: 'triedením vkladaním',
+      popis: 'Ľavá časť poľa je vždy usporiadaná. Zoberiem ďalší prvok, <b>nadvihnem ho</b> a väčšie prvky vľavo od neho <b>posúvam o jedno miesto doprava</b>, kým nenájdem jeho miesto. Tam ho vložím – ako keď si zoraďuješ karty v ruke.',
+      legenda: ['vloz', 'cmp', 'posun', 'okCast'],
+      kod: [
+        'pre i od 2 po n:',
+        '  vkladaný ← pole[i]   (nadvihnem ho, vznikne voľné miesto)',
+        '  j ← i − 1',
+        '  kým j ≥ 1 a pole[j] > vkladaný:',
+        '    posuň pole[j] o jedno miesto doprava',
+        '    j ← j − 1',
+        '  vlož vkladaný na voľné miesto'
+      ],
+      txt: {
+        start: 'Triedenie vkladaním berie prvky jeden po druhom a vkladá ich na správne miesto do usporiadanej časti vľavo.',
+        vyber: 'Nadvihnem číslo {a} (pozícia {i}) a hľadám preň miesto v usporiadanej časti vľavo.',
+        cmpV: 'Porovnávam {a} s vkladaným {b}. {a} je väčšie, posuniem ho doprava.',
+        cmpN: 'Porovnávam {a} s vkladaným {b}. {a} nie je väčšie, preto sa zastavím.',
+        posun: 'Posunul som {a} o jedno miesto doprava. Voľné miesto je teraz na pozícii {i}.',
+        vloz: 'Vkladám {a} na voľné miesto (pozícia {i}). Usporiadaná časť je o jeden prvok dlhšia.',
+        vlozZac: 'Vľavo už nič nie je. Vkladám {a} na začiatok (pozícia 1). Usporiadaná časť je o jeden prvok dlhšia.'
+      }
+    },
+    zl: {
+      nazov: 'Triedenie zlučovaním', en: 'Merge sort', kratko: 'zlučovaním', siedmy: 'triedením zlučovaním', doplnkova: true,
+      popis: '<b>Doplnková karta pre zvedavých.</b> Pole rozdelím na dve polovice, každú polovicu usporiadam <b>rovnakým spôsobom</b> (aj ju rozdelím…), až kým nezostanú úseky s jedným prvkom. Potom usporiadané polovice <b>zlučujem</b>: porovnám ich prvé prvky a menší presuniem späť do poľa. Na zlučovanie potrebujem <b>pomocné pole</b> (spodný rad).',
+      legenda: ['pasmo', 'delic', 'dim', 'cmp', 'presun', 'pomocne', 'ok'],
+      kod: [
+        'zoraď(úsek):',
+        '  ak má úsek len 1 prvok: je usporiadaný, hotovo',
+        '  rozdeľ úsek na ľavú a pravú polovicu',
+        '  zoraď(ľavá polovica); zoraď(pravá polovica)',
+        '  zlúč obe usporiadané polovice:',
+        '    presuň ich do pomocného poľa',
+        '    kým sú v oboch polovičkách prvky: porovnaj ich prvé prvky',
+        '      menší z nich presuň späť do poľa (pri rovnosti ľavý)',
+        '    zvyšné prvky presuň späť do poľa'
+      ],
+      txt: {
+        start: 'Triedenie zlučovaním rozdelí pole na polovice, každú usporiada rovnakým spôsobom a potom usporiadané polovice zlúči.',
+        rozdel: 'Úsek na pozíciách {lo} – {hi} rozdelím na dve polovice: {lo} – {m} a {m1} – {hi}.',
+        jeden: 'Úsek s jedným prvkom ({a}) je sám osebe usporiadaný.',
+        doPom: 'Zlučujem usporiadané úseky {lo} – {m} a {m1} – {hi}. Najprv ich presuniem do pomocného poľa.',
+        cmpL: 'Porovnávam prvé prvky polovíc: {a} (ľavá) a {b} (pravá). {a} nie je väčšie, presuniem ho späť do poľa.',
+        cmpP: 'Porovnávam prvé prvky polovíc: {a} (ľavá) a {b} (pravá). {b} je menšie, presuniem ho späť do poľa.',
+        presun: 'Číslo {a} je späť v poli na pozícii {i}.',
+        zvysok: 'Jedna polovica je už prázdna. Zvyšné číslo {a} presuniem bez porovnávania na pozíciu {i}.',
+        zlucene: 'Úsek {lo} – {hi} je zlúčený a usporiadaný.'
+      }
+    },
+    qs: {
+      nazov: 'Rýchle triedenie', en: 'Quick sort', kratko: 'rýchle', siedmy: 'rýchlym triedením', doplnkova: true,
+      popis: '<b>Doplnková karta pre zvedavých.</b> Vyberiem jeden prvok – <b>pivot</b> (u nás posledný prvok úseku). Úsek rozdelím tak, aby pred pivotom boli menšie čísla a za ním ostatné. Pivot je potom na svojom mieste. Rovnako zoradím časť pred pivotom aj časť za ním.',
+      legenda: ['pivot', 'cmp', 'swp', 'hranica', 'pasmo', 'dim', 'ok'],
+      kod: [
+        'zoraď(úsek):',
+        '  ak má úsek najviac 1 prvok: hotovo',
+        '  pivot ← posledný prvok úseku; hranica ← začiatok úseku',
+        '  pre každý prvok pred pivotom:',
+        '    ak prvok < pivot:',
+        '      vymeň ho s prvkom na hranici; hranica ← hranica + 1',
+        '  vymeň pivot s prvkom na hranici → pivot je na svojom mieste',
+        '  zoraď(časť pred pivotom); zoraď(časť za pivotom)'
+      ],
+      txt: {
+        start: 'Rýchle triedenie vyberie pivot a rozdelí okolo neho úsek: menšie čísla pred pivot, ostatné za neho.',
+        pivot: 'Úsek {lo} – {hi}: pivotom je posledný prvok, {a}. Hranica je na začiatku úseku.',
+        cmpM: 'Porovnávam {a} s pivotom {b}. {a} je menšie, patrí pred hranicu – vymením ho s prvkom na hranici.',
+        cmpMh: 'Porovnávam {a} s pivotom {b}. {a} je menšie a už stojí na hranici – len posuniem hranicu.',
+        cmpN: 'Porovnávam {a} s pivotom {b}. {a} nie je menšie, ostane za hranicou.',
+        swap: 'Vymenil som {a} a {b}. Menšie číslo {a} je teraz pred hranicou, hranica sa posunie.',
+        pivotSwap: 'Vymením pivot {a} s číslom {b}, ktoré stojí na hranici.',
+        naMieste: 'Pivot {a} je na svojom mieste: pred ním sú len menšie čísla, za ním väčšie alebo rovnaké.',
+        naMiesteBez: 'Pivot {a} už stojí na hranici, nič nevymieňam. Je na svojom mieste.',
+        rekurzia: 'Teraz rovnako zoradím časť pred pivotom ({l} prv.) a časť za pivotom ({r} prv.).',
+        jeden: 'Úsek s jedným prvkom ({a}) je hotový – je na svojom mieste.'
+      }
+    }
+  },
+
+  /* ---------- 1. SKÚS TO SÁM ---------- */
+  hra: {
+    nadpis: 'Skús to sám: usporiadaj zakryté karty',
+    uvod: 'Pod kartami sú čísla, ale nevidíš ich – presne ako počítač. Klikni na <b>dve karty</b> a dozvieš sa, ktorá je menšia. Potom ich môžeš <b>vymeniť</b>. Usporiadaj karty od najmenšej (pozícia 1) po najväčšiu (pozícia 8). Písmeno ostáva na karte, aj keď ju presunieš.',
+    stav0: 'Klikni na prvú kartu.',
+    vyber1: 'Vybral si kartu {a}. Klikni na ďalšiu kartu, s ktorou ju chceš porovnať.',
+    vysl: 'Karta {a} {z} karta {b}. Menšia je {m}, väčšia je {v}. Môžeš ich vymeniť alebo vybrať inú kartu.',
+    vymenene: 'Vymenil si karty {a} a {b}.',
+    vymen: '⇄ Vymeniť vybrané karty', hotovo: '✓ Hotovo – skontrolovať', nova: '🎲 Nová hra', napoveda: '💡 Nápoveda',
+    napovedaText: 'Skús mať <b>postup</b>: porovnaj kartu na 1. pozícii s každou ďalšou a vždy si pamätaj tú menšiu. Najmenšiu potom vymeň na 1. pozíciu. Potom to zopakuj od 2. pozície… Presne toto robí <b>triedenie výberom</b>.',
+    porovnania: 'Tvoje porovnania', vymeny: 'Tvoje výmeny', zaznam: 'Čo už vieš:', zaznamPrazdny: 'zatiaľ nič',
+    mensia: 'menšia', vacsia: 'väčšia',
+    uspech: '🎉 Výborne! Karty sú usporiadané. Potreboval si {p} a {v}.',
+    neuspech: 'Ešte to nie je usporiadané – na správnom mieste je {ok} z 8 kariet (✓). Skús novú hru.',
+    porovnanie: 'Ako by to urobili algoritmy na tých istých kartách:',
+    tab: ['Kto', 'Porovnania', 'Výmeny / posuny / presuny', 'Kroky spolu'],
+    ty: 'Ty',
+    pointa: 'Bez postupu sa ľahko stratíš alebo porovnávaš zbytočne. Algoritmus je presný postup – počítač ho vie vykonať bez toho, aby „rozumel“ číslam. Napríklad triedenie výberom by to urobilo na {pv} – porovnaní urobí pri 8 kartách vždy rovnako veľa ({p8}), nech sú čísla akékoľvek.'
+  },
+
+  /* ---------- SÚŤAŽ ---------- */
+  sutaz: {
+    nadpis: 'Súťaž algoritmov',
+    uvod: 'Všetkých päť algoritmov triedi <b>tie isté údaje</b> naraz. Jeden krok súťaže = jedno porovnanie alebo jedna výmena (posun, presun) v každom algoritme. Vyhráva ten, kto potrebuje <b>najmenej krokov</b> – nezáleží na tom, aký rýchly je tvoj počítač či tablet.',
+    cas: 'Krok súťaže: {t}', miesto: '🏁 {m}. miesto', bezi: 'triedi…',
+    vysledky: 'Výsledky súťaže',
+    tab: ['Poradie', 'Algoritmus', 'Porovnania', 'Výmeny / posuny / presuny', 'Kroky spolu'],
+    typyNadpis: 'Poradie sa mení podľa typu údajov',
+    typyUvod: 'Priemerný počet krokov z 20 polí s {n} prvkami pre každý typ údajov. ★ = najmenej krokov. Zvýraznený je typ, ktorý práve súťaží.',
+    vitaz: 'Pri údajoch „{typ}“ vyhráva {alg}.', vitazViac: 'Pri údajoch „{typ}“ sa o 1. miesto delia {alg}.',
+    pointa: 'Všimni si: <b>neexistuje jeden víťaz pre všetko</b>. Pri takmer usporiadanom poli je veľmi rýchle triedenie vkladaním, pri náhodnom poli zvyčajne vyhráva zlučovanie alebo rýchle triedenie. Naša verzia rýchleho triedenia je naopak pri usporiadanom poli veľmi pomalá.',
+    prepocitat: '🎲 Prepočítať tabuľku'
+  },
+
+  /* ---------- GRAF ---------- */
+  graf: {
+    nadpis: 'Ako rastie počet krokov',
+    uvod: 'Pre polia s 5, 10, 15, 20, 25 a 30 prvkami spustím každý algoritmus <b>bez animácie</b> na 20 rôznych poliach a vypočítam priemer.',
+    miera: 'Čo kreslím:', mP: 'porovnania', mK: 'kroky spolu', typ: 'Údaje:',
+    osX: 'Počet prvkov v poli', osY: { p: 'Priemerný počet porovnaní', k: 'Priemerný počet krokov' },
+    prepocitat: '🎲 Prepočítať s novými poľami',
+    tabNadpis: 'Namerané hodnoty (priemer z 20 polí)',
+    vysvNadpis: 'Čo z grafu vyčítame',
+    vysv: 'Keď sa počet údajov <b>zdvojnásobí</b>, bublinové triedenie (aj triedenie výberom a vkladaním) potrebuje približne <b>štyrikrát</b> toľko porovnaní. Triedenie zlučovaním potrebuje len o niečo viac ako <b>dvojnásobok</b>. Pri malých poliach je rozdiel malý, pri veľkých obrovský.',
+    pomerNadpis: 'Koľkokrát viac porovnaní, keď sa počet prvkov zdvojnásobí:',
+    pomerHlav: ['Algoritmus', '5 → 10', '10 → 20', '15 → 30', '100 → 200'],
+    pomerPozn: 'Pri našich malých poliach je to pri zlučovaní ešte okolo 2,5- až 3-násobku, čím je pole väčšie, tým bližšie je to k dvojnásobku (stĺpec 100 → 200, priemer z 5 polí). Pri bublinovom triedení je to stále asi 4-násobok.',
+    inyTyp: 'Pozor: vysvetlenie platí pre náhodné údaje. Pri type „{typ}“ môže graf vyzerať inak – napríklad pri usporiadanom poli bublinové triedenie a vkladanie urobia len o jedno porovnanie menej, než je prvkov.',
+    zvedavi: 'Pre zvedavých: „veľké O“',
+    zvedaviText: 'Informatici rast počtu krokov zapisujú pomocou „veľkého O“. Bublinové, výberom a vkladaním majú <b>O(n²)</b> – pri dvojnásobku údajov štvornásobok krokov. Zlučovanie má <b>O(n · log n)</b> – len o niečo viac ako dvojnásobok. Rýchle triedenie má v priemere tiež O(n · log n), ale v najhoršom prípade O(n²). V 6. ročníku to vedieť nemusíš.'
+  },
+
+  /* ---------- OMYLY ---------- */
+  omyly: {
+    nadpis: 'Časté omyly',
+    omyl: 'Omyl', oprava: 'Ako to naozaj je',
+    hraj: '▶ Prehrávať', pauza: '❚❚ Pauza', znova: '↻ Znova',
+    o1: {
+      omyl: 'Počítač vidí všetky čísla naraz a jednoducho ich usporiada.',
+      oprava: 'Počítač vie naraz <b>porovnať len dve hodnoty</b>. Celé pole „nevidí“ – výsledok poskladá z množstva malých porovnaní. V animácii (triedenie výberom) vidíš len dvojicu, ktorú práve porovnáva; ostatné čísla sú skryté.'
+    },
+    o2: {
+      omyl: 'Existuje jeden najlepší algoritmus na všetko.',
+      oprava: 'Záleží na údajoch. <b>Vkladanie</b> je veľmi rýchle pri takmer usporiadanom poli, pri náhodnom je pomalé. <b>Rýchle triedenie</b> býva rýchle v priemere, ale nie vždy – pri takmer usporiadanom poli je naša verzia pomalá. Dĺžka pásika = priemerný počet krokov (20 polí s 20 prvkami).',
+      skup: { takmer: 'Takmer usporiadané pole', nahodne: 'Náhodné pole' }
+    },
+    o3: {
+      omyl: 'Keď algoritmus nič nevymieňa, nič nerobí.',
+      oprava: 'Aj porovnávanie je práca. <b>Triedenie výberom</b> urobí vždy rovnaký počet porovnaní bez ohľadu na údaje – aj pri už usporiadanom poli, kde nevymení nič. Výmen robí naopak málo (najviac jednu v každom kole).'
+    },
+    o4: {
+      omyl: 'Bublinové triedenie je zlé, lebo je pomalé.',
+      oprava: 'Bublinové triedenie je <b>jednoduché na pochopenie</b>, preto sa učí ako prvé. Pri malých poliach úplne stačí. Pri veľkých poliach sa nepoužíva, lebo krokov rýchlo pribúda:',
+      vypocet: 'Pri {n} náhodných číslach: bublinové ≈ <b>{b}</b>, zlučovanie ≈ <b>{z}</b> porovnaní.',
+      pocitam: 'Počítam…'
+    }
+  },
+
+  /* ---------- KVÍZ ---------- */
+  kviz: {
+    nadpis: 'Kvíz',
+    uvod: 'Otázky sa vyberajú náhodne a správne odpovede počíta program <b>tými istými algoritmami</b> ako animácie. Nič sa neukladá ani neodosiela.',
+    novy: '🎲 Nový kvíz', spravne: 'Správne!', nespravne: 'Nesprávne.', spravnaJe: 'Správna odpoveď: {x}.',
+    skore: 'Správne odpovede: {b} z {n}', koniecDobre: ' 🎉 Výborne!', koniecSlabo: ' Pozri si karty s algoritmami a skús nový kvíz.',
+    akcie: { cmp: 'Porovnám {a} a {b}', swap: 'Vymením {a} a {b}', shift: 'Posuniem {a} o miesto doprava', write: 'Presuniem {a} späť do poľa' },
+    porPokyn: 'Klikaj na kroky v poradí, v akom sa vykonajú:', porReset: '↺ Vybrať znova',
+    poKole: 'po {k}. kole {pole}',
+    q: {
+      bubKolo: { q: 'Pole {pole} triedime <b>bublinovým triedením</b>. Aké bude pole po <b>{k}. kole</b>?', vysv: 'V každom kole sa porovnávajú susedné čísla a väčšie sa posúva doprava, takže najväčšie ešte neusporiadané číslo „vybuble“ na koniec. Postupne: {postup}.' },
+      vybKolo: { q: 'Pole {pole} triedime <b>triedením výberom</b>. Aké bude pole po <b>{k}. kole</b> (po {k}. nájdení minima)?', vysv: 'V každom kole sa nájde najmenšie číslo zo zvyšku poľa a vymení sa na prvé ešte neusporiadané miesto. Postupne: {postup}.' },
+      najmenejVymen: { q: 'Ktorý algoritmus urobí pri poli {pole} <b>najmenej výmen</b>?', vysv: 'Počty výmen: {zoznam}.', vyb: ' Triedenie výberom urobí v každom kole najviac jednu výmenu, preto ich býva málo.' },
+      najmenejPorovnani: { q: 'Pole {pole} je takmer usporiadané. Ktorý algoritmus urobí <b>najmenej porovnaní</b>?', vysv: 'Počty porovnaní: {zoznam}.', vkl: ' Pri takmer usporiadanom poli sa vkladaný prvok skoro vždy hneď zastaví, preto vkladanie porovnáva málo.' },
+      poradie: { q: 'Pole {pole} triedime <b>{alg}</b>. Zoraď jeho prvé štyri kroky do správneho poradia.', vysv: 'Správne poradie:<br>{zoznam}' },
+      vybPorovnania: { q: 'Koľko porovnaní urobí <b>triedenie výberom</b> pri poli {pole}?', vysv: 'V 1. kole porovná {n1}-krát, v každom ďalšom o jedno menej: {sucet} = {c}. Je to tak pri <b>akýchkoľvek</b> údajoch s {n} prvkami.' },
+      bubVymeny: { q: 'Koľko výmen urobí <b>bublinové triedenie</b> pri poli {pole}?', vysv: 'Bublinové triedenie vymení každú dvojicu čísel, ktoré sú navzájom v zlom poradí, práve raz. Tu je to {c}.' },
+      vklPosuny: { q: 'Koľko posunov urobí <b>triedenie vkladaním</b> pri poli {pole}?', vysv: 'Pri vkladaní čísla sa o miesto doprava posunie každé väčšie číslo, ktoré stojí pred ním. Spolu je to {c}.' },
+      qsDelenie: { q: '<b>Rýchle triedenie</b> (pivot = posledný prvok) triedi pole {pole}. Aké bude pole po prvom rozdelení okolo pivota <b>{p}</b>?', vysv: 'Čísla menšie ako {p} sa výmenami presunú pred hranicu, potom sa pivot vymení na hranicu. Výsledok: {vysl}. Pivot {p} je na svojom mieste, časti pred ním a za ním ešte nemusia byť usporiadané.' },
+      bubKola: { q: 'Koľko kôl urobí <b>bublinové triedenie</b> (končí, keď v kole nebola žiadna výmena) pri poli {pole}?', vysv: 'Bublinové triedenie urobí {c}.', bezVymeny: ' Posledné kolo nemalo žiadnu výmenu – tak algoritmus zistil, že pole je usporiadané.', vsetky: ' Prešlo všetkými možnými kolami (pri {n} prvkoch najviac {m}), v každom bola výmena.' }
+    }
+  },
+
+  /* ---------- POZNÁMKY ---------- */
+  pozn: {
+    nadpis: 'Poznámky: zjednodušenia a pravidlá počítania',
+    polozky: [
+      '<b>Pseudokód</b> je zjednodušený zápis postupu v slovenčine, nie presný zápis v programovacom jazyku. Pozície v poli číslujeme od 1 (programy ich často číslujú od 0).',
+      '<b>Porovnanie</b> = každé porovnanie dvoch hodnôt z poľa. <b>Kroky spolu</b> = porovnania + výmeny (alebo posuny, presuny). Pomocné činnosti – označenie prvku, výber pivota, rozdelenie úseku na polovice, zapamätanie „min“ alebo „hranice“ – sa nepočítajú.',
+      '<b>Bublinové triedenie</b>: po každom kole sa prechádzaný úsek skráti o jedno miesto a ak v kole nebola žiadna výmena, triedenie skončí. Výmena = výmena dvoch susedných prvkov.',
+      '<b>Triedenie výberom</b>: výmena sa robí (a počíta) len vtedy, keď minimum ešte nie je na svojom mieste. Za nové minimum sa berie len prvok, ktorý je <i>naozaj</i> menší (nie rovnaký).',
+      '<b>Triedenie vkladaním</b>: posun = presunutie prvku o jedno miesto doprava. Porovnanie sa počíta aj vtedy, keď sa vkladaný prvok zastaví. Samotné vloženie prvku na voľné miesto sa nepočíta. Vkladaný prvok v animácii „nadvihnem“, aby bolo vidno voľné miesto.',
+      '<b>Triedenie zlučovaním</b>: úsek sa delí na polovice (pri nepárnom počte má ľavá polovica o jeden prvok viac). Pri zlučovaní sa oba úseky skopírujú do pomocného poľa – toto kopírovanie sa <b>nepočíta</b>. Ako <b>presun</b> sa počíta každý zápis prvku späť do hlavného poľa. Keď sa jedna polovica minie, zvyšok sa presúva bez porovnávania.',
+      '<b>Rýchle triedenie</b>: pivotom je vždy posledný prvok úseku (tzv. Lomutovo rozdelenie). Výmena sa počíta, len keď sa vymieňajú dva prvky na rôznych miestach (aj keď majú rovnakú hodnotu). Pri už usporiadanom poli alebo pri mnohých rovnakých hodnotách je táto verzia pomalá – skutočné programy volia pivot múdrejšie.',
+      '<b>Súťaž</b>: jeden krok súťaže = jedno porovnanie alebo jedna výmena (posun, presun) v každom algoritme naraz. Skutočná rýchlosť programu závisí aj od iných vecí (napr. jeden posun je lacnejší ako výmena), to tu zanedbávame.',
+      '<b>Graf</b> a tabuľka podľa typu údajov sú priemery z 20 náhodne vytvorených polí, preto sa čísla pri každom prepočítaní trochu líšia.',
+      '<b>Typy údajov</b>: „náhodné“, „usporiadané“ a „opačne usporiadané“ polia majú rôzne čísla od 1 do 50; „takmer usporiadané“ je usporiadané pole, v ktorom sa vymenilo niekoľko susedných dvojíc; „veľa rovnakých“ obsahuje len 3 rôzne hodnoty.',
+      '<b>Vlastné pole</b>: celé čísla od 0 do 99, najviac 30 čísel, oddelené čiarkou, bodkočiarkou alebo medzerou. Pozor: „3,5“ sa prečíta ako dve čísla 3 a 5.',
+      '<b>Hra „Skús to sám“</b>: porovnanie sa započíta pri každom výbere dvoch kariet, aj keď tú istú dvojicu porovnáš znova. Čísla na kartách sú navzájom rôzne (1 – 99).',
+      'Pri veľa prvkoch (napr. 30) sa stĺpce na úzkej obrazovke nezmestia – pole sa dá posúvať prstom do strany.'
+    ]
+  }
+};
+</script>
+<script id="jadro">
+'use strict';
+/* =====================================================================
+   JADRO – algoritmy a počítanie. Žiadna práca s obrazovkou.
+   Každý algoritmus je generátor (function*). Pracuje na stave S:
+     S.a     – pole prvkov {v: hodnota, id: totožnosť}, kópia vstupu
+     S.aux   – pomocné pole (len zlučovanie), S.held – nadvihnutý prvok (len vkladanie)
+     S.spec  – zvláštny prvok (min / pivot / vkladaný), S.ok – množina hotových prvkov
+     S.range, S.mid, S.hr – práve spracovaný úsek, stred, hranica (len na zobrazenie)
+   Po každej udalosti algoritmus urobí yield {t: typ, ...}. Typy, ktoré sa počítajú:
+     'cmp' = porovnanie, 'swap' = výmena, 'shift' = posun, 'write' = presun.
+   Tú istú implementáciu používa animácia, krok späť, súťaž, graf aj kvíz.
+   ===================================================================== */
+
+// doplní {x} v texte hodnotami z objektu p
+function fmt(s, p) { return String(s).replace(/\{(\w+)\}/g, (m, k) => (p && p[k] !== undefined ? p[k] : m)); }
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+// slovenský tvar slova podľa počtu: 1 výmena, 2 výmeny, 5 výmen
+function sklon(n, druh) { const t = TEXTY.jednotky[druh]; return n + ' ' + (n === 1 ? t[0] : n >= 2 && n <= 4 ? t[1] : t[2]); }
+function randInt(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+function zamiesaj(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function nahRozne(n, min, max) {   // n rôznych čísel; keď sa do rozsahu nezmestia, rozsah sa zväčší (žiadne zacyklenie)
+  if (max - min + 1 < n) max = min + n - 1;
+  const s = new Set(); while (s.size < n) s.add(randInt(min, max)); return [...s];
+}
+
+function isSorted(v) { for (let i = 1; i < v.length; i++) if (v[i - 1] > v[i]) return false; return true; }
+function rovnakePrvky(a, b) {
+  if (a.length !== b.length) return false;
+  const x = a.slice().sort((p, q) => p - q), y = b.slice().sort((p, q) => p - q);
+  return x.every((v, i) => v === y[i]);
+}
+
+/* ---------- Bublinové triedenie ---------- */
+function* bublinove(S) {
+  const a = S.a, n = a.length;
+  let koniec = n - 1, kolo = 0;
+  while (koniec >= 1) {
+    kolo++;
+    let vymena = false;
+    yield { t: 'kolo', kolo, line: 2, txt: 'kolo', p: { k: kolo, hi: koniec + 1 } };
+    for (let j = 0; j < koniec; j++) {
+      const x = a[j], y = a[j + 1], vacsi = x.v > y.v;
+      yield { t: 'cmp', ids: [x.id, y.id], line: 4, txt: vacsi ? 'cmpV' : 'cmpN', p: { a: x.v, b: y.v } };
+      if (vacsi) {
+        a[j] = y; a[j + 1] = x; vymena = true;
+        yield { t: 'swap', ids: [x.id, y.id], line: 5, txt: 'swap', p: { a: x.v, b: y.v } };
+      }
+    }
+    S.ok.add(a[koniec].id);
+    yield { t: 'koloKoniec', kolo, line: 6, txt: 'naMieste', p: { k: kolo, a: a[koniec].v } };
+    if (!vymena) { yield { t: 'ziadna', line: 7, txt: 'ziadna' }; return; }   // predčasné ukončenie
+    koniec--;
+  }
+}
+
+/* ---------- Triedenie výberom ---------- */
+function* vyberom(S) {
+  const a = S.a, n = a.length;
+  for (let i = 0; i < n - 1; i++) {
+    let m = i;
+    S.spec = { id: a[i].id, lbl: 'min' };
+    yield { t: 'info', line: 1, txt: 'min0', p: { i: i + 1, a: a[i].v } };
+    for (let j = i + 1; j < n; j++) {
+      const x = a[j], y = a[m], mensi = x.v < y.v;
+      if (mensi) { m = j; S.spec = { id: x.id, lbl: 'min' }; }
+      yield { t: 'cmp', ids: [x.id, y.id], line: 3, txt: mensi ? 'cmpM' : 'cmpN', p: { a: x.v, b: y.v } };
+    }
+    S.spec = null;
+    if (m !== i) {                                   // výmena so sebou samým sa nerobí ani nepočíta
+      const x = a[m], y = a[i]; a[i] = x; a[m] = y;
+      yield { t: 'swap', ids: [x.id, y.id], line: 4, txt: 'swap', p: { a: x.v, b: y.v, i: i + 1 } };
+    } else {
+      yield { t: 'info', line: 4, txt: 'bez', p: { a: a[i].v, i: i + 1 } };
+    }
+    S.ok.add(a[i].id);
+    yield { t: 'naMieste', kolo: i + 1, line: 5, txt: 'naMieste', p: { a: a[i].v, i: i + 1 } };
+  }
+}
+
+/* ---------- Triedenie vkladaním ---------- */
+function* vkladanim(S) {
+  const a = S.a, n = a.length;
+  if (n > 0) S.ok.add(a[0].id);
+  for (let i = 1; i < n; i++) {
+    const key = a[i]; a[i] = null;                   // nadvihnem prvok, vznikne voľné miesto
+    S.held = { id: key.id, pos: i }; S.spec = { id: key.id, lbl: 'V' };
+    yield { t: 'info', line: 1, txt: 'vyber', p: { a: key.v, i: i + 1 } };
+    let j = i - 1;
+    while (j >= 0) {
+      const x = a[j], vacsi = x.v > key.v;
+      // porovnanie sa počíta aj vtedy, keď sa vkladaný prvok zastaví
+      yield { t: 'cmp', ids: [x.id, key.id], line: 3, txt: vacsi ? 'cmpV' : 'cmpN', p: { a: x.v, b: key.v } };
+      if (!vacsi) break;
+      a[j + 1] = x; a[j] = null; S.held.pos = j;     // posun o jedno miesto doprava
+      yield { t: 'shift', ids: [x.id], line: 4, txt: 'posun', p: { a: x.v, i: j + 1 } };
+      j--;
+    }
+    a[j + 1] = key; S.held = null; S.spec = null; S.ok.add(key.id);
+    yield { t: 'info', line: 6, txt: j < 0 ? 'vlozZac' : 'vloz', p: { a: key.v, i: j + 2 } };
+  }
+}
+
+/* ---------- Triedenie zlučovaním ---------- */
+function* zlucovanim(S) {
+  const a = S.a, n = a.length;
+  S.aux = new Array(n).fill(null);
+  function* zorad(lo, hi) {
+    S.range = [lo, hi]; S.mid = null;
+    if (lo >= hi) { yield { t: 'info', line: 1, txt: 'jeden', p: { a: a[lo].v } }; return; }
+    const m = (lo + hi) >> 1;
+    S.mid = m;
+    yield { t: 'split', line: 2, txt: 'rozdel', p: { lo: lo + 1, hi: hi + 1, m: m + 1, m1: m + 2 } };
+    yield* zorad(lo, m);
+    yield* zorad(m + 1, hi);
+    S.range = [lo, hi]; S.mid = m;
+    for (let k = lo; k <= hi; k++) { S.aux[k] = a[k]; a[k] = null; }   // kopírovanie sa nepočíta
+    yield { t: 'info', line: 5, txt: 'doPom', p: { lo: lo + 1, hi: hi + 1, m: m + 1, m1: m + 2 } };
+    let i = lo, j = m + 1, k = lo;
+    while (i <= m && j <= hi) {
+      const x = S.aux[i], y = S.aux[j], lavy = x.v <= y.v;            // pri rovnosti ľavý (stabilné)
+      yield { t: 'cmp', ids: [x.id, y.id], line: 6, txt: lavy ? 'cmpL' : 'cmpP', p: { a: x.v, b: y.v } };
+      const z = lavy ? x : y;
+      if (lavy) S.aux[i++] = null; else S.aux[j++] = null;
+      a[k++] = z;
+      yield { t: 'write', ids: [z.id], line: 7, txt: 'presun', p: { a: z.v, i: k } };
+    }
+    while (i <= m || j <= hi) {                      // zvyšok bez porovnávania
+      let z;
+      if (i <= m) { z = S.aux[i]; S.aux[i++] = null; } else { z = S.aux[j]; S.aux[j++] = null; }
+      a[k++] = z;
+      yield { t: 'write', ids: [z.id], line: 8, txt: 'zvysok', p: { a: z.v, i: k } };
+    }
+    S.mid = null;
+    yield { t: 'info', line: 4, txt: 'zlucene', p: { lo: lo + 1, hi: hi + 1 } };
+  }
+  if (n > 0) yield* zorad(0, n - 1);
+  S.range = null;
+}
+
+/* ---------- Rýchle triedenie (pivot = posledný prvok, Lomutovo rozdelenie) ---------- */
+function* rychle(S) {
+  const a = S.a;
+  function* zorad(lo, hi) {
+    if (lo > hi) return;
+    S.range = [lo, hi];
+    if (lo === hi) { S.ok.add(a[lo].id); yield { t: 'info', line: 1, txt: 'jeden', p: { a: a[lo].v } }; return; }
+    const p = a[hi]; let h = lo;
+    S.spec = { id: p.id, lbl: 'P' }; S.hr = h;
+    yield { t: 'pivot', line: 2, txt: 'pivot', p: { a: p.v, lo: lo + 1, hi: hi + 1 } };
+    for (let j = lo; j < hi; j++) {
+      const x = a[j], mensi = x.v < p.v;
+      yield { t: 'cmp', ids: [x.id, p.id], line: 4, txt: !mensi ? 'cmpN' : (j === h ? 'cmpMh' : 'cmpM'), p: { a: x.v, b: p.v } };
+      if (mensi) {
+        if (j !== h) {
+          const y = a[h]; a[h] = x; a[j] = y;
+          yield { t: 'swap', ids: [x.id, y.id], line: 5, txt: 'swap', p: { a: x.v, b: y.v } };
+        }
+        h++; S.hr = h;
+      }
+    }
+    if (h !== hi) {
+      const y = a[h]; a[h] = p; a[hi] = y;
+      yield { t: 'swap', ids: [p.id, y.id], line: 6, txt: 'pivotSwap', p: { a: p.v, b: y.v } };
+    }
+    S.spec = null; S.hr = null; S.ok.add(p.id);
+    yield { t: 'naMieste', line: 6, txt: h !== hi ? 'naMieste' : 'naMiesteBez', p: { a: p.v } };
+    if (h - lo > 1 || hi - h > 1) yield { t: 'info', line: 7, txt: 'rekurzia', p: { l: h - lo, r: hi - h } };
+    yield* zorad(lo, h - 1);
+    yield* zorad(h + 1, hi);
+  }
+  yield* zorad(0, a.length - 1);
+  S.range = null;
+}
+
+const ALG = {
+  bub: { gen: bublinove, druh: 'swap' },
+  vyb: { gen: vyberom, druh: 'swap' },
+  vkl: { gen: vkladanim, druh: 'shift' },
+  zl: { gen: zlucovanim, druh: 'write' },
+  qs: { gen: rychle, druh: 'swap' }
+};
+const PORADIE = ['bub', 'vyb', 'vkl', 'zl', 'qs'];
+const POCITANE = { cmp: 'p', swap: 'v', shift: 'v', write: 'v' };   // p = porovnania, v = výmeny/posuny/presuny
+
+// triedenie nikdy nemení vstupné pole – vždy pracuje na kópii
+function novyStav(hodnoty) {
+  return { a: hodnoty.map((v, id) => ({ v, id })), aux: null, held: null, spec: null, ok: new Set(), range: null, mid: null, hr: null };
+}
+function* beh(key, S) {
+  yield { t: 'start', line: -1, txt: 'start' };
+  yield* ALG[key].gen(S);
+  S.a.forEach(x => { if (x) S.ok.add(x.id); });
+  S.held = S.spec = S.range = S.mid = S.hr = null;
+  yield { t: 'done', line: -1, txt: 'done' };
+}
+// kontrola výsledku – chyba ide len do konzoly, nie žiakovi
+function over(key, vstup, S) {
+  const vysl = S.a.map(x => (x ? x.v : NaN));
+  if (!isSorted(vysl) || !rovnakePrvky(vysl, vstup)) console.error('Triedenie „' + key + '“ zlyhalo pre', vstup, '→', vysl);
+  return vysl;
+}
+// rýchle spočítanie bez animácie (graf, súťaž, kvíz); naUdalost(ev, S, c) – voliteľné sledovanie
+function spocitaj(key, hodnoty, naUdalost) {
+  const S = novyStav(hodnoty), c = { p: 0, v: 0 };
+  for (const ev of beh(key, S)) {
+    const k = POCITANE[ev.t]; if (k) c[k]++;
+    if (naUdalost) naUdalost(ev, S, c);
+  }
+  c.k = c.p + c.v; c.vysl = over(key, hodnoty, S);
+  return c;
+}
+function textKroku(key, ev, c) {
+  const T = TEXTY.alg[key], Sp = TEXTY.spolocne;
+  if (ev.t === 'start') return fmt(Sp.start, { uvod: T.txt.start });
+  if (ev.t === 'done') return fmt(Sp.done, { p: sklon(c.p, 'p'), v: sklon(c.v, ALG[key].druh), k: sklon(c.p + c.v, 'k') });
+  return fmt(T.txt[ev.txt], ev.p);
+}
+// zaznamená všetky kroky pre animáciu a krok späť: snímka = poloha každého prvku + značky + text
+// poloha: 0–99 = hlavné pole, 100+ = pomocné pole, 200+ = nadvihnutý prvok
+function zaznamenaj(key, hodnoty) {
+  const S = novyStav(hodnoty), n = hodnoty.length, kroky = [], c = { p: 0, v: 0 };
+  for (const ev of beh(key, S)) {
+    const k = POCITANE[ev.t]; if (k) c[k]++;
+    const p = new Array(n);
+    S.a.forEach((x, i) => { if (x) p[x.id] = i; });
+    if (S.aux) S.aux.forEach((x, i) => { if (x) p[x.id] = 100 + i; });
+    if (S.held) p[S.held.id] = 200 + S.held.pos;
+    kroky.push({
+      p, ev: ev.t, cmp: ev.t === 'cmp' ? ev.ids : [], swp: k === 'v' ? ev.ids : [],
+      ok: [...S.ok], spec: S.spec ? { id: S.spec.id, lbl: S.spec.lbl } : null,
+      range: S.range ? S.range.slice() : null, mid: S.mid, hr: S.hr,
+      line: ev.line, txt: textKroku(key, ev, c), c: { p: c.p, v: c.v }, k: c.p + c.v
+    });
+  }
+  over(key, hodnoty, S);
+  return kroky;
+}
+
+/* ---------- Údaje ---------- */
+const VSTUP = { min: 0, max: 99, maxN: 30 };
+function generuj(typ, n) {
+  const vzost = (x, y) => x - y, M = Math.max(50, 2 * n);   // pri malých poliach čísla 1 – 50
+  let v;
+  if (typ === 'uspor') v = nahRozne(n, 1, M).sort(vzost);
+  else if (typ === 'opacne') v = nahRozne(n, 1, M).sort((x, y) => y - x);
+  else if (typ === 'takmer') {
+    v = nahRozne(n, 1, M).sort(vzost);
+    const k = Math.max(1, Math.round(n / 10));
+    for (let r = 0; r < k && n > 1; r++) { const i = randInt(0, n - 2); [v[i], v[i + 1]] = [v[i + 1], v[i]]; }
+    if (n > 1 && isSorted(v)) { const i = randInt(0, n - 2); [v[i], v[i + 1]] = [v[i + 1], v[i]]; }
+  } else if (typ === 'rovnake') {
+    const z = nahRozne(3, 1, M);
+    v = Array.from({ length: n }, () => z[randInt(0, 2)]);
+  } else v = nahRozne(n, 1, M);
+  return v;
+}
+// kontrola vlastného poľa od žiaka
+function overVstup(text) {
+  const casti = String(text).split(/[\s,;]+/).filter(Boolean), C = TEXTY.ui.chyby;
+  if (!casti.length) return { chyba: C.prazdne };
+  if (casti.length > VSTUP.maxN) return { chyba: fmt(C.vela, { max: VSTUP.maxN, n: casti.length }) };
+  const h = [];
+  for (const c of casti) {
+    if (!/^[+-]?\d+$/.test(c)) return { chyba: fmt(C.necele, { x: esc(c.slice(0, 20)) }) };
+    const x = parseInt(c, 10);
+    if (x < VSTUP.min || x > VSTUP.max) return { chyba: fmt(C.rozsah, { x: esc(c.slice(0, 20)), min: VSTUP.min, max: VSTUP.max }) };
+    h.push(x);
+  }
+  return { hodnoty: h };
+}
+</script>
+<style>
+/* ===== Farby a základ – rovnaká paleta ako predošlé animácie ===== */
+:root{
+  --bg:#04060c;--panel:rgba(12,16,28,.86);--line:rgba(140,160,215,.22);
+  --text:#e2e8f5;--muted:#a3adc6;--gold:#f3b453;--gold2:#ffd88a;--blue:#6fb4ff;--red:#ff7a6b;--green:#7fdc8f;--violet:#b9a3ff;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--text);background:var(--bg);
+  background-image:radial-gradient(ellipse at 50% -10%,#14204a 0%,#070b18 50%,#04060c 100%);background-attachment:fixed;
+  font:17px/1.5 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1440px;margin:0 auto;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.45);padding:16px;min-width:0}
+h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+h2{margin:0 0 10px;font-size:23px;line-height:1.25}
+h3{margin:0 0 8px;font-size:16px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:650}
+p{margin:0 0 10px}
+.sub{color:var(--muted);margin:4px 0 0;font-size:17px;max-width:1000px}
+.sub b{color:var(--text)}
+button{font:inherit;font-size:16px;color:var(--text);background:rgba(255,255,255,.07);border:1px solid var(--line);
+  border-radius:10px;padding:8px 14px;min-height:44px;cursor:pointer;transition:background .15s,border-color .15s,color .15s;touch-action:manipulation}
+button:hover{background:rgba(255,255,255,.13);border-color:rgba(160,180,230,.4)}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible,summary:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
+button.on{background:rgba(243,180,83,.2);border-color:rgba(243,180,83,.65);color:var(--gold2)}
+button.primary{background:linear-gradient(135deg,#f3b453,#d9772f);color:#1a0e02;border:none;font-weight:700;min-width:130px}
+button.primary:hover{filter:brightness(1.08)}
+button:disabled{cursor:default;opacity:.45}
+.mini{color:var(--muted);font-size:16px;margin:10px 0 4px}
+
+/* ===== Hlavička a karty ===== */
+header.top{margin-bottom:12px}
+nav.karty{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+nav.karty button{border-radius:999px;padding:8px 15px}
+nav.karty button .cis{display:inline-block;min-width:1.4em;color:var(--muted)}
+nav.karty button.on .cis{color:var(--gold2)}
+
+/* ===== Rozloženie sekcie ===== */
+.sek{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:16px;align-items:start}
+.stlpec{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:1000px){.sek{grid-template-columns:minmax(0,1fr)}}
+
+/* ===== Scéna so stĺpcami ===== */
+.algHlava{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-bottom:8px}
+.algHlava h2{margin:0}
+.algHlava .en{color:var(--muted);font-weight:400;font-size:18px}
+.stitok{display:inline-block;padding:3px 10px;border-radius:999px;border:1px solid var(--violet);color:var(--violet);font-size:16px}
+.stage{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border-radius:10px;background:#08101c;padding:6px 8px 0}
+.pole{position:relative;width:100%;user-select:none;-webkit-user-select:none}
+.st{position:absolute;display:flex;flex-direction:column;align-items:center;will-change:transform,left}
+.st .num{height:22px;line-height:22px;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.st .tyc,.sw .tyc{display:block;width:100%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,#86a6e6,#4c6bb0)}
+.st .zn{height:24px;line-height:24px;font-size:16px;font-weight:800;white-space:nowrap}
+.f-cmp .tyc{background:var(--gold)}
+.f-cmp .num,.f-cmp .zn{color:var(--gold2)}
+.r-cmp .tyc{outline:3px dashed #fff;outline-offset:2px}
+.f-swp .tyc{background:repeating-linear-gradient(45deg,#ff7a6b 0 7px,#a83427 7px 11px)}
+.f-swp .num,.f-swp .zn{color:var(--red)}
+.f-ok .tyc{background:radial-gradient(circle,#2f8a44 0 2.5px,transparent 3px) 0 0/10px 10px,#7fdc8f}
+.f-ok .zn{color:var(--green)}
+.f-spec .tyc{background:repeating-linear-gradient(0deg,#b9a3ff 0 6px,#6a4fd0 6px 10px);box-shadow:0 0 0 3px #e9e1ff}
+.f-spec .num,.f-spec .zn{color:var(--violet)}
+.dim{opacity:.3}
+.st.skr .tyc{background:repeating-linear-gradient(90deg,#3d4864 0 8px,#2f3850 8px 16px)}
+.st.skr .num{color:var(--muted)}
+.pole.bezCisel .st .num{visibility:hidden}
+.pasmo{position:absolute;top:0;border:2px dashed rgba(243,180,83,.6);border-bottom:none;background:rgba(243,180,83,.1);border-radius:10px 10px 0 0;pointer-events:none}
+.delic{position:absolute;top:0;width:0;border-left:3px dashed var(--gold2);margin-left:-1.5px;pointer-events:none}
+.hranica{position:absolute;top:0;width:0;border-left:3px solid var(--violet);margin-left:-1.5px;pointer-events:none}
+.hranica span{position:absolute;top:0;left:5px;font-size:16px;line-height:1.1;color:var(--violet);white-space:nowrap}
+.auxPas{position:absolute;left:0;right:0;bottom:0;border-top:2px solid var(--line);background:rgba(255,255,255,.035)}
+.auxPas span{position:absolute;right:6px;top:2px;color:var(--muted);font-size:16px}
+
+/* ===== Krok, počítadlá, ovládanie ===== */
+.krokNum{color:var(--muted);font-size:16px;letter-spacing:.04em;margin-top:8px}
+.krokText{font-size:18px;min-height:84px;margin:4px 0 10px;line-height:1.55}
+.pocitadla{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.poc{flex:1 1 110px;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:10px;padding:6px 10px;text-align:center}
+.poc span{display:block;color:var(--muted);font-size:16px}
+.poc b{font-size:26px;color:var(--gold2);font-variant-numeric:tabular-nums}
+.poc small{display:block;color:var(--muted);font-size:16px}
+.tlac{display:flex;flex-wrap:wrap;gap:8px}
+.sl{display:block;margin-top:8px}
+.sl .lbl{display:flex;justify-content:space-between;gap:10px}
+.sl .lbl b{color:var(--gold2);font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:40px;background:transparent;margin:2px 0 0;cursor:pointer;touch-action:pan-y}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;margin-top:-10px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02;box-shadow:0 0 0 2px var(--gold)}
+input[type=range]::-moz-range-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02}
+.volby{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.volby .lbl0{color:var(--muted);margin-right:4px}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
+.pills button{border-radius:999px;padding:6px 13px}
+.vlastne{margin-top:12px}
+.vlastne label{display:block;color:var(--muted);font-size:16px;margin-bottom:4px}
+.vlRiadok{display:flex;gap:8px}
+.vlRiadok input{flex:1;min-width:0;height:46px;font:inherit;font-size:17px;color:var(--text);background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:10px;padding:0 12px}
+.hlaska{color:var(--gold2);font-size:16px;margin:8px 0 0;min-height:1.5em}
+.hlaska.chyba{color:var(--red)}
+
+/* ===== Pseudokód a legenda ===== */
+ol.kod{list-style:none;counter-reset:r;margin:6px 0;padding:8px 0;font:16px/1.45 ui-monospace,Consolas,"Courier New",monospace;background:#08101c;border-radius:10px}
+ol.kod li{counter-increment:r;white-space:pre-wrap;padding:3px 10px 3px 42px;position:relative;border-left:4px solid transparent;transition:background .15s}
+ol.kod li::before{content:counter(r);position:absolute;left:6px;width:26px;text-align:right;color:var(--muted)}
+ol.kod li.akt{background:rgba(243,180,83,.2);border-left-color:var(--gold);color:var(--gold2)}
+.legenda{display:flex;flex-wrap:wrap;gap:8px 18px}
+.leg{display:inline-flex;align-items:center;gap:8px;font-size:16px}
+.sw{display:inline-flex;flex-direction:column;align-items:center;width:24px;flex:none}
+.sw .tyc{height:30px;border-radius:3px}
+.sw b{font-size:16px;line-height:1.1;min-height:18px}
+.sw.f-cmp b{color:var(--gold2)}.sw.f-swp b{color:var(--red)}.sw.f-ok b{color:var(--green)}.sw.f-spec b{color:var(--violet)}
+.swP{width:30px;height:26px;border:2px dashed rgba(243,180,83,.8);border-bottom:none;background:rgba(243,180,83,.1);border-radius:6px 6px 0 0;flex:none}
+.swD{width:24px;height:30px;border-left:3px dashed var(--gold2);margin-left:12px;flex:none}
+.swH{width:24px;height:30px;border-left:3px solid var(--violet);margin-left:12px;flex:none}
+.swA{width:30px;height:22px;border-top:2px solid var(--line);background:rgba(255,255,255,.08);flex:none}
+
+/* ===== Hra ===== */
+.hraKarty{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin:14px 0 10px}
+.hk{position:relative;min-height:122px;padding:6px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:12px;
+  background:repeating-linear-gradient(135deg,#1d2a52 0 10px,#172144 10px 20px);border:2px solid var(--line)}
+.hk .poz{position:absolute;top:4px;left:7px;font-size:16px;color:var(--muted)}
+.hk .pism{font-size:26px;font-weight:800;color:var(--blue)}
+.hk .hod{font-size:24px;font-weight:800;color:var(--muted)}
+.hk .znak{font-size:16px;min-height:24px;font-weight:700}
+.hk.vyb{border:3px solid var(--gold2);box-shadow:0 0 0 3px rgba(243,180,83,.3)}
+.hk.mensia .znak{color:var(--blue)}.hk.vacsia .znak{color:var(--gold2)}
+.hk.odkr{background:linear-gradient(160deg,#2a3a6a,#1a2548)}
+.hk.odkr .hod{color:var(--text);font-size:28px}
+.hk.dobre{border:3px solid var(--green)}.hk.dobre .znak{color:var(--green)}
+.hk.zle{border:3px dashed var(--red)}.hk.zle .znak{color:var(--red)}
+.hraStav{font-size:18px;min-height:56px;margin:4px 0 10px}
+.hraStav b{color:var(--gold2)}
+.zaznam{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
+.zaznam .chip{padding:2px 10px;border-radius:999px;background:rgba(111,180,255,.12);border:1px solid rgba(111,180,255,.4);font-weight:700;font-variant-numeric:tabular-nums}
+@media (max-width:600px){.hraKarty{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* ===== Tabuľky ===== */
+.tabWrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.tab{width:100%;border-collapse:collapse;font-size:17px;margin:6px 0 10px}
+.tab th,.tab td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.tab th:first-child,.tab td:first-child{text-align:left}
+.tab th{color:var(--muted);font-weight:600;font-size:16px}
+.tab tr.ty td{color:var(--gold2);font-weight:700}
+.tab tr.akt td{background:rgba(243,180,83,.1)}
+.tab td.vit{color:var(--green);font-weight:800}
+.box{margin:10px 0;padding:10px 13px;border-radius:10px;border:1px solid}
+.box b.h{display:block;font-size:16px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.box.omyl{background:rgba(255,122,107,.09);border-color:rgba(255,122,107,.45)}.box.omyl b.h{color:var(--red)}
+.box.pravda{background:rgba(127,220,143,.08);border-color:rgba(127,220,143,.4)}.box.pravda b.h{color:var(--green)}
+.box.info{background:rgba(111,180,255,.08);border-color:rgba(111,180,255,.4)}
+
+/* ===== Súťaž ===== */
+.drahy{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(400px,100%),1fr));gap:16px;margin:16px 0}
+.draha{padding:12px}
+.drHlava{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.drHlava h3{margin:0;font-size:17px;letter-spacing:.04em;text-transform:none;color:var(--text)}
+.drHlava .miesto{font-weight:700;color:var(--muted)}
+.draha.hotova{border-color:rgba(127,220,143,.6)}
+.draha.hotova .miesto{color:var(--green)}
+.drPoc{margin-top:6px;font-size:16px;color:var(--muted);font-variant-numeric:tabular-nums}
+.drPoc b{color:var(--text)}
+.farba{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+/* ===== Graf ===== */
+.grafStage{padding:0}
+.grafStage svg{display:block;width:100%;height:auto;min-width:520px}
+.grafLeg{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:10px;font-size:16px}
+.grafLeg span{display:inline-flex;align-items:center;gap:6px}
+details{margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:rgba(255,255,255,.03)}
+summary{cursor:pointer;font-weight:700;color:var(--violet);min-height:32px}
+
+/* ===== Omyly ===== */
+.omylyGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(460px,100%),1fr));gap:16px;margin-top:16px}
+.omylyGrid .krokText{min-height:56px;font-size:17px}
+.omylyGrid .stage{margin:8px 0}
+.stlpGraf{margin:8px 0}
+.stlpGraf h4{margin:10px 0 4px;font-size:17px}
+.sgRiadok{display:grid;grid-template-columns:120px minmax(0,1fr) 54px;gap:8px;align-items:center;margin:4px 0;font-size:16px}
+.sgPas{height:22px;border-radius:4px;background:rgba(255,255,255,.06);overflow:hidden}
+.sgPas i{display:block;height:100%;width:0}
+.sgRiadok b{text-align:right;font-variant-numeric:tabular-nums}
+
+/* ===== Kvíz ===== */
+.otazka{padding:14px 0;border-bottom:1px solid var(--line)}
+.otazka .q{font-size:19px;margin-bottom:10px}
+.otazka .q .por{color:var(--muted);margin-right:4px}
+.moznosti{display:flex;flex-wrap:wrap;gap:8px}
+.moznosti button{min-width:84px;min-height:56px;font-size:19px}
+.otazka button.ok{background:rgba(127,220,143,.2);border-color:var(--green);color:#d7ffdf;opacity:1}
+.otazka button.zle{background:rgba(255,122,107,.2);border-color:var(--red);color:#ffe0dc;opacity:1}
+.arr{display:inline-flex;flex-wrap:wrap;gap:3px;vertical-align:middle}
+.arr b{min-width:34px;padding:1px 6px;border:1px solid var(--line);border-radius:6px;background:rgba(255,255,255,.07);text-align:center;font-variant-numeric:tabular-nums;font-weight:700}
+.porKroky{display:flex;flex-direction:column;gap:8px;max-width:560px}
+.porKroky button{text-align:left;display:flex;align-items:center;gap:10px}
+.porKroky button .c{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);color:var(--gold2);font-weight:800;flex:none}
+.fb{margin-top:10px;font-size:17px}
+.fb.ok>b:first-child{color:var(--green)}.fb.zle>b:first-child{color:var(--red)}
+#kvizVysl{font-size:21px;font-weight:700;color:var(--gold2);margin:14px 0}
+ul.poznList{margin:0;padding-left:22px}
+ul.poznList li{margin:8px 0}
+footer{color:var(--muted);text-align:center;font-size:16px;padding:20px 0 10px}
+@media (max-width:600px){
+  .wrap{padding:10px}
+  .card{padding:12px}
+  .krokText{font-size:17px}
+  .tlac button{flex:1 1 auto}
+  .sgRiadok{grid-template-columns:96px minmax(0,1fr) 48px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top"><h1 data-t="titul"></h1><p class="sub" data-t="podtitul"></p></header>
+<nav class="karty" id="karty" role="tablist"></nav>
+
+<!-- ============ 1. SKÚS TO SÁM ============ -->
+<section id="hra" data-karta hidden>
+  <div class="card">
+    <h2 data-t="hra.nadpis"></h2>
+    <p data-t="hra.uvod"></p>
+    <div class="hraKarty" id="hra_karty"></div>
+    <div class="hraStav" id="hra_stav" aria-live="polite"></div>
+    <div class="pocitadla">
+      <div class="poc"><span data-t="hra.porovnania"></span><b id="hra_p">0</b></div>
+      <div class="poc"><span data-t="hra.vymeny"></span><b id="hra_v">0</b></div>
+    </div>
+    <div class="tlac">
+      <button id="hra_vymen" class="primary" data-t="hra.vymen"></button>
+      <button id="hra_hotovo" data-t="hra.hotovo"></button>
+      <button id="hra_nova" data-t="hra.nova"></button>
+      <button id="hra_nap" data-t="hra.napoveda"></button>
+    </div>
+    <div class="box info" id="hra_napText" hidden></div>
+    <div class="zaznam"><span class="mini" style="margin:0" data-t="hra.zaznam"></span><span id="hra_log"></span></div>
+  </div>
+  <div class="card" id="hra_vysl" hidden style="margin-top:16px"></div>
+</section>
+
+<!-- ============ 2.–6. ALGORITMY (karty sa vytvoria v programe, všetky rovnaké) ============ -->
+<div id="algKarty"></div>
+
+<!-- ============ 7. SÚŤAŽ ============ -->
+<section id="sutaz" data-karta hidden>
+  <div class="sek">
+    <div class="card">
+      <h2 data-t="sutaz.nadpis"></h2>
+      <p data-t="sutaz.uvod"></p>
+      <div class="tlac">
+        <button id="sut_spat"></button>
+        <button id="sut_hraj" class="primary"></button>
+        <button id="sut_vpred"></button>
+        <button id="sut_reset"></button>
+      </div>
+      <label class="sl"><span class="lbl"><span data-t="ui.rychlost"></span><b id="sut_rv"></b></span><input type="range" id="sut_r" min="1" max="12" step="1" aria-label="Rýchlosť súťaže"></label>
+      <p class="krokNum" id="sut_t"></p>
+    </div>
+    <div class="card" id="sut_udaje"></div>
+  </div>
+  <div class="drahy" id="sut_drahy"></div>
+  <div class="card" id="sut_vysl" hidden></div>
+  <div class="card" style="margin-top:16px">
+    <h2 data-t="sutaz.typyNadpis"></h2>
+    <p id="sut_typyUvod"></p>
+    <div class="tabWrap" id="sut_typy"></div>
+    <div id="sut_vitazi"></div>
+    <div class="box info" data-t="sutaz.pointa"></div>
+    <button id="sut_prepocitat" data-t="sutaz.prepocitat"></button>
+  </div>
+</section>
+
+<!-- ============ 8. RAST KROKOV ============ -->
+<section id="graf" class="sek" data-karta hidden>
+  <div class="stlpec">
+    <div class="card">
+      <h2 data-t="graf.nadpis"></h2>
+      <p data-t="graf.uvod"></p>
+      <div class="volby"><span class="lbl0" data-t="graf.miera"></span><div class="pills" id="graf_miera"></div></div>
+      <div class="volby"><span class="lbl0" data-t="graf.typ"></span><div class="pills" id="graf_typ"></div></div>
+      <div class="stage grafStage" style="margin-top:10px"><svg id="graf_svg" viewBox="0 0 720 440" role="img" aria-label="Graf počtu porovnaní podľa veľkosti poľa"></svg></div>
+      <div class="grafLeg" id="graf_leg"></div>
+      <div class="volby" style="margin-top:12px"><button id="graf_prepocitat" data-t="graf.prepocitat"></button></div>
+    </div>
+    <div class="card"><h3 data-t="graf.tabNadpis"></h3><div class="tabWrap" id="graf_tab"></div></div>
+  </div>
+  <div class="stlpec panel">
+    <div class="card">
+      <h2 data-t="graf.vysvNadpis"></h2>
+      <p data-t="graf.vysv"></p>
+      <p id="graf_inyTyp" class="box omyl" hidden></p>
+      <h3 data-t="graf.pomerNadpis"></h3>
+      <div class="tabWrap" id="graf_pomer"></div>
+      <p class="mini" data-t="graf.pomerPozn"></p>
+      <details><summary data-t="graf.zvedavi"></summary><p style="margin-top:8px" data-t="graf.zvedaviText"></p></details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 9. ČASTÉ OMYLY ============ -->
+<section id="omyly" data-karta hidden>
+  <div class="card"><h2 data-t="omyly.nadpis"></h2></div>
+  <div class="omylyGrid">
+    <div class="card">
+      <div class="box omyl"><b class="h" data-t="omyly.omyl"></b><span data-t="omyly.o1.omyl"></span></div>
+      <div class="stage" id="om1_stage"></div>
+      <div class="krokText" id="om1_txt"></div>
+      <div class="tlac"><button id="om1_hraj"></button><button id="om1_znova"></button></div>
+      <div class="box pravda"><b class="h" data-t="omyly.oprava"></b><span data-t="omyly.o1.oprava"></span></div>
+    </div>
+    <div class="card">
+      <div class="box omyl"><b class="h" data-t="omyly.omyl"></b><span data-t="omyly.o2.omyl"></span></div>
+      <div class="stlpGraf" id="om2_graf"></div>
+      <div class="tlac"><button id="om2_znova"></button></div>
+      <div class="box pravda"><b class="h" data-t="omyly.oprava"></b><span data-t="omyly.o2.oprava"></span></div>
+    </div>
+    <div class="card">
+      <div class="box omyl"><b class="h" data-t="omyly.omyl"></b><span data-t="omyly.o3.omyl"></span></div>
+      <div class="stage" id="om3_stage"></div>
+      <div class="pocitadla" style="margin-top:8px">
+        <div class="poc"><span data-t="ui.porovnania"></span><b id="om3_p">0</b></div>
+        <div class="poc"><span data-t="druhyNazov.swap"></span><b id="om3_v">0</b></div>
+      </div>
+      <div class="krokText" id="om3_txt"></div>
+      <div class="tlac"><button id="om3_hraj"></button><button id="om3_znova"></button></div>
+      <div class="box pravda"><b class="h" data-t="omyly.oprava"></b><span data-t="omyly.o3.oprava"></span></div>
+    </div>
+    <div class="card">
+      <div class="box omyl"><b class="h" data-t="omyly.omyl"></b><span data-t="omyly.o4.omyl"></span></div>
+      <div class="stage" id="om4_stage"></div>
+      <div class="krokText" id="om4_txt"></div>
+      <div class="tlac"><button id="om4_hraj"></button><button id="om4_znova"></button></div>
+      <div class="box pravda"><b class="h" data-t="omyly.oprava"></b><span data-t="omyly.o4.oprava"></span>
+        <ul style="margin:6px 0 0;padding-left:20px"><li id="om4_100"></li><li id="om4_1000"></li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 10. KVÍZ ============ -->
+<section id="kviz" data-karta hidden>
+  <div class="card">
+    <h2 data-t="kviz.nadpis"></h2>
+    <p data-t="kviz.uvod"></p>
+    <button id="kvizNovy" class="primary" data-t="kviz.novy"></button>
+    <div id="kvizOtazky"></div>
+    <div id="kvizVysl" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ============ 11. POZNÁMKY ============ -->
+<section id="pozn" data-karta hidden>
+  <div class="card"><h2 data-t="pozn.nadpis"></h2><ul class="poznList" id="poznList"></ul></div>
+</section>
+
+<footer>Triedenie · interaktívna animácia pre 6. ročník ZŠ (informatika) · funguje aj offline</footer>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   ZOBRAZENIE A OVLÁDANIE
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const U = TEXTY.ui;
+let AKT = null;                                   // práve zobrazená karta
+function cesta(o, p) { return p.split('.').reduce((x, k) => (x == null ? x : x[k]), o); }
+function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+function cislo(x, d) { return x.toFixed(d).replace('.', ','); }
+function tisic(x) { return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+function fmtPole(v) { return '<span class="arr">' + v.map(x => `<b>${x}</b>`).join('') + '</span>'; }
+function interval(r) { return 1400 * Math.pow(0.7, r - 1); }   // ms na jeden krok podľa posuvníka rýchlosti
+const FARBY = { bub: '#ff7a6b', vyb: '#6fb4ff', vkl: '#7fdc8f', zl: '#f3b453', qs: '#b9a3ff' };
+const NAZOV = k => TEXTY.alg[k].nazov;
+
+/* ---------- Stĺpce (jedno pole na obrazovke) ---------- */
+const POLIA = [];
+function geometria(o) {
+  const maly = window.innerWidth < 600;
+  const Hm = o.mini ? 150 : (maly ? 240 : 300), num = 22, zn = 24, lift = o.mini ? 24 : 40;
+  const maxBar = Hm - num - zn - lift - 4;
+  return { Hm, lift, maxBar, auxH: o.aux ? maxBar + num + zn + 12 : 0, arc: o.mini ? 10 : 20 };
+}
+class Pole {
+  constructor(host, o = {}) {
+    this.o = o; this.el = document.createElement('div');
+    this.el.className = 'pole' + (o.mini ? ' mini' : '');
+    host.appendChild(this.el); this.it = []; this.n = 0; this.posl = null;
+    POLIA.push(this);
+  }
+  nastav(hodnoty) {
+    this.n = hodnoty.length; this.max = Math.max(1, ...hodnoty);
+    this.el.innerHTML = (this.o.aux ? `<div class="auxPas"><span>${U.pomocne}</span></div>` : '') +
+      `<div class="pasmo" hidden></div><div class="delic" hidden></div><div class="hranica" hidden><span>${U.hranica}</span></div>`;
+    this.pasmo = $('.pasmo', this.el); this.delic = $('.delic', this.el); this.hran = $('.hranica', this.el); this.auxPas = $('.auxPas', this.el);
+    this.it = hodnoty.map(v => {
+      const d = document.createElement('div'); d.className = 'st';
+      d.innerHTML = '<span class="num"></span><span class="tyc"></span><span class="zn"></span>';
+      this.el.appendChild(d);
+      return { d, num: d.children[0], tyc: d.children[1], zn: d.children[2], v, cls: '', znak: null, skr: null };
+    });
+    this.posl = null;
+    this.rozmery();
+  }
+  rozmery() {
+    const g = this.g = geometria(this.o), n = this.n || 1;
+    this.el.style.height = (g.Hm + g.auxH) + 'px';
+    if (!this.o.mini) this.el.style.minWidth = (n * 26 + 4) + 'px';
+    if (this.auxPas) this.auxPas.style.height = g.auxH + 'px';
+    for (const s of [this.pasmo, this.delic, this.hran]) if (s) s.style.bottom = g.auxH + 'px';
+    const w = (100 / n * 0.78) + '%';
+    this.it.forEach(it => { it.d.style.width = w; it.d.style.bottom = g.auxH + 'px'; it.skr = null; });
+    const sir = this.el.clientWidth;
+    this.el.classList.toggle('bezCisel', !!this.o.mini && sir > 0 && sir / n < 24);
+    if (this.posl) this.kresli(...this.posl);
+  }
+  vyska(v) { return Math.max(4, Math.round(v / this.max * this.g.maxBar)); }
+  // A = snímka, z ktorej sa ide, B = cieľová snímka, t = 0..1 priebeh pohybu
+  kresli(A, B, t) {
+    this.posl = [A, B, t];
+    if (!this.n || !B) return;
+    const n = this.n, slot = 100 / n, g = this.g, e = ease(t);
+    const S = B._s || (B._s = { cmp: new Set(B.cmp), swp: new Set(B.swp), ok: new Set(B.ok) });
+    const X = c => ((c % 100) + 0.11) * slot;
+    const Y = c => (c >= 200 ? -g.lift : c >= 100 ? g.auxH : 0);
+    for (let id = 0; id < n; id++) {
+      const it = this.it[id], ca = A.p[id], cb = B.p[id];
+      const xa = X(ca), xb = X(cb);
+      const x = xa + (xb - xa) * e;
+      let y = Y(ca) + (Y(cb) - Y(ca)) * e;
+      if (B.ev === 'swap' && S.swp.has(id) && xa !== xb) y += (xb > xa ? -1 : 1) * Math.sin(Math.PI * e) * g.arc;   // oblúk pri výmene
+      it.d.style.left = x.toFixed(3) + '%';
+      it.d.style.transform = 'translateY(' + y.toFixed(1) + 'px)';
+      // farba + tvar (pruhy, bodky, rámik) + značka pod stĺpcom
+      let f = '', z = '';
+      if (S.swp.has(id)) { f = 'f-swp'; z = B.ev === 'shift' ? '→' : B.ev === 'write' ? '↑' : '⇄'; }
+      else if (B.spec && B.spec.id === id) { f = 'f-spec'; z = B.spec.lbl; }
+      else if (S.cmp.has(id)) { f = 'f-cmp'; z = '?'; }
+      else if (S.ok.has(id)) { f = 'f-ok'; z = '✓'; }
+      let cls = 'st ' + f;
+      if (S.cmp.has(id)) cls += ' r-cmp';
+      if (B.range && cb < 200 && ((cb % 100) < B.range[0] || (cb % 100) > B.range[1])) cls += ' dim';
+      const skr = !!this.o.skryte && !S.cmp.has(id);
+      if (skr) cls += ' skr';
+      if (cls !== it.cls) { it.d.className = cls; it.cls = cls; }
+      if (z !== it.znak) { it.zn.textContent = z; it.znak = z; }
+      if (skr !== it.skr) {
+        it.skr = skr; it.num.textContent = skr ? '?' : it.v;
+        it.tyc.style.height = (skr ? Math.round(g.maxBar * .45) : this.vyska(it.v)) + 'px';
+      }
+    }
+    this.pasmo.hidden = !B.range;
+    if (B.range) { this.pasmo.style.left = (B.range[0] * slot) + '%'; this.pasmo.style.width = ((B.range[1] - B.range[0] + 1) * slot) + '%'; }
+    this.delic.hidden = B.mid == null;
+    if (B.mid != null) this.delic.style.left = ((B.mid + 1) * slot) + '%';
+    this.hran.hidden = B.hr == null;
+    if (B.hr != null) this.hran.style.left = (B.hr * slot) + '%';
+  }
+}
+window.addEventListener('resize', () => POLIA.forEach(p => p.rozmery()));
+
+/* ---------- Prehrávač krokov (krok vpred, krok späť, plynulý pohyb) ---------- */
+const HRACI = [];
+class Hrac {
+  constructor(pole, sek, naZmenu) {
+    Object.assign(this, { pole, sek, naZmenu: naZmenu || (() => {}), kroky: [], i: 0, od: 0, t: 1, hra: false, acc: 0, rychlost: 4, slucka: null, auto: false, cakaj: 0 });
+    HRACI.push(this);
+  }
+  get akt() { return this.kroky[this.i]; }
+  nastavKroky(k) {
+    this.kroky = k; this.i = this.od = 0; this.t = 1; this.acc = 0; this.cakaj = 0;
+    this.pole.kresli(k[0], k[0], 1); this.naZmenu(this);
+  }
+  chod(i) {
+    i = clamp(i, 0, this.kroky.length - 1);
+    if (i === this.i) return;
+    this.od = this.i; this.i = i; this.t = 0; this.naZmenu(this);
+  }
+  prepni() {
+    if (this.hra) { this.hra = false; this.auto = false; }
+    else {
+      if (this.i >= this.kroky.length - 1) { this.i = this.od = 0; this.t = 1; this.pole.kresli(this.kroky[0], this.kroky[0], 1); }
+      this.hra = true; this.auto = true; this.acc = interval(this.rychlost);   // prvý krok hneď
+    }
+    this.naZmenu(this);
+  }
+  tick(dt) {
+    const ms = dt * 1000;
+    if (this.hra) {
+      this.acc += ms; const iv = interval(this.rychlost);
+      while (this.acc >= iv && this.hra) {
+        this.acc -= iv;
+        if (this.i < this.kroky.length - 1) this.chod(this.i + 1);
+        else { this.hra = false; this.cakaj = 0; this.naZmenu(this); }
+      }
+    } else if (this.slucka && this.auto && this.i >= this.kroky.length - 1) {   // omyly: po skončení začni znova
+      this.cakaj += ms;
+      if (this.cakaj > 2500) { this.slucka(); this.hra = true; this.acc = 0; this.naZmenu(this); }
+    }
+    if (this.t < 1) {
+      this.t = Math.min(1, this.t + ms / Math.min(450, interval(this.rychlost) * 0.85));
+      this.pole.kresli(this.kroky[this.od], this.kroky[this.i], this.t);
+    }
+  }
+}
+
+/* ---------- Ovládanie údajov (typ, počet, nové pole, vlastné pole) ---------- */
+function ovladanieUdajov(host, o) {
+  let typ = o.typ, n = o.n;
+  host.innerHTML = `<h3>${U.udaje}</h3>
+    <div class="mini" style="margin-top:0">${U.typUdajov}</div>
+    <div class="pills">${Object.keys(TEXTY.data).map(k => `<button data-typ="${k}">${TEXTY.data[k]}</button>`).join('')}</div>
+    <label class="sl"><span class="lbl"><span>${U.pocet}</span><b class="nVal"></b></span><input type="range" min="5" max="30" step="1" class="nIn" aria-label="${U.pocet}"></label>
+    <div class="volby"><button class="noveBtn">${U.noveNahodne}</button></div>
+    <div class="vlastne"><label>${U.vlastne}</label>
+      <div class="vlRiadok"><input type="text" inputmode="text" autocomplete="off" placeholder="${U.vlastnePlaceholder}" aria-label="Vlastné pole"><button class="vlBtn">${U.pouzit}</button></div>
+      <p class="hlaska" aria-live="polite"></p></div>`;
+  const nIn = $('.nIn', host), nVal = $('.nVal', host), hl = $('.hlaska', host), vin = $('.vlRiadok input', host);
+  const obnov = dlzka => {
+    $$('[data-typ]', host).forEach(b => b.classList.toggle('on', b.dataset.typ === typ));
+    nIn.value = clamp(dlzka, 5, 30); nVal.textContent = dlzka;
+  };
+  const nove = () => { if (!typ) typ = 'nahodne'; hl.textContent = ''; hl.classList.remove('chyba'); const h = generuj(typ, n); obnov(n); o.naZmenu(h); };
+  $$('[data-typ]', host).forEach(b => { b.onclick = () => { typ = b.dataset.typ; nove(); }; });
+  nIn.oninput = () => { n = +nIn.value; nove(); };
+  $('.noveBtn', host).onclick = nove;
+  const vlastne = () => {
+    const r = overVstup(vin.value);
+    if (r.chyba) { hl.innerHTML = r.chyba; hl.classList.add('chyba'); return; }
+    typ = null; hl.classList.remove('chyba'); hl.textContent = fmt(U.vlastneOk, { n: sklon(r.hodnoty.length, 'prvok') });
+    obnov(r.hodnoty.length); o.naZmenu(r.hodnoty);
+  };
+  $('.vlBtn', host).onclick = vlastne;
+  vin.addEventListener('keydown', ev => { if (ev.key === 'Enter') vlastne(); });
+  obnov(o.start ? o.start.length : n);
+  if (o.start) o.naZmenu(o.start.slice()); else nove();
+}
+
+function legendaHTML(zoz) {
+  const SW = {
+    cmp: ['f-cmp r-cmp', '?'], swp: ['f-swp', '⇄'], posun: ['f-swp', '→'], presun: ['f-swp', '↑'], ok: ['f-ok', '✓'], okCast: ['f-ok', '✓'],
+    min: ['f-spec', 'min'], pivot: ['f-spec', 'P'], vloz: ['f-spec', 'V'], dim: ['dim', '']
+  };
+  return zoz.map(k => {
+    let sw;
+    if (SW[k]) sw = `<span class="sw ${SW[k][0]}"><span class="tyc"></span><b>${SW[k][1]}</b></span>`;
+    else sw = `<span class="${{ pasmo: 'swP', delic: 'swD', hranica: 'swH', pomocne: 'swA' }[k]}"></span>`;
+    return `<span class="leg">${sw}<span>${TEXTY.legenda[k]}</span></span>`;
+  }).join('');
+}
+
+/* =====================================================================
+   KARTY ALGORITMOV – rovnaké rozloženie a ovládanie pre všetkých päť
+   ===================================================================== */
+let START;   // spoločné počiatočné pole, aby sa algoritmy dali porovnať
+function initAlg(key) {
+  const A = TEXTY.alg[key], druh = ALG[key].druh;
+  const sek = document.createElement('section');
+  sek.id = key; sek.className = 'sek'; sek.dataset.karta = ''; sek.hidden = true;
+  sek.innerHTML = `
+  <div class="stlpec">
+    <div class="card">
+      <div class="algHlava"><h2>${A.nazov} <span class="en">(${A.en})</span></h2>${A.doplnkova ? `<span class="stitok">${U.doplnkova}</span>` : ''}</div>
+      <div class="stage"></div>
+      <div class="krokNum"></div>
+      <div class="krokText" aria-live="polite"></div>
+      <div class="pocitadla">
+        <div class="poc"><span>${U.porovnania}</span><b data-c="p">0</b></div>
+        <div class="poc"><span>${TEXTY.druhyNazov[druh]}</span><b data-c="v">0</b></div>
+        <div class="poc"><span>${U.kroky}</span><b data-c="k">0</b><small>${fmt(U.krokyPozn, { druh: TEXTY.druhyMale[druh] })}</small></div>
+      </div>
+      <div class="tlac">
+        <button data-a="spat">${U.krokSpat}</button>
+        <button data-a="hraj" class="primary">${U.spustit}</button>
+        <button data-a="vpred">${U.krokVpred}</button>
+        <button data-a="reset">${U.reset}</button>
+      </div>
+      <label class="sl"><span class="lbl"><span>${U.rychlost}</span><b data-v="r"></b></span><input type="range" min="1" max="10" step="1" data-i="r" aria-label="${U.rychlost}"></label>
+    </div>
+    <div class="card"><h3>${U.legenda}</h3><div class="legenda">${legendaHTML(A.legenda)}</div></div>
+  </div>
+  <div class="stlpec panel">
+    <div class="card"><p>${A.popis}</p><h3>${U.pseudokod}</h3><ol class="kod">${A.kod.map(r => `<li>${esc(r)}</li>`).join('')}</ol><p class="mini">${U.pseudoPozn}</p></div>
+    <div class="card udaje"></div>
+  </div>`;
+  $('#algKarty').appendChild(sek);
+  const pole = new Pole($('.stage', sek), { aux: key === 'zl' });
+  const kod = $$('.kod li', sek), txt = $('.krokText', sek), num = $('.krokNum', sek);
+  const poc = { p: $('[data-c=p]', sek), v: $('[data-c=v]', sek), k: $('[data-c=k]', sek) };
+  const b = a => $(`[data-a=${a}]`, sek);
+  const hrac = new Hrac(pole, key, h => {
+    const s = h.akt;
+    txt.innerHTML = s.txt; poc.p.textContent = s.c.p; poc.v.textContent = s.c.v; poc.k.textContent = s.k;
+    num.textContent = fmt(U.krokX, { i: h.i, n: h.kroky.length - 1 });
+    kod.forEach((li, i) => li.classList.toggle('akt', i === s.line));
+    b('hraj').innerHTML = h.hra ? U.pauza : U.spustit;
+    b('spat').disabled = h.i === 0; b('vpred').disabled = h.i >= h.kroky.length - 1;
+  });
+  b('spat').onclick = () => { hrac.hra = false; hrac.chod(hrac.i - 1); };
+  b('vpred').onclick = () => { hrac.hra = false; hrac.chod(hrac.i + 1); };
+  b('hraj').onclick = () => hrac.prepni();
+  b('reset').onclick = () => { hrac.hra = false; hrac.nastavKroky(hrac.kroky); };
+  const rIn = $('[data-i=r]', sek), rV = $('[data-v=r]', sek);
+  rIn.value = hrac.rychlost; rV.textContent = hrac.rychlost;
+  rIn.oninput = () => { hrac.rychlost = +rIn.value; rV.textContent = rIn.value; };
+  ovladanieUdajov($('.udaje', sek), {
+    typ: 'nahodne', n: START.length, start: START,
+    naZmenu: h => { hrac.hra = false; pole.nastav(h); hrac.nastavKroky(zaznamenaj(key, h)); }
+  });
+}
+
+/* =====================================================================
+   1. SKÚS TO SÁM
+   ===================================================================== */
+const HRA = { karty: [], vyb: [], p: 0, v: 0, koniec: false, log: [], vysl: null, anim: null, start: [] };
+const TH = TEXTY.hra;
+function novaHra() {
+  let v; do { v = nahRozne(8, 1, 99); } while (isSorted(v));
+  HRA.start = v.slice();
+  HRA.karty = v.map((x, i) => {
+    const el = document.createElement('button'); el.className = 'hk';
+    el.innerHTML = `<span class="poz"></span><span class="pism">${'ABCDEFGH'[i]}</span><span class="hod">?</span><span class="znak"></span>`;
+    const k = { v: x, pism: 'ABCDEFGH'[i], el };
+    el.onclick = () => hraKlik(k);
+    el.setAttribute('aria-label', 'Karta ' + k.pism);
+    return k;
+  });
+  Object.assign(HRA, { vyb: [], p: 0, v: 0, koniec: false, log: [], vysl: null, anim: null });
+  $('#hra_karty').replaceChildren(...HRA.karty.map(k => k.el));
+  $('#hra_stav').innerHTML = TH.stav0; $('#hra_vysl').hidden = true;
+  hraRender();
+}
+function hraKlik(k) {
+  if (HRA.koniec || HRA.anim) return;
+  if (HRA.vyb.length === 1 && HRA.vyb[0] === k) { HRA.vyb = []; $('#hra_stav').innerHTML = TH.stav0; }
+  else if (HRA.vyb.length !== 1) { HRA.vyb = [k]; HRA.vysl = null; $('#hra_stav').innerHTML = fmt(TH.vyber1, { a: `<b>${k.pism}</b>` }); }
+  else {
+    const a = HRA.vyb[0], b = k; HRA.vyb.push(k); HRA.p++;
+    const men = a.v < b.v ? a : b, vac = men === a ? b : a;
+    HRA.vysl = { men, vac };
+    const z = a.v < b.v ? '<' : '>';
+    HRA.log.push(`${a.pism} ${z} ${b.pism}`);
+    $('#hra_stav').innerHTML = fmt(TH.vysl, { a: `<b>${a.pism}</b>`, z: `<b>${z}</b>`, b: `<b>${b.pism}</b>`, m: `<b>${men.pism}</b>`, v: `<b>${vac.pism}</b>` });
+  }
+  hraRender();
+}
+function hraVymen() {
+  if (HRA.vyb.length !== 2 || HRA.koniec || HRA.anim) return;
+  const [x, y] = HRA.vyb, K = HRA.karty, ix = K.indexOf(x), iy = K.indexOf(y);
+  const r1 = x.el.getBoundingClientRect(), r2 = y.el.getBoundingClientRect();
+  K[ix] = y; K[iy] = x; HRA.v++;
+  $('#hra_karty').replaceChildren(...K.map(k => k.el));
+  const n1 = x.el.getBoundingClientRect(), n2 = y.el.getBoundingClientRect();
+  HRA.anim = { t: 0, it: [{ el: x.el, dx: r1.left - n1.left, dy: r1.top - n1.top, s: -1 }, { el: y.el, dx: r2.left - n2.left, dy: r2.top - n2.top, s: 1 }] };
+  $('#hra_stav').innerHTML = fmt(TH.vymenene, { a: `<b>${x.pism}</b>`, b: `<b>${y.pism}</b>` });
+  hraRender(); tickHra(0);
+}
+function tickHra(dt) {   // plynulá výmena kariet (requestAnimationFrame)
+  const A = HRA.anim; if (!A) return;
+  A.t = Math.min(1, A.t + dt / 0.5); const e = ease(A.t);
+  for (const it of A.it) it.el.style.transform = A.t >= 1 ? '' : `translate(${(it.dx * (1 - e)).toFixed(1)}px,${(it.dy * (1 - e) + it.s * Math.sin(Math.PI * e) * 22).toFixed(1)}px)`;
+  if (A.t >= 1) HRA.anim = null;
+}
+function hraRender() {
+  HRA.karty.forEach((k, i) => {
+    let cls = 'hk', zn = '';
+    if (HRA.koniec) {
+      const dobre = k.v === HRA.usp[i];
+      cls += ' odkr ' + (dobre ? 'dobre' : 'zle'); zn = dobre ? '✓' : '✗';
+    } else {
+      if (HRA.vyb.includes(k)) cls += ' vyb';
+      if (HRA.vysl && HRA.vysl.men === k) { cls += ' mensia'; zn = TH.mensia; }
+      if (HRA.vysl && HRA.vysl.vac === k) { cls += ' vacsia'; zn = TH.vacsia; }
+    }
+    k.el.className = cls;
+    $('.poz', k.el).textContent = (i + 1) + '.';
+    $('.hod', k.el).textContent = HRA.koniec ? k.v : '?';
+    $('.znak', k.el).textContent = zn;
+  });
+  $('#hra_p').textContent = HRA.p; $('#hra_v').textContent = HRA.v;
+  $('#hra_vymen').disabled = HRA.vyb.length !== 2 || HRA.koniec;
+  $('#hra_hotovo').disabled = HRA.koniec;
+  $('#hra_log').innerHTML = HRA.log.length ? HRA.log.map(s => `<span class="chip">${esc(s)}</span>`).join(' ') : `<span class="mini">${TH.zaznamPrazdny}</span>`;
+}
+function hraHotovo() {
+  if (HRA.koniec) return;
+  HRA.koniec = true; HRA.vyb = []; HRA.vysl = null;
+  HRA.usp = HRA.start.slice().sort((a, b) => a - b);
+  const ok = HRA.karty.filter((k, i) => k.v === HRA.usp[i]).length;
+  const hotovo = ok === 8;
+  $('#hra_stav').innerHTML = hotovo ? fmt(TH.uspech, { p: `<b>${sklon(HRA.p, 'p')}</b>`, v: `<b>${sklon(HRA.v, 'swap')}</b>` }) : fmt(TH.neuspech, { ok });
+  const riadky = PORADIE.map(k => { const c = spocitaj(k, HRA.start); return { k, c }; });
+  const vyb = riadky.find(r => r.k === 'vyb').c;
+  $('#hra_vysl').innerHTML = `<h3>${TH.porovnanie}</h3><div class="tabWrap"><table class="tab"><tr>${TH.tab.map(t => `<th>${t}</th>`).join('')}</tr>
+    <tr class="ty"><td>${TH.ty}</td><td>${HRA.p}</td><td>${HRA.v}</td><td>${HRA.p + HRA.v}</td></tr>
+    ${riadky.map(r => `<tr><td><span class="farba" style="background:${FARBY[r.k]}"></span>${NAZOV(r.k)}</td><td>${r.c.p}</td><td>${sklon(r.c.v, ALG[r.k].druh)}</td><td>${r.c.k}</td></tr>`).join('')}
+    </table></div><div class="box info">${fmt(TH.pointa, { pv: `<b>${sklon(vyb.p, 'p')}</b> a <b>${sklon(vyb.v, 'swap')}</b>`, p8: vyb.p })}</div>`;
+  $('#hra_vysl').hidden = false;
+  hraRender();
+}
+function initHra() {
+  $('#hra_vymen').onclick = hraVymen; $('#hra_hotovo').onclick = hraHotovo; $('#hra_nova').onclick = novaHra;
+  $('#hra_nap').onclick = () => { const t = $('#hra_napText'); t.innerHTML = TH.napovedaText; t.hidden = !t.hidden; };
+  novaHra();
+}
+
+/* =====================================================================
+   7. SÚŤAŽ ALGORITMOV – počíta sa podľa krokov, nie podľa času
+   ===================================================================== */
+const SUT = { t: 0, max: 0, hra: false, acc: 0, rychlost: 6, drahy: [], hodnoty: [] };
+const TS = TEXTY.sutaz;
+function initSutaz() {
+  const host = $('#sut_drahy');
+  SUT.drahy = PORADIE.map(key => {
+    const c = document.createElement('div'); c.className = 'card draha';
+    c.innerHTML = `<div class="drHlava"><h3><span class="farba" style="background:${FARBY[key]}"></span>${NAZOV(key)}</h3><span class="miesto"></span></div><div class="stage"></div><div class="drPoc"></div>`;
+    host.appendChild(c);
+    return { key, el: c, pole: new Pole($('.stage', c), { mini: true, aux: key === 'zl' }), kroky: [], idx: [], total: 0, i: 0, od: 0, t: 1 };
+  });
+  $('#sut_spat').innerHTML = U.krokSpat; $('#sut_vpred').innerHTML = U.krokVpred; $('#sut_reset').innerHTML = U.reset;
+  $('#sut_hraj').onclick = () => {
+    if (SUT.hra) SUT.hra = false;
+    else { if (SUT.t >= SUT.max) nastavSutT(0); SUT.hra = true; SUT.acc = interval(SUT.rychlost); }
+    obnovSut();
+  };
+  $('#sut_vpred').onclick = () => { SUT.hra = false; nastavSutT(SUT.t + 1); };
+  $('#sut_spat').onclick = () => { SUT.hra = false; nastavSutT(SUT.t - 1); };
+  $('#sut_reset').onclick = () => { SUT.hra = false; nastavSutT(0); };
+  const r = $('#sut_r'); r.value = SUT.rychlost; $('#sut_rv').textContent = SUT.rychlost;
+  r.oninput = () => { SUT.rychlost = +r.value; $('#sut_rv').textContent = r.value; };
+  $('#sut_prepocitat').onclick = () => prehladTypov(SUT.hodnoty.length, SUT.typ);
+  ovladanieUdajov($('#sut_udaje'), { typ: 'nahodne', n: 12, naZmenu: h => nacitajSutaz(h) });
+}
+function nacitajSutaz(h) {
+  SUT.hodnoty = h.slice(); SUT.hra = false; SUT.t = 0;
+  const akt = $('#sut_udaje .pills .on'); SUT.typ = akt ? akt.dataset.typ : null;
+  for (const d of SUT.drahy) {
+    d.kroky = zaznamenaj(d.key, h); d.total = d.kroky[d.kroky.length - 1].k;
+    d.idx = new Array(d.total + 1);
+    d.kroky.forEach((s, i) => { d.idx[s.k] = i; });     // pre každý krok súťaže posledná snímka s týmto počtom krokov
+    d.pole.nastav(h); d.i = d.od = d.idx[0]; d.t = 1;
+    d.pole.kresli(d.kroky[d.i], d.kroky[d.i], 1);
+  }
+  SUT.max = Math.max(...SUT.drahy.map(d => d.total));
+  obnovSut();
+  prehladTypov(h.length, SUT.typ);
+}
+function nastavSutT(t) {
+  SUT.t = clamp(t, 0, SUT.max);
+  for (const d of SUT.drahy) {
+    const ni = d.idx[Math.min(SUT.t, d.total)];
+    if (ni !== d.i) { d.od = d.i; d.i = ni; d.t = 0; }
+  }
+  if (SUT.t >= SUT.max) SUT.hra = false;
+  obnovSut();
+}
+function tickSut(dt) {
+  if (SUT.hra) {
+    SUT.acc += dt * 1000; const iv = interval(SUT.rychlost); let k = 0;
+    while (SUT.acc >= iv) { SUT.acc -= iv; k++; }
+    if (k) nastavSutT(SUT.t + k);
+  }
+  for (const d of SUT.drahy) if (d.t < 1) {
+    d.t = Math.min(1, d.t + dt * 1000 / Math.min(400, interval(SUT.rychlost) * 0.85));
+    d.pole.kresli(d.kroky[d.od], d.kroky[d.i], d.t);
+  }
+}
+function miesta() {   // poradie podľa počtu krokov (rovnaký počet = rovnaké miesto)
+  const m = {};
+  for (const d of SUT.drahy) m[d.key] = 1 + SUT.drahy.filter(e => e.total < d.total).length;
+  return m;
+}
+function obnovSut() {
+  const m = miesta();
+  for (const d of SUT.drahy) {
+    const s = d.kroky[d.i], hotova = SUT.t >= d.total;
+    $('.drPoc', d.el).innerHTML = `${U.porovnania}: <b>${s.c.p}</b> · ${TEXTY.druhyNazov[ALG[d.key].druh]}: <b>${s.c.v}</b> · ${U.kroky}: <b>${s.k}</b>`;
+    $('.miesto', d.el).textContent = hotova ? fmt(TS.miesto, { m: m[d.key] }) : TS.bezi;
+    d.el.classList.toggle('hotova', hotova);
+  }
+  $('#sut_t').textContent = fmt(TS.cas, { t: SUT.t });
+  $('#sut_hraj').innerHTML = SUT.hra ? U.pauza : U.spustit;
+  $('#sut_spat').disabled = SUT.t <= 0; $('#sut_vpred').disabled = SUT.t >= SUT.max;
+  const V = $('#sut_vysl');
+  if (SUT.t >= SUT.max && SUT.max > 0) {
+    const zor = SUT.drahy.slice().sort((a, b) => a.total - b.total);
+    V.innerHTML = `<h2>${TS.vysledky}</h2><div class="tabWrap"><table class="tab"><tr>${TS.tab.map(t => `<th>${t}</th>`).join('')}</tr>
+      ${zor.map(d => { const c = d.kroky[d.kroky.length - 1].c; return `<tr><td>${m[d.key]}.</td><td><span class="farba" style="background:${FARBY[d.key]}"></span>${NAZOV(d.key)}</td><td>${c.p}</td><td>${sklon(c.v, ALG[d.key].druh)}</td><td><b>${d.total}</b></td></tr>`; }).join('')}
+      </table></div>`;
+    V.hidden = false;
+  } else V.hidden = true;
+}
+// priemerné kroky pre všetky typy údajov – ukáže, že poradie sa mení podľa údajov
+function prehladTypov(n, aktTyp) {
+  const POK = 20, riadky = [];
+  for (const typ of Object.keys(TEXTY.data)) {
+    const sum = {}; PORADIE.forEach(k => { sum[k] = 0; });
+    for (let r = 0; r < POK; r++) { const v = generuj(typ, n); PORADIE.forEach(k => { sum[k] += spocitaj(k, v).k; }); }
+    riadky.push({ typ, avg: PORADIE.map(k => sum[k] / POK) });
+  }
+  $('#sut_typyUvod').innerHTML = fmt(TS.typyUvod, { n });
+  $('#sut_typy').innerHTML = `<table class="tab"><tr><th>${U.udaje}</th>${PORADIE.map(k => `<th><span class="farba" style="background:${FARBY[k]}"></span>${TEXTY.alg[k].kratko}</th>`).join('')}</tr>
+    ${riadky.map(r => { const mn = Math.min(...r.avg.map(Math.round)); return `<tr class="${r.typ === aktTyp ? 'akt' : ''}"><td>${TEXTY.data[r.typ]}</td>${r.avg.map(a => Math.round(a) === mn ? `<td class="vit">★ ${Math.round(a)}</td>` : `<td>${Math.round(a)}</td>`).join('')}</tr>`; }).join('')}</table>`;
+  $('#sut_vitazi').innerHTML = '<ul>' + riadky.map(r => {
+    const mn = Math.min(...r.avg.map(Math.round));
+    const v = PORADIE.filter((k, i) => Math.round(r.avg[i]) === mn).map(k => `<b>${NAZOV(k).toLowerCase()}</b>`);
+    return `<li>${fmt(v.length > 1 ? TS.vitazViac : TS.vitaz, { typ: TEXTY.data[r.typ], alg: v.join(' a ') })}</li>`;
+  }).join('') + '</ul>';
+}
+
+/* =====================================================================
+   8. AKO RASTIE POČET KROKOV – graf bez animácie algoritmov
+   ===================================================================== */
+const VELKOSTI = [5, 10, 15, 20, 25, 30];
+const TVARY = { bub: 'kruh', vyb: 'stvorec', vkl: 'trojuh', zl: 'koso', qs: 'krizik' };
+const CIARY = { bub: '', vyb: '9 5', vkl: '2 5', zl: '14 6', qs: '10 4 2 4' };
+const GRAF = { miera: 'p', typ: 'nahodne', data: null, anim: 1, pomer100: null, hotovo: false };
+const TG = TEXTY.graf;
+function znacka(tvar, x, y, f) {
+  const s = `fill="${f}" stroke="#08101c" stroke-width="1.5"`;
+  if (tvar === 'kruh') return `<circle cx="${x}" cy="${y}" r="6.5" ${s}/>`;
+  if (tvar === 'stvorec') return `<rect x="${x - 6}" y="${y - 6}" width="12" height="12" ${s}/>`;
+  if (tvar === 'trojuh') return `<path d="M${x} ${y - 8}L${x + 7.5} ${y + 6}L${x - 7.5} ${y + 6}Z" ${s}/>`;
+  if (tvar === 'koso') return `<path d="M${x} ${y - 8}L${x + 8} ${y}L${x} ${y + 8}L${x - 8} ${y}Z" ${s}/>`;
+  return `<path d="M${x - 6} ${y - 6}L${x + 6} ${y + 6}M${x + 6} ${y - 6}L${x - 6} ${y + 6}" stroke="${f}" stroke-width="4" stroke-linecap="round"/>`;
+}
+function vypocitajGraf() {
+  const POK = 20, d = {};
+  PORADIE.forEach(k => { d[k] = { p: [], k: [] }; });
+  for (const n of VELKOSTI) {
+    const s = {}; PORADIE.forEach(k => { s[k] = { p: 0, k: 0 }; });
+    for (let r = 0; r < POK; r++) {
+      const v = generuj(GRAF.typ, n);
+      PORADIE.forEach(k => { const c = spocitaj(k, v); s[k].p += c.p; s[k].k += c.k; });
+    }
+    PORADIE.forEach(k => { d[k].p.push(s[k].p / POK); d[k].k.push(s[k].k / POK); });
+  }
+  GRAF.data = d;
+  // pomer pri väčších poliach (100 → 200), priemer z 5 polí
+  const pom = {};
+  for (const k of PORADIE) {
+    let a = 0, b = 0;
+    for (let r = 0; r < 5; r++) { a += spocitaj(k, generuj(GRAF.typ, 100)).p; b += spocitaj(k, generuj(GRAF.typ, 200)).p; }
+    pom[k] = b / a;
+  }
+  GRAF.pomer100 = pom;
+}
+function kresliGraf() {
+  const W = 720, H = 440, L = 78, R = 24, T = 20, B = 64, d = GRAF.data, m = GRAF.miera;
+  let mx = 0; PORADIE.forEach(k => d[k][m].forEach(v => { mx = Math.max(mx, v); }));
+  const krok = [5, 10, 20, 25, 50, 100, 200, 250, 500, 1000].find(s => mx / s <= 6) || 1000;
+  const maxY = Math.max(krok, Math.ceil(mx / krok) * krok);
+  const sx = i => L + (VELKOSTI[i] - 5) / 25 * (W - L - R), sy = v => H - B - v / maxY * (H - T - B);
+  let s = `<defs><clipPath id="grafClip"><rect id="grafClipR" x="0" y="0" width="0" height="${H}"/></clipPath></defs>`;
+  for (let v = 0; v <= maxY; v += krok) s += `<line x1="${L}" x2="${W - R}" y1="${sy(v)}" y2="${sy(v)}" stroke="rgba(140,160,215,.18)"/><text x="${L - 10}" y="${sy(v) + 6}" fill="#a3adc6" font-size="16" text-anchor="end">${v}</text>`;
+  VELKOSTI.forEach((n, i) => { s += `<line x1="${sx(i)}" x2="${sx(i)}" y1="${H - B}" y2="${H - B + 6}" stroke="#a3adc6"/><text x="${sx(i)}" y="${H - B + 26}" fill="#e2e8f5" font-size="17" text-anchor="middle">${n}</text>`; });
+  s += `<line x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" stroke="#a3adc6" stroke-width="1.5"/><line x1="${L}" x2="${L}" y1="${T}" y2="${H - B}" stroke="#a3adc6" stroke-width="1.5"/>`;
+  s += `<text x="${(L + W - R) / 2}" y="${H - 10}" fill="#a3adc6" font-size="16" text-anchor="middle">${TG.osX}</text>`;
+  s += `<text transform="translate(18 ${(T + H - B) / 2}) rotate(-90)" fill="#a3adc6" font-size="16" text-anchor="middle">${TG.osY[m]}</text>`;
+  s += '<g clip-path="url(#grafClip)">';
+  PORADIE.forEach(k => {
+    const body = d[k][m].map((v, i) => `${sx(i).toFixed(1)},${sy(v).toFixed(1)}`).join(' ');
+    s += `<polyline points="${body}" fill="none" stroke="${FARBY[k]}" stroke-width="3.5" stroke-linejoin="round" ${CIARY[k] ? `stroke-dasharray="${CIARY[k]}"` : ''}/>`;
+    d[k][m].forEach((v, i) => { s += znacka(TVARY[k], sx(i), sy(v), FARBY[k]); });
+  });
+  s += '</g>';
+  $('#graf_svg').innerHTML = s;
+  $('#graf_svg').setAttribute('aria-label', TG.osY[m] + ' podľa počtu prvkov');
+  GRAF.anim = 0;
+  // tabuľka hodnôt
+  $('#graf_tab').innerHTML = `<table class="tab"><tr><th></th>${VELKOSTI.map(n => `<th>${n}</th>`).join('')}</tr>
+    ${PORADIE.map(k => `<tr><td><span class="farba" style="background:${FARBY[k]}"></span>${TEXTY.alg[k].kratko}</td>${d[k][m].map(v => `<td>${cislo(v, 1)}</td>`).join('')}</tr>`).join('')}</table>`;
+  // pomery pri zdvojnásobení (vždy porovnania)
+  const r = (k, a, b) => d[k].p[VELKOSTI.indexOf(b)] / d[k].p[VELKOSTI.indexOf(a)];
+  $('#graf_pomer').innerHTML = `<table class="tab"><tr>${TG.pomerHlav.map(h => `<th>${h}</th>`).join('')}</tr>
+    ${PORADIE.map(k => `<tr><td>${TEXTY.alg[k].kratko}</td><td>×${cislo(r(k, 5, 10), 1)}</td><td>×${cislo(r(k, 10, 20), 1)}</td><td>×${cislo(r(k, 15, 30), 1)}</td><td>×${cislo(GRAF.pomer100[k], 1)}</td></tr>`).join('')}</table>`;
+  const iny = $('#graf_inyTyp');
+  iny.hidden = GRAF.typ === 'nahodne'; iny.innerHTML = fmt(TG.inyTyp, { typ: TEXTY.data[GRAF.typ] });
+}
+function tickGraf(dt) {
+  if (GRAF.anim >= 1) return;
+  GRAF.anim = Math.min(1, GRAF.anim + dt / 1.4);
+  const r = $('#grafClipR'); if (r) r.setAttribute('width', (720 * ease(GRAF.anim)).toFixed(1));
+}
+function prepocitajGraf() { vypocitajGraf(); kresliGraf(); }
+function initGraf() {
+  $('#graf_miera').innerHTML = `<button data-m="p">${TG.mP}</button><button data-m="k">${TG.mK}</button>`;
+  $('#graf_typ').innerHTML = Object.keys(TEXTY.data).map(k => `<button data-typ="${k}">${TEXTY.data[k]}</button>`).join('');
+  const obnov = () => {
+    $$('#graf_miera button').forEach(b => b.classList.toggle('on', b.dataset.m === GRAF.miera));
+    $$('#graf_typ button').forEach(b => b.classList.toggle('on', b.dataset.typ === GRAF.typ));
+  };
+  $$('#graf_miera button').forEach(b => { b.onclick = () => { GRAF.miera = b.dataset.m; obnov(); kresliGraf(); }; });
+  $$('#graf_typ button').forEach(b => { b.onclick = () => { GRAF.typ = b.dataset.typ; obnov(); prepocitajGraf(); }; });
+  $('#graf_prepocitat').onclick = prepocitajGraf;
+  $('#graf_leg').innerHTML = PORADIE.map(k => `<span><svg width="44" height="20" aria-hidden="true"><line x1="2" x2="42" y1="10" y2="10" stroke="${FARBY[k]}" stroke-width="3.5" ${CIARY[k] ? `stroke-dasharray="${CIARY[k]}"` : ''}/>${znacka(TVARY[k], 22, 10, FARBY[k])}</svg>${NAZOV(k)}</span>`).join('');
+  obnov();
+}
+
+/* =====================================================================
+   9. ČASTÉ OMYLY
+   ===================================================================== */
+const OM = { o2: null, o2t: 1, o4hotovo: false };
+const TO = TEXTY.omyly;
+function omylHrac(stageId, key, gen, opt, naZmenu, btnHraj, btnZnova) {
+  const pole = new Pole($(stageId), Object.assign({ mini: true }, opt));
+  const h = new Hrac(pole, 'omyly', hh => { naZmenu(hh); $(btnHraj).innerHTML = hh.auto ? TO.pauza : TO.hraj; });
+  h.rychlost = 4;
+  h.slucka = () => { const v = gen(); pole.nastav(v); h.nastavKroky(zaznamenaj(key, v)); };
+  h.slucka(); h.hra = true; h.auto = true; h.naZmenu(h);
+  $(btnHraj).onclick = () => h.prepni();
+  $(btnZnova).innerHTML = TO.znova;
+  $(btnZnova).onclick = () => { h.slucka(); h.hra = true; h.auto = true; h.acc = 0; h.naZmenu(h); };
+  return h;
+}
+function initOmyly() {
+  omylHrac('#om1_stage', 'vyb', () => generuj('nahodne', 6), { skryte: true }, h => { $('#om1_txt').innerHTML = h.akt.txt; }, '#om1_hraj', '#om1_znova');
+  omylHrac('#om3_stage', 'vyb', () => generuj('uspor', 8), {}, h => {
+    const s = h.akt; $('#om3_txt').innerHTML = s.txt; $('#om3_p').textContent = s.c.p; $('#om3_v').textContent = s.c.v;
+  }, '#om3_hraj', '#om3_znova');
+  omylHrac('#om4_stage', 'bub', () => generuj('nahodne', 6), {}, h => { $('#om4_txt').innerHTML = h.akt.txt; }, '#om4_hraj', '#om4_znova');
+  $('#om2_znova').innerHTML = TO.znova;
+  $('#om2_znova').onclick = () => { pripravOm2(); };
+}
+// omyl 2: priemerné kroky vkladania, rýchleho, zlučovania a bublinového pri dvoch typoch údajov
+function pripravOm2() {
+  const algs = ['vkl', 'qs', 'zl', 'bub'], skup = ['takmer', 'nahodne'], N = 20, POK = 20, d = {};
+  for (const t of skup) {
+    d[t] = {}; algs.forEach(k => { d[t][k] = 0; });
+    for (let r = 0; r < POK; r++) { const v = generuj(t, N); algs.forEach(k => { d[t][k] += spocitaj(k, v).k / POK; }); }
+  }
+  const mx = Math.max(...skup.flatMap(t => algs.map(k => d[t][k])));
+  $('#om2_graf').innerHTML = skup.map(t => `<h4>${TO.o2.skup[t]}</h4>` + algs.map(k =>
+    `<div class="sgRiadok"><span>${TEXTY.alg[k].kratko}</span><span class="sgPas"><i data-w="${(d[t][k] / mx * 100).toFixed(1)}" style="background:${FARBY[k]}"></i></span><b>${Math.round(d[t][k])}</b></div>`).join('')).join('');
+  OM.o2t = 0;
+}
+function tickOm2(dt) {
+  if (OM.o2t >= 1) return;
+  OM.o2t = Math.min(1, OM.o2t + dt / 1.3); const e = ease(OM.o2t);
+  $$('#om2_graf i').forEach(i => { i.style.width = (+i.dataset.w * e) + '%'; });
+}
+function omylyPrvyRaz() {
+  if (!OM.o2) { OM.o2 = true; pripravOm2(); }
+  if (!OM.o4hotovo) {
+    OM.o4hotovo = true;
+    $('#om4_100').textContent = TO.o4.pocitam; $('#om4_1000').textContent = '';
+    setTimeout(() => {   // výpočet bez animácie, tou istou implementáciou
+      for (const [n, id] of [[100, '#om4_100'], [1000, '#om4_1000']]) {
+        const v = Array.from({ length: n }, () => randInt(1, 10000));
+        $(id).innerHTML = fmt(TO.o4.vypocet, { n: tisic(n), b: tisic(spocitaj('bub', v).p), z: tisic(spocitaj('zl', v).p) });
+      }
+    }, 60);
+  }
+}
+
+/* =====================================================================
+   10. KVÍZ – odpovede vždy počíta tá istá implementácia algoritmov
+   ===================================================================== */
+const TK = TEXTY.kviz, Q = TK.q;
+function stavy(key, v, test) { const out = []; spocitaj(key, v, (ev, S) => { if (test(ev)) out.push(S.a.map(x => x.v)); }); return out; }
+function moznostiPoli(spravne, ine) {
+  const kl = x => x.join(','), seen = new Set([kl(spravne)]), opt = [spravne];
+  for (const x of ine) if (x && !seen.has(kl(x)) && opt.length < 4) { seen.add(kl(x)); opt.push(x); }
+  for (let pokus = 0; opt.length < 4 && pokus < 300; pokus++) {
+    const x = spravne.slice(), i = randInt(0, x.length - 2); [x[i], x[i + 1]] = [x[i + 1], x[i]];
+    if (pokus > 100) { const j = randInt(0, x.length - 1); [x[0], x[j]] = [x[j], x[0]]; }
+    if (!seen.has(kl(x))) { seen.add(kl(x)); opt.push(x); }
+  }
+  const z = zamiesaj(opt);
+  return { moznosti: z.map(fmtPole), spravna: z.indexOf(spravne), spravnaText: fmtPole(spravne) };
+}
+function moznostiCisel(c, kand) {
+  const s = [c];
+  for (const x of kand) if (x >= 0 && !s.includes(x) && s.length < 4) s.push(x);
+  for (let d = 1; s.length < 4; d++) { if (!s.includes(c + d)) s.push(c + d); }
+  const z = zamiesaj(s);
+  return { moznosti: z.map(String), spravna: z.indexOf(c), spravnaText: String(c) };
+}
+function moznostiAlg(keys, hodn) {    // hodn[k] – počet; správny je jediný najmenší
+  const mn = Math.min(...keys.map(k => hodn[k]));
+  if (keys.filter(k => hodn[k] === mn).length !== 1) return null;
+  const z = zamiesaj(keys), vit = keys.find(k => hodn[k] === mn);
+  return { moznosti: z.map(NAZOV), spravna: z.indexOf(vit), spravnaText: NAZOV(vit), vit };
+}
+const OTAZKY = {
+  bubKolo() {
+    for (let p = 0; p < 300; p++) {
+      const k = randInt(1, 2), v = nahRozne(6, 1, 30), st = stavy('bub', v, ev => ev.t === 'koloKoniec');
+      if (st.length < k || isSorted(st[k - 1])) continue;
+      const m = moznostiPoli(st[k - 1], [st[k], k > 1 ? st[k - 2] : v, v.slice().sort((a, b) => a - b)]);
+      return Object.assign(m, { q: fmt(Q.bubKolo.q, { pole: fmtPole(v), k }), vysv: fmt(Q.bubKolo.vysv, { postup: st.slice(0, k).map((s, i) => fmt(TK.poKole, { k: i + 1, pole: fmtPole(s) })).join(', ') }) });
+    }
+    return null;
+  },
+  vybKolo() {
+    for (let p = 0; p < 300; p++) {
+      const k = randInt(1, 2), v = nahRozne(6, 1, 30), st = stavy('vyb', v, ev => ev.t === 'naMieste');
+      if (st.length < k || isSorted(st[k - 1]) || st[k - 1].join() === v.join()) continue;
+      const m = moznostiPoli(st[k - 1], [st[k], k > 1 ? st[k - 2] : v, v.slice().sort((a, b) => a - b)]);
+      return Object.assign(m, { q: fmt(Q.vybKolo.q, { pole: fmtPole(v), k }), vysv: fmt(Q.vybKolo.vysv, { postup: st.slice(0, k).map((s, i) => fmt(TK.poKole, { k: i + 1, pole: fmtPole(s) })).join(', ') }) });
+    }
+    return null;
+  },
+  najmenejVymen() {
+    for (let p = 0; p < 300; p++) {
+      const v = nahRozne(6, 1, 30), keys = ['bub', 'vyb', 'qs'], c = {};
+      keys.forEach(k => { c[k] = spocitaj(k, v).v; });
+      const m = moznostiAlg(keys, c); if (!m) continue;
+      return Object.assign(m, { q: fmt(Q.najmenejVymen.q, { pole: fmtPole(v) }), vysv: fmt(Q.najmenejVymen.vysv, { zoznam: keys.map(k => `${TEXTY.alg[k].kratko}: ${sklon(c[k], 'swap')}`).join(', ') }) + (m.vit === 'vyb' ? Q.najmenejVymen.vyb : '') });
+    }
+    return null;
+  },
+  najmenejPorovnani() {
+    for (let p = 0; p < 300; p++) {
+      const v = generuj('takmer', 8), keys = ['bub', 'vyb', 'vkl'], c = {};
+      keys.forEach(k => { c[k] = spocitaj(k, v).p; });
+      const m = moznostiAlg(keys, c); if (!m) continue;
+      return Object.assign(m, { q: fmt(Q.najmenejPorovnani.q, { pole: fmtPole(v) }), vysv: fmt(Q.najmenejPorovnani.vysv, { zoznam: keys.map(k => `${TEXTY.alg[k].kratko}: ${sklon(c[k], 'p')}`).join(', ') }) + (m.vit === 'vkl' ? Q.najmenejPorovnani.vkl : '') });
+    }
+    return null;
+  },
+  poradie() {
+    for (let p = 0; p < 300; p++) {
+      const key = ['bub', 'vyb', 'vkl'][randInt(0, 2)], v = nahRozne(4, 1, 20), ak = [], typy = [];
+      spocitaj(key, v, ev => { if (POCITANE[ev.t] && ak.length < 4) { ak.push(fmt(TK.akcie[ev.t], ev.p)); typy.push(ev.t); } });
+      if (ak.length < 4 || new Set(ak).size < 4 || typy.every(t => t === 'cmp')) continue;
+      const por = zamiesaj([0, 1, 2, 3]); if (por.join() === '0,1,2,3') continue;
+      return { poradie: por, kroky: por.map(i => ak[i]), q: fmt(Q.poradie.q, { pole: fmtPole(v), alg: TEXTY.alg[key].siedmy }), vysv: fmt(Q.poradie.vysv, { zoznam: ak.map((t, i) => `${i + 1}. ${t}`).join('<br>') }) };
+    }
+    return null;
+  },
+  vybPorovnania() {
+    const n = randInt(5, 8), v = nahRozne(n, 1, 30), c = spocitaj('vyb', v).p;
+    const m = moznostiCisel(c, [n - 1, n * (n - 1), n * n, c - n + 1]);
+    return Object.assign(m, { q: fmt(Q.vybPorovnania.q, { pole: fmtPole(v) }), vysv: fmt(Q.vybPorovnania.vysv, { n1: n - 1, n, c, sucet: Array.from({ length: n - 1 }, (_, i) => n - 1 - i).join(' + ') }) });
+  },
+  bubVymeny() {
+    for (let p = 0; p < 300; p++) {
+      const v = nahRozne(5, 1, 20), c = spocitaj('bub', v).v; if (c < 2) continue;
+      const m = moznostiCisel(c, zamiesaj([c + 1, c - 1, c + 2, c - 2]));
+      return Object.assign(m, { q: fmt(Q.bubVymeny.q, { pole: fmtPole(v) }), vysv: fmt(Q.bubVymeny.vysv, { c: sklon(c, 'swap') }) });
+    }
+    return null;
+  },
+  vklPosuny() {
+    for (let p = 0; p < 300; p++) {
+      const v = nahRozne(5, 1, 20), c = spocitaj('vkl', v).v; if (c < 2) continue;
+      const m = moznostiCisel(c, zamiesaj([c + 1, c - 1, c + 2, c - 2]));
+      return Object.assign(m, { q: fmt(Q.vklPosuny.q, { pole: fmtPole(v) }), vysv: fmt(Q.vklPosuny.vysv, { c: sklon(c, 'shift') }) });
+    }
+    return null;
+  },
+  qsDelenie() {
+    for (let p = 0; p < 300; p++) {
+      const v = nahRozne(6, 1, 30), pv = v[5];
+      if (pv === Math.min(...v) || pv === Math.max(...v)) continue;
+      const st = stavy('qs', v, ev => ev.t === 'naMieste')[0];
+      const stab = [...v.filter(x => x < pv), pv, ...v.filter(x => x > pv)];
+      const m = moznostiPoli(st, [stab, v.slice().sort((a, b) => a - b), [pv, ...v.slice(0, 5)]]);
+      return Object.assign(m, { q: fmt(Q.qsDelenie.q, { pole: fmtPole(v), p: pv }), vysv: fmt(Q.qsDelenie.vysv, { p: pv, vysl: fmtPole(st) }) });
+    }
+    return null;
+  },
+  bubKola() {
+    const n = 6, v = Math.random() < .5 ? generuj('takmer', n) : nahRozne(n, 1, 30);
+    let c = 0, bez = false;
+    spocitaj('bub', v, ev => { if (ev.t === 'kolo') c++; if (ev.t === 'ziadna') bez = true; });
+    const m = moznostiCisel(c, zamiesaj([c - 1, c + 1, n - 1, n]));
+    return Object.assign(m, { q: fmt(Q.bubKola.q, { pole: fmtPole(v) }), vysv: fmt(Q.bubKola.vysv, { c: sklon(c, 'kolo') }) + (bez ? Q.bubKola.bezVymeny : fmt(Q.bubKola.vsetky, { n, m: n - 1 })) });
+  }
+};
+const KV = { n: 0, b: 0, zodp: 0 };
+function novyKviz() {
+  const povinne = ['bubKolo', 'najmenejVymen', 'poradie'];
+  const ostatne = zamiesaj(Object.keys(OTAZKY).filter(k => !povinne.includes(k)));
+  const otazky = [];
+  for (const k of povinne.concat(ostatne)) { if (otazky.length >= 8) break; const o = OTAZKY[k](); if (o) otazky.push(o); }
+  const host = $('#kvizOtazky'); host.innerHTML = '';
+  Object.assign(KV, { n: otazky.length, b: 0, zodp: 0 });
+  zamiesaj(otazky).forEach((o, i) => host.appendChild(o.poradie ? otazkaPoradie(o, i) : otazkaVyber(o, i)));
+  skoreKviz();
+}
+function skoreKviz() {
+  let s = fmt(TK.skore, { b: KV.b, n: KV.n });
+  if (KV.zodp === KV.n) s += KV.b >= KV.n - 1 ? TK.koniecDobre : TK.koniecSlabo;
+  $('#kvizVysl').innerHTML = s;
+}
+function odpovedane(d, ok, o) {
+  KV.zodp++; if (ok) KV.b++;
+  const fb = $('.fb', d); fb.hidden = false; fb.className = 'fb ' + (ok ? 'ok' : 'zle');
+  fb.innerHTML = `<b>${ok ? TK.spravne : TK.nespravne}</b> ${ok || o.poradie ? '' : fmt(TK.spravnaJe, { x: o.spravnaText })} ${o.vysv}`;
+  skoreKviz();
+}
+function otazkaVyber(o, i) {
+  const d = document.createElement('div'); d.className = 'otazka';
+  d.innerHTML = `<div class="q"><span class="por">${i + 1}.</span> ${o.q}</div><div class="moznosti"></div><div class="fb" hidden></div>`;
+  const mz = $('.moznosti', d);
+  o.moznosti.forEach((t, j) => {
+    const b = document.createElement('button'); b.innerHTML = t;
+    b.onclick = () => {
+      $$('button', mz).forEach((x, k) => { x.disabled = true; if (k === o.spravna) x.classList.add('ok'); });
+      if (j !== o.spravna) b.classList.add('zle');
+      odpovedane(d, j === o.spravna, o);
+    };
+    mz.appendChild(b);
+  });
+  return d;
+}
+function otazkaPoradie(o, i) {
+  const d = document.createElement('div'); d.className = 'otazka';
+  d.innerHTML = `<div class="q"><span class="por">${i + 1}.</span> ${o.q}</div><p class="mini">${TK.porPokyn}</p><div class="porKroky"></div>
+    <div class="volby"><button class="porReset">${TK.porReset}</button></div><div class="fb" hidden></div>`;
+  const host = $('.porKroky', d), vyb = [];
+  const btns = o.kroky.map((t, j) => {
+    const b = document.createElement('button'); b.innerHTML = `<span class="c"></span><span>${t}</span>`;
+    b.onclick = () => {
+      if (vyb.includes(j) || vyb.length >= 4) return;
+      vyb.push(j); $('.c', b).textContent = vyb.length;
+      if (vyb.length === 4) {
+        const ok = vyb.every((x, pos) => o.poradie[x] === pos);
+        btns.forEach((x, k) => { x.disabled = true; x.classList.add(o.poradie[k] === vyb.indexOf(k) ? 'ok' : 'zle'); });
+        $('.porReset', d).disabled = true;
+        odpovedane(d, ok, o);
+      }
+    };
+    host.appendChild(b); return b;
+  });
+  $('.porReset', d).onclick = () => { vyb.length = 0; btns.forEach(b => { $('.c', b).textContent = ''; }); };
+  return d;
+}
+
+/* =====================================================================
+   PREPÍNANIE KARIET A ŠTART
+   ===================================================================== */
+function ukazKartu(id) {
+  AKT = id;
+  $$('[data-karta]').forEach(s => { s.hidden = s.id !== id; });
+  $$('#karty button').forEach(b => { const on = b.dataset.k === id; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  POLIA.forEach(p => p.rozmery());   // skryté polia mali nulovú šírku
+  if (id === 'graf' && !GRAF.hotovo) { GRAF.hotovo = true; prepocitajGraf(); }
+  if (id === 'graf') GRAF.anim = 0;
+  if (id === 'omyly') omylyPrvyRaz();
+  try { history.replaceState(null, '', '#' + id); } catch (e) { /* napr. pri otvorení zo súboru */ }
+}
+function init() {
+  $$('[data-t]').forEach(el => { const v = cesta(TEXTY, el.dataset.t); if (typeof v === 'string') el.innerHTML = v; });
+  const nav = $('#karty'); let i = 0;
+  for (const k in TEXTY.karty) {
+    const b = document.createElement('button'); b.dataset.k = k; b.setAttribute('role', 'tab');
+    b.innerHTML = (k !== 'pozn' ? `<span class="cis">${i + 1}.</span> ` : '') + TEXTY.karty[k];
+    b.onclick = () => ukazKartu(k); nav.appendChild(b); i++;
+  }
+  $('#poznList').innerHTML = TEXTY.pozn.polozky.map(t => `<li>${t}</li>`).join('');
+  START = generuj('nahodne', 10);
+  initHra();
+  PORADIE.forEach(initAlg);
+  initSutaz(); initGraf(); initOmyly();
+  $('#kvizNovy').onclick = novyKviz; novyKviz();
+  const h = (location.hash || '').slice(1);
+  ukazKartu(TEXTY.karty[h] ? h : 'hra');
+  let posl = performance.now();
+  const snimka = now => {   // jedna slučka pre všetky animácie, časovanie podľa skutočného času
+    const dt = Math.min(.1, Math.max(0, (now - posl) / 1000)); posl = now;
+    for (const hr of HRACI) if (hr.sek === AKT) hr.tick(dt);
+    if (AKT === 'sutaz') tickSut(dt);
+    if (AKT === 'graf') tickGraf(dt);
+    if (AKT === 'omyly') tickOm2(dt);
+    if (AKT === 'hra') tickHra(dt);
+    requestAnimationFrame(snimka);
+  };
+  requestAnimationFrame(snimka);
+}
+init();
+</script>
+<script data-goatcounter="https://jasvarc.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
