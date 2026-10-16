@@ -16,7 +16,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parent
-PAGE_TITLE = "Moje animácie"
+PAGE_TITLE = "Pachove animácie"
 OTHER_LABEL = "Ostatné"
 
 # Voliteľné: pekné zobrazované názvy predmetov (kľúč = prefix priečinka, malými písmenami).
