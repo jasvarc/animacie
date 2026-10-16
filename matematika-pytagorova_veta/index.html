@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pytagorova veta</title>
+<link rel="icon" href="data:,">
+<script>
+/* =====================================================================
+   TEXTY – všetko, čo žiak číta, je na jednom mieste. Upravuj len texty v úvodzovkách.
+   HTML značky (<b>, <br>) sú povolené.
+   {x} – sem program doplní číslo alebo výraz.
+   ===================================================================== */
+const TEXTY = {
+  titul: 'Pytagorova veta',
+  podtitul: 'V pravouhlom trojuholníku má štvorec nad preponou rovnaký obsah ako oba štvorce nad odvesnami spolu. Pozri sa, prečo to platí, a nauč sa to používať.',
+  pata: 'Pytagorova veta · interaktívna animácia pre 8. ročník ZŠ · funguje aj offline',
+  karty: { odm: 'Príprava: odmocnina', str: 'Pomenovanie strán', stv: 'Štvorce nad stranami', dok: 'Dôkaz prekladaním', troj: 'Pytagorejské trojice', vyp: 'Výpočet strany', obr: 'Obrátená veta', prax: 'V praxi', omyly: 'Časté omyly', kviz: 'Kvíz', pozn: 'Zjednodušenia' },
+
+  ui: {
+    spustit: '▶ Spustiť', pauza: '❚❚ Pauza', znova: '⟲ Prehrať znova', spat: '◀ Späť', krok: 'Krok za krokom ▶',
+    rychlost: 'Rýchlosť animácie', krokX: 'Krok {i} z {n}', zavriet: 'Zavrieť ✕'
+  },
+
+  /* ---------- 0. ODMOCNINA ---------- */
+  odm: {
+    nadpis: 'Príprava: odmocnina',
+    uvod: 'Obsah štvorca vypočítam tak, že stranu vynásobím ňou samou: <b>S = s · s = s²</b>. <b>Odmocnina</b> ide opačne: poznám obsah štvorca a hľadám jeho stranu.',
+    rezimA: 'Poznám stranu → obsah', rezimB: 'Poznám obsah → stranu',
+    slStrana: 'Strana štvorca', slObsah: 'Obsah štvorca, ktorý hľadám', slHladam: 'Moja strana',
+    rovA: 'obsah = {s} · {s} = {s}² = <b>{S}</b>',
+    rovAcele: ' – spočítaj štvorčeky',
+    rovAdes: ' – {n} celých štvorčekov a ešte kúsky',
+    rovB: 'strana {s} → obsah {s} · {s} = <b>{S}</b> &nbsp;(hľadám obsah {T})',
+    uloha: 'Hľadám stranu štvorca, ktorý má obsah <b>{T}</b>. Posúvaj stranu alebo použi tlačidlá.',
+    malo: 'Obsah {S} je <b>menší</b> ako {T} → stranu zväčši.',
+    vela: 'Obsah {S} je <b>väčší</b> ako {T} → stranu zmenši.',
+    presne: '<b>Presne!</b> {o}, lebo {s} · {s} = {T}. Štvorec so stranou {s} má obsah {T}.',
+    medzi: 'Presnejšie to s dvoma desatinnými miestami nejde: {s1} · {s1} = {S1} je trochu menej a {s2} · {s2} = {S2} je trochu viac ako {T}. Strana je niekde medzi nimi: <b>{o}</b>.<br>Presnú stranu nevieme zapísať desatinným číslom – desatinné miesta by nikdy neskončili. Preto píšeme {odm} a pri počítaní ju <b>zaokrúhlime</b>.',
+    ukaz: 'Ukáž stranu',
+    zapamataj: '<b class="h">Zapamätaj si</b>Odmocnina z čísla je <b>strana štvorca</b>, ktorý má taký obsah. √25 = 5, lebo štvorec 5 × 5 má obsah 25. Niekedy strana nevyjde celá: √2 <b class="pr">≈</b> 1,41. Znak <b class="pr">≈</b> znamená „približne“.'
+  },
+
+  /* ---------- 1. POMENOVANIE STRÁN ---------- */
+  str: {
+    nadpis: 'Pomenovanie strán',
+    uvod: 'Pravouhlý trojuholník má jeden <b>pravý uhol</b> (90°), označený štvorčekom.',
+    odvesny: '<b class="cA">Odvesny</b> <b class="cA">a</b>, <b class="cB">b</b> – dve strany, ktoré <b>zvierajú pravý uhol</b>.',
+    prepona: '<b class="cC">Prepona</b> <b class="cC">c</b> – strana, ktorá leží <b>oproti pravému uhlu</b>. Je vždy najdlhšia.',
+    slRot: 'Otočenie', ukazPravidlo: 'Ukáž, čo leží oproti pravému uhlu',
+    otocL: '↺ 45°', otocP: '↻ 45°', preklop: '⇋ Preklopiť', nahodne: '🎲 Náhodná poloha', tvar: '◇ Iný tvar',
+    tipTahaj: 'Tip: trojuholník môžeš chytiť a posúvať. Kliknutím na stranu sa zobrazí jej popis.',
+    tipKlik: 'Pozor: prepona nemusí byť dole ani šikmo. Rozhoduje len to, že leží oproti pravému uhlu.',
+    slovo: { a: 'odvesna', b: 'odvesna', c: 'prepona' },
+    stav: 'Pravý uhol je pri vrchole <b>C</b>. Oproti nemu leží strana <b class="cC">c</b> – to je <b>prepona</b>. Strany <b class="cA">a</b> a <b class="cB">b</b> vychádzajú z vrcholu C a zvierajú pravý uhol – sú to <b>odvesny</b>.<br>Dĺžky: a = {a}, b = {b}, c {c}. Prepona je najdlhšia.',
+    poloha: '<br>Trojuholník je otočený o {r}°{z}. Strany sa stále pomenúvajú rovnako – podľa pravého uhla, nie podľa polohy na obrazovke.',
+    preklopeny: ' a preklopený',
+    info: {
+      c: { n: 'Prepona c', t: 'Strana <b>oproti pravému uhlu</b>. V pravouhlom trojuholníku je vždy <b>najdlhšia</b>. Nezáleží na tom, či je dole, hore alebo šikmo.' },
+      a: { n: 'Odvesna a', t: 'Jedna z dvoch strán, ktoré <b>zvierajú pravý uhol</b> – vychádza z vrcholu s pravým uhlom. Leží oproti vrcholu A.' },
+      b: { n: 'Odvesna b', t: 'Druhá strana, ktorá <b>zviera pravý uhol</b> – vychádza z vrcholu s pravým uhlom. Leží oproti vrcholu B.' }
+    }
+  },
+  hra: {
+    nadpis: 'Mini hra: nájdi preponu',
+    rezimC: 'Klikni na preponu', rezimO: 'Klikni na odvesnu',
+    zadC: 'Klikni na <b>preponu</b> tohto trojuholníka.',
+    zadO: 'Klikni na jednu z <b>odvesien</b> tohto trojuholníka.',
+    dalsi: 'Ďalší trojuholník ▶', skore: 'Správne: {ok} z {n}',
+    okC: '<b>✔ Správne!</b> Strana {s} leží oproti pravému uhlu pri vrchole {v} – je to prepona.',
+    zleC: '<b>✘ Nie.</b> Pravý uhol je pri vrchole {v} (štvorček). Prepona je strana oproti nemu – <b>{s}</b> (zelená, hrubá).',
+    okO: '<b>✔ Správne!</b> Strana {s} vychádza z vrcholu {v} s pravým uhlom – je to odvesna.',
+    zleO: '<b>✘ Nie.</b> Strana {s} leží oproti pravému uhlu – to je prepona. Odvesny sú {o1} a {o2}: zvierajú pravý uhol pri vrchole {v}.'
+  },
+
+  /* ---------- 2. ŠTVORCE NAD STRANAMI ---------- */
+  stv: {
+    nadpis: 'Štvorce nad stranami',
+    uvod: 'Nad každou stranou trojuholníka je štvorec. Obsah štvorca = počet jednotkových štvorčekov. Zmeň odvesny a sleduj, ako sa menia obsahy.',
+    slA: 'Odvesna a', slB: 'Odvesna b', trojice: 'Skús:',
+    preloz: 'Prelož štvorčeky do veľkého štvorca', vrat: '⏮ Vráť späť',
+    trojica: '{a}, {b}, {c} sú celé čísla – <b>pytagorejská trojica</b>. Štvorčeky z a² a b² sa dajú presne preložiť do štvorca nad preponou.',
+    hotovo: 'Všetkých {a2} + {b2} = {c2} štvorčekov presne vyplnilo štvorec nad preponou. Nič nezostalo, nič nechýba.',
+    necela: 'c {c} nie je celé číslo, preto sa štvorec nad preponou <b>nedá poskladať z celých štvorčekov</b>. Jeho obsah je však aj tak presne {a2} + {b2} = <b>{c2}</b>.',
+    veta: '<b class="h">Pytagorova veta</b>V pravouhlom trojuholníku je obsah štvorca nad preponou rovný súčtu obsahov štvorcov nad odvesnami:<div class="vzorec">a² + b² = c²</div>',
+    omyl: '<b class="h">Pozor</b>a + b = {a} + {b} = {s}, ale c {c}. Prepona <b>nie je</b> súčet odvesien. Sčítavajú sa <b>obsahy štvorcov</b>, nie dĺžky strán.',
+    historia: '<b class="h">Z histórie</b>Veta nesie meno podľa Pytagora zo Samu, ktorý žil v 6. storočí pred Kr. Vzťah medzi stranami pravouhlého trojuholníka bol však známy už skôr, napríklad v Babylone.',
+    legenda: 'Štvorec nad <b class="cA">a</b> je šrafovaný šikmo „/“, nad <b class="cB">b</b> šikmo „\\“ (modré štvorčeky majú pruhy), nad <b class="cC">c</b> bodkovaný.'
+  },
+
+  /* ---------- 3. DÔKAZ ---------- */
+  dok: {
+    nadpis: 'Dôkaz prekladaním',
+    uvod: 'Prečo veta platí pre <b>každý</b> pravouhlý trojuholník, nielen pre jeden príklad? Stačí veľký štvorec a štyri rovnaké trojuholníky. Zmeň a, b posuvníkmi – dôkaz funguje vždy.',
+    slA: 'Odvesna a', slB: 'Odvesna b', slM: 'Rozloženie A → B',
+    prepni: '⇄ Prelož A ↔ B',
+    myslienka: '<b class="h">Hlavná myšlienka</b>Veľký štvorec má v oboch rozloženiach rovnakú plochu <b>(a + b)²</b>. Odpočítame od nej tie isté štyri trojuholníky. Preto musia byť zvyšné plochy rovnaké: <b>a² + b² = c²</b>.',
+    kroky: [
+      'Nakreslím veľký štvorec so stranou <b>a + b = {a} + {b} = {S}</b>. Jeho obsah je (a + b)² = {S}² = {S2}. Tento štvorec sa počas celého dôkazu nemení.',
+      '<b>Rozloženie A:</b> vložím <b>štyri zhodné pravouhlé trojuholníky</b> s odvesnami <b class="cA">a</b>, <b class="cB">b</b> a preponou <b class="cC">c</b> – vždy dva tvoria obdĺžnik a × b. Každý trojuholník má obsah a · b : 2 = {T}.',
+      'Zvyšná (nezakrytá) plocha sú <b>dva štvorce</b>: <b class="cA">a²</b> so stranou a a <b class="cB">b²</b> so stranou b. Spolu {a2} + {b2} = <b>{c2}</b>.',
+      'Teraz tie isté štyri trojuholníky preskupím. Trojuholníky sa nemenia – nemenia veľkosť ani tvar, len sa presúvajú.',
+      '<b>Rozloženie B:</b> zvyšná plocha je jeden <b>naklonený štvorec so stranou c</b>. Jeho vrcholy ležia na stranách veľkého štvorca vo vzdialenosti a od rohov. Všetky jeho strany sú prepony c a uhly sú pravé: pri vrchole je na priamke β + ? + α = 180° a α + β = 90°, preto ? = 90°.',
+      'Zdôvodnenie: v oboch rozloženiach je zvyšná plocha = (a + b)² − 4 trojuholníky = {S2} − {T4} = {c2}. Preto sa musia rovnať:<div class="vzorec">a² + b² = c²</div>Pre naše čísla: {a}² + {b}² = {a2} + {b2} = {c2}, teda c {ct}.'
+    ],
+    rov: 'zvyšná plocha = (a + b)² − 4 trojuholníky = {S}² − 4 · {T} = {S2} − {T4} = <b>{c2}</b>',
+    rovC: 'rozloženie B: jeden štvorec <b class="cC">c²</b> = {c2}',
+    rovAB: 'rozloženie A: dva štvorce <b class="cA">a²</b> + <b class="cB">b²</b> = {a2} + {b2} = {c2}',
+    kontrolaOk: 'Kontrola výpočtom v kóde (a = {a}, b = {b}): vrcholy nakloneného štvorca ležia na stranách veľkého štvorca vo vzdialenosti a = {a} od rohov ✓, všetky jeho strany majú dĺžku c ✓, všetky jeho uhly sú pravé ✓.',
+    kontrolaZle: 'Kontrola výpočtom v kóde zlyhala: {chyby}'
+  },
+
+  /* ---------- 4. PYTAGOREJSKÉ TROJICE ---------- */
+  troj: {
+    nadpis: 'Pytagorejské trojice',
+    uvod: '<b>Pytagorejská trojica</b> sú tri celé čísla a, b, c, pre ktoré platí a² + b² = c². Klikni na trojicu – nakreslí sa trojuholník aj štvorce.',
+    slK: 'Násobok k', necBtn: '1, 1 → ?',
+    rov: '{a}² + {b}² = {A} + {B} = {S}',
+    rovCela: ' = {c}² ✓ pytagorejská trojica',
+    rovNecela: ', c = {odm} – nie je celé číslo',
+    nasobok: 'Keď všetky strany trojice vynásobím tým istým číslom <b>k = {k}</b>, dostanem novú trojicu: ({a}, {b}, {c}) · {k} = <b>({A}, {B}, {C})</b>. Platí to vždy, lebo (k·a)² + (k·b)² = k² · (a² + b²) = k² · c² = (k·c)². Trojuholníky sú <b>podobné</b> – majú rovnaký tvar, líšia sa len veľkosťou.',
+    necele: '<b class="h">Nie každý pravouhlý trojuholník má celé strany</b>Odvesny {a} a {b}: c² = {A} + {B} = {S}, c = {odm}. Trojuholník je pravouhlý, ale prepona nie je celé číslo – preto to nie je pytagorejská trojica.',
+    podobne: 'Podobné trojuholníky pre k = 1 až 5',
+    povraz: {
+      nadpis: 'Povraz s 12 uzlami',
+      text: 'Stavbári kedysi vyznačovali pravý uhol povrazom, na ktorom bolo 12 rovnako vzdialených uzlov. Povraz napli do trojuholníka so stranami 3, 4 a 5 dielov.',
+      napni: '▶ Napni povraz', znova: '⏮ Znova',
+      hotovo: '3² + 4² = 9 + 16 = 25 = 5², preto pri uzle medzi stranami 3 a 4 vznikol <b>pravý uhol</b>.',
+      pred: 'Povraz je rozdelený uzlami na 12 rovnakých dielov (prvý a posledný uzol sa zviažu).'
+    }
+  },
+
+  /* ---------- 5. VÝPOČET ---------- */
+  vyp: {
+    nadpis: 'Výpočet chýbajúcej strany',
+    uvod: 'Zadaj dve strany pravouhlého trojuholníka a vyber, ktorú chceš vypočítať. Najprv si ujasni, <b>ktorá strana je prepona</b>.',
+    hl: { c: 'Hľadám preponu c', a: 'Hľadám odvesnu a', b: 'Hľadám odvesnu b' },
+    lbl: { a: 'Odvesna a (cm)', b: 'Odvesna b (cm)', c: 'Prepona c (cm)' },
+    des: 'Zaokrúhliť na desatinné miesta:',
+    btn: 'Vypočítaj', postup: 'Postup riešenia',
+    dalej: 'Ďalší krok ▶', vsetko: 'Ukáž celé riešenie', znova: '⏮ Od začiatku',
+    nahodny: '🎲 Náhodný príklad', urovne: { 1: 'ľahká', 2: 'stredná', 3: 'ťažšia' }, uroven: 'Úroveň:',
+    chybaCislo: 'Dĺžka strany musí byť <b>kladné číslo</b> (väčšie ako 0), najviac s dvoma desatinnými miestami, napr. 6 alebo 2,5. Nula ani záporné číslo nemôže byť dĺžka strany.',
+    chybaPrepona: '<b class="h">Takýto pravouhlý trojuholník neexistuje</b>Prepona je vždy <b>najdlhšia strana</b> pravouhlého trojuholníka. Zadaná prepona {c} cm nie je dlhšia ako odvesna {o} cm. Skontroluj, či nie sú strany zamenené, alebo zväčši preponu.',
+    zadC: 'Poznám odvesny <b class="cA">a = {p} cm</b> a <b class="cB">b = {q} cm</b>. Hľadám preponu <b class="cC">c</b>.',
+    zadO: 'Poznám preponu <b class="cC">c = {p} cm</b> a odvesnu <b>{k} = {q} cm</b>. Hľadám odvesnu <b>{u}</b>.',
+    vzC: 'Vzorec: c² = a² + b², preto <b>c = {vz}</b>',
+    vzO: 'Vzorec: c² = a² + b². Odvesnu dostanem, keď od štvorca nad preponou odoberiem štvorec nad známou odvesnou: {u}² = c² − {k}², preto <b>{u} = {vz}</b>',
+    dos: 'Dosadím: {u} = {vz}',
+    med: 'Medzivýsledok: {u} = {vz} = {odm}. ({u}² = {N} je obsah štvorca nad stranou {u}.)',
+    odmP: 'Odmocnina: <b>{u} = {r}</b>',
+    odmZ: 'Odmocnina: <b>{u} {pr} {r}</b> (zaokrúhlené na {d} des. {m})',
+    miesta: ['miesto', 'miesta', 'miest'],
+    odpC: '<b>Odpoveď:</b> Prepona má dĺžku {txt} cm. Kontrola: prepona je najdlhšia strana ({r} > {max}) ✓',
+    odpO: '<b>Odpoveď:</b> Odvesna {u} má dĺžku {txt} cm. Kontrola: odvesna je kratšia ako prepona ({r} < {c}) ✓',
+    priblizne: 'približne',
+    omyly: '<b class="h">Pozor na časté chyby</b>• <b>c ≠ a + b</b> – sčítavajú sa druhé mocniny (obsahy štvorcov), nie dĺžky.<br>• Na konci treba <b>odmocniť</b> – c² je obsah štvorca, c je jeho strana.<br>• Pri hľadaní <b>odvesny</b> sa <b>odčítava</b>: a² = c² − b².'
+  },
+
+  /* ---------- 6. OBRÁTENÁ VETA ---------- */
+  obr: {
+    nadpis: 'Obrátená Pytagorova veta',
+    uvod: 'Ak pre strany trojuholníka platí <b>a² + b² = c²</b> (c je najdlhšia strana), trojuholník je <b>pravouhlý</b> a pravý uhol leží oproti strane c. Nastav tri strany a over to.',
+    sl: ['Strana 1', 'Strana 2', 'Strana 3'], skus: 'Skús:', zloz: '▶ Zlož tyčky znova',
+    tip: 'Na poradí posuvníkov nezáleží – najdlhšiu stranu program vždy označí ako c, lebo len ona môže byť prepona. Najprv sa overí, či z tyčiek vôbec vznikne trojuholník.',
+    prav: '<b class="h">Pravouhlý trojuholník</b>Trojuholník vznikne ({a} + {b} > {c}). {a}² + {b}² = {A} + {B} = {S} = {c}². Platí a² + b² = c², preto je trojuholník <b>pravouhlý</b>. Pravý uhol leží oproti najdlhšej strane c = {c}.',
+    nie: '<b class="h">Nie je pravouhlý</b>Trojuholník vznikne ({a} + {b} > {c}), ale {a}² + {b}² = {A} + {B} = {S} a {c}² = {C}. Nie je to rovnaké, preto trojuholník <b>nie je pravouhlý</b>.',
+    ostry: '<br><b class="zved">Rozšírenie pre zvedavých:</b> a² + b² je <b>viac</b> ako c² ({S} > {C}), preto je trojuholník <b>ostrouhlý</b> – uhol oproti najdlhšej strane je menší ako 90° (γ ≈ {g}°).',
+    tupy: '<br><b class="zved">Rozšírenie pre zvedavých:</b> a² + b² je <b>menej</b> ako c² ({S} < {C}), preto je trojuholník <b>tupouhlý</b> – uhol oproti najdlhšej strane je väčší ako 90° (γ ≈ {g}°).',
+    nieTroj: '<b class="h">Trojuholník nevznikne</b>Najprv overím trojuholníkovú nerovnosť: dve kratšie strany {a} + {b} = {s} musia byť spolu dlhšie ako najdlhšia strana {c}. Nie sú, preto sa tyčky nestretnú. O pravom uhle sa tu nedá hovoriť.',
+    barL: 'a² + b² = {A} + {B} = <b>{S}</b>', barR: 'c² = <b>{C}</b>',
+    medzera: 'nestretnú sa'
+  },
+
+  /* ---------- 7. V PRAXI ---------- */
+  prax: {
+    nadpis: 'Pytagorova veta v praxi',
+    skryty: 'Šrafovaný je <b>pravouhlý trojuholník, ktorý sa v situácii skrýva</b>. Hlavná zručnosť je nájsť ho – potom už stačí Pytagorova veta.',
+    sc: { rebrik: '🪜 Rebrík', obdlznik: '▭ Uhlopriečka obdĺžnika', body: '⌗ Body v sieti', rovno: '△ Rovnoramenný trojuholník' },
+    rebrik: {
+      uvod: 'Rebrík, stena a zem tvoria pravouhlý trojuholník. Pravý uhol je medzi stenou a zemou, oproti nemu leží rebrík – <b>rebrík je prepona</b>. Hľadáme, kam rebrík na stene siaha.',
+      slL: 'Dĺžka rebríka L (m)', slD: 'Päta od steny d (m)',
+      vypocet: 'h² = L² − d² = {L}² − {d}² = {L2} − {d2} = {h2}<br>h = {odm} m',
+      vysledok: 'Rebrík siaha na stene do výšky <b>{h} m</b>.',
+      tip: 'Tip: pätu rebríka môžeš chytiť a posúvať.'
+    },
+    obdlznik: {
+      uvod: 'Uhlopriečka rozdelí obdĺžnik na dva pravouhlé trojuholníky. Strany obdĺžnika sú odvesny, <b>uhlopriečka je prepona</b>.',
+      predvolby: { tv: 'Televízor', dvere: 'Dvere', ihrisko: 'Ihrisko', ciste: 'Obdĺžnik 6 × 8' },
+      slW: 'Šírka', slV: 'Výška',
+      vypocet: 'u² = {w}² + {v}² = {w2} + {v2} = {u2}<br>u = {odm} {j}',
+      palce: 'Veľkosť televízora sa udáva uhlopriečkou v palcoch (1 palec = 2,54 cm): {u} : 2,54 ≈ <b>{p} palcov</b>.',
+      vysledok: 'Uhlopriečka má dĺžku <b>{u} {j}</b>.',
+      tip: 'Vyber predmet alebo nastav rozmery posuvníkmi.'
+    },
+    body: {
+      uvod: 'Vzdialenosť dvoch bodov v sieti je prepona pravouhlého trojuholníka. Odvesny sú rozdiel x-ových a rozdiel y-ových súradníc. To je <b>úvod do vzdialenosti v rovine</b>.',
+      vypocet: '|AB| = {vz}<br>|AB| = {vz2} = {vz3} = {odm}',
+      rovno: 'Body ležia na jednej vodorovnej alebo zvislej čiare – trojuholník nevznikne, vzdialenosť stačí odpočítať: |AB| = {d}.',
+      tip: 'Tip: body A a B môžeš chytiť a posúvať po sieti.'
+    },
+    rovno: {
+      uvod: 'Výška rovnoramenného trojuholníka ho rozdelí na dva zhodné pravouhlé trojuholníky. Výška padá do stredu základne. <b>Rameno je prepona</b>, odvesny sú výška a polovica základne.',
+      slZ: 'Základňa z', slR: 'Rameno r',
+      vypocet: 'v² = r² − (z : 2)² = {r}² − {h}² = {r2} − {h2} = {v2}<br>v = {odm}',
+      vysledok: 'Výška trojuholníka je <b>{v}</b>.',
+      zle: 'Rameno musí byť dlhšie ako polovica základne ({h}). Inak sa ramená nestretnú a trojuholník nevznikne.',
+      tip: 'Zmeň základňu a rameno posuvníkmi.'
+    }
+  },
+
+  /* ---------- 8. ČASTÉ OMYLY ---------- */
+  omyly: {
+    nadpis: 'Časté omyly',
+    uvod: 'Ku každému omylu je krátka animácia. Stlač „Ukáž opravu“.',
+    ukaz: '▶ Ukáž opravu', znova: '⏮ Znova',
+    zoznam: [
+      { omyl: 'c = a + b', oprava: '3 + 4 = 7, ale prepona je 5. Súčet dvoch strán trojuholníka je vždy <b>väčší</b> ako tretia strana (trojuholníková nerovnosť). Preto prepona nikdy nie je a + b.' },
+      { omyl: '√(a² + b²) = a + b', oprava: 'Odmocnina súčtu <b>nie je</b> súčet odmocnín. Plochy 9 + 16 = 25 dajú štvorec so stranou √25 = 5. Štvorec so stranou 3 + 4 = 7 má plochu 49 – oveľa viac.' },
+      { omyl: 'a² + b² = c² platí v každom trojuholníku', oprava: 'Platí <b>len v pravouhlom</b> trojuholníku. Pri strane a = 4, b = 5 a uhle 80° je c² menšie ako 41, pri 100° väčšie. Rovnosť nastane len pri 90°.' },
+      { omyl: 'c je vždy „tá šikmá“ alebo „tá dole“', oprava: 'c je <b>prepona</b> – strana oproti pravému uhlu, v ľubovoľnej polohe trojuholníka. Pozri, ako sa trojuholník otáča a c ide stále s preponou.' },
+      { omyl: 'a² = 2 · a', oprava: '5² = 5 · 5 = <b>25</b>, nie 2 · 5 = 10. Druhá mocnina je obsah štvorca: 5 riadkov po 5 štvorčekov.' },
+      { omyl: 'pri hľadaní odvesny sa plochy sčítavajú', oprava: 'Pri odvesne sa <b>odčítava</b>: od veľkého štvorca c² odoberieme štvorec a². 25 − 9 = 16, b = √16 = 4.' }
+    ]
+  },
+
+  /* ---------- KVÍZ ---------- */
+  kviz: {
+    nadpis: 'Kvíz',
+    uvod: 'Desať otázok, zakaždým iných. Desatinné čísla môžeš písať s čiarkou aj bodkou, napr. 3,61. Odpoveď sa uzná, ak sa od presnej hodnoty líši najviac o 0,01. Nič sa neukladá ani neodosiela.',
+    uroven: 'Úroveň:', urovne: { 1: 'ľahká', 2: 'stredná', 3: 'ťažšia' },
+    novy: '🔄 Nový kvíz', over: 'Skontrolovať', dobre: 'Správne!', zle: 'Nesprávne.', spravne: 'Správna odpoveď:',
+    vyplnCislo: 'Napíš číslo (napr. 13 alebo 3,61).', ano: 'Áno', nie: 'Nie', postup: 'Postup:',
+    druhy: { prav: 'pravouhlý', ostry: 'ostrouhlý', tupy: 'tupouhlý' },
+    vysl: 'Výsledok: {b} z {n} bodov.', vyslDobre: ' Výborne!', vyslSkus: ' Pozri si postupy a skús nový kvíz.',
+    q: {
+      prepona: 'Ktorá strana tohto (otočeného) trojuholníka je <b>prepona</b>?',
+      rovnica: 'Ktorá rovnica platí pre tento pravouhlý trojuholník?',
+      vypC: 'Odvesny pravouhlého trojuholníka merajú {a} cm a {b} cm. Vypočítaj preponu (v cm){z}.',
+      vypB: 'Prepona pravouhlého trojuholníka meria {c} cm a jedna odvesna {a} cm. Vypočítaj druhú odvesnu (v cm){z}.',
+      zaokr: ', zaokrúhli na dve desatinné miesta',
+      obratena: 'Je trojuholník so stranami {x} cm, {y} cm a {z} cm pravouhlý?',
+      druh: 'Aký je trojuholník so stranami {x} cm, {y} cm a {z} cm?',
+      rebrik: 'Rebrík dlhý {c} m je opretý o zvislú stenu. Jeho päta je {a} m od steny. Do akej výšky (v m) siaha rebrík{z}?',
+      obdlznik: 'Obdĺžnik má rozmery {a} cm a {b} cm. Aká dlhá je jeho uhlopriečka (v cm){z}?',
+      rovno: 'Rovnoramenný trojuholník má základňu {z0} cm a ramená {r} cm. Aká je jeho výška (v cm){z}?'
+    },
+    v: {
+      prepona: 'Pravý uhol je označený štvorčekom. Prepona leží <b>oproti</b> nemu – je to strana <b>{p}</b>. Na tom, kde je na obrázku, nezáleží.',
+      rovnica: 'Pravý uhol je pri vrchole {V}, oproti nemu leží strana {h} – prepona. Preto platí <b>{r}</b>.',
+      vypC: 'c² = a² + b² = {a}² + {b}² = {A} + {B} = {C}, c = {odm} cm.',
+      vypB: 'b² = c² − a² = {c}² − {a}² = {C} − {A} = {B}, b = {odm} cm.',
+      obr: 'Najdlhšia strana je {c} – len ona môže byť prepona. {a}² + {b}² = {A} + {B} = {S} a {c}² = {C}. ',
+      obrAno: 'Je to rovnaké, preto je trojuholník <b>pravouhlý</b>.',
+      obrNie: 'Nie je to rovnaké, preto trojuholník <b>nie je</b> pravouhlý.',
+      druh: '{S} {zn} {C}, preto je trojuholník <b>{d}</b>.',
+      rebrik: 'Rebrík je prepona (leží oproti pravému uhlu medzi stenou a zemou). h² = {c}² − {a}² = {C} − {A} = {B}, h = {odm} m.',
+      obdlznik: 'Uhlopriečka je prepona, strany obdĺžnika sú odvesny. u² = {a}² + {b}² = {A} + {B} = {C}, u = {odm} cm.',
+      rovno: 'Výška delí trojuholník na dva pravouhlé trojuholníky: prepona je rameno {r}, odvesna je polovica základne {h}. v² = {r}² − {h}² = {R} − {H} = {V}, v = {odm} cm.',
+      sucet: 'Vyzerá to tak, že sa sčítali dĺžky strán namiesto ich <b>druhých mocnín</b>.',
+      bezOdm: 'Vyzerá to tak, že chýba posledný krok – <b>odmocnina</b>. Toto číslo je obsah štvorca, nie jeho strana.',
+      dvaA: 'Vyzerá to tak, že sa druhá mocnina počítala ako 2 · a. Pozor: a² = a · a.',
+      plus: 'Vyzerá to tak, že sa druhé mocniny <b>sčítali</b>. Pri hľadaní odvesny sa <b>odčítavajú</b>: b² = c² − a².',
+      minus: 'Vyzerá to tak, že sa druhé mocniny <b>odčítali</b>. Pri hľadaní prepony sa <b>sčítavajú</b>: c² = a² + b².',
+      rozdiel: 'Vyzerá to tak, že sa odčítali dĺžky strán. Odčítavajú sa ich <b>druhé mocniny</b>.',
+      celaZakl: 'Vyzerá to tak, že sa do výpočtu dosadila celá základňa. Odvesna je len <b>polovica</b> základne.',
+      najdlhsia: ' Pozor: ako preponu treba vždy skúšať <b>najdlhšiu</b> stranu, nie poslednú v zadaní.'
+    }
+  },
+
+  /* ---------- ZJEDNODUŠENIA ---------- */
+  pozn: {
+    nadpis: 'Zjednodušenia a poznámky pre učiteľa',
+    polozky: [
+      'Karty môžu žiaci prechádzať v ľubovoľnom poradí. Karta 0 (odmocnina) je príprava pre tých, ktorí si odmocninu ešte nespájajú so stranou štvorca.',
+      'V karte „Štvorce nad stranami“ sú odvesny celé čísla 1 až 12. Štvorčeky sa prekladajú len pri pytagorejských trojiciach (3, 4, 5; 6, 8, 10; 5, 12, 13; 9, 12, 15), lebo len vtedy je aj c celé číslo. Prekladanie štvorčekov nie je dôkaz – ukazuje len konkrétne čísla.',
+      'V dôkaze sa trojuholníky pri prechode z rozloženia A do B <b>len posúvajú</b>, neotáčajú sa. Pri zvolenom usporiadaní otáčanie nie je potrebné. Tvar ani veľkosť sa nikdy nemenia.',
+      'Pravý uhol nakloneného štvorca sa zdôvodňuje súčtom uhlov α + β = 90° (súčet uhlov v trojuholníku je 180°). Poloha vrcholov sa navyše overuje výpočtom priamo v kóde.',
+      'Odmocniny sa zaokrúhľujú len na zobrazenie (štandardne na dve desatinné miesta) a vždy sa označujú znakom ≈. Výpočty a porovnania pracujú s presnými hodnotami. Pojem „iracionálne číslo“ sa nepoužíva – hovorím len, že desatinné miesta by nikdy neskončili.',
+      'Rozhodnutie „je pravouhlý“ a overenie pytagorejských trojíc sa robí s celými číslami (a · a + b · b === c · c). Desatinné vstupy (najviac 2 miesta) sa prepočítajú na celé stotiny, takže aj ich druhé mocniny sú presné.',
+      'Uhol γ v karte „Obrátená veta“ program počíta (kosínusovou vetou) len na zobrazenie – žiaci ho nepočítajú. Ostrouhlý a tupouhlý trojuholník sú označené ako rozšírenie pre zvedavých.',
+      'Rozmery televízora a dverí v karte „V praxi“ sú približné typické hodnoty, nie údaje konkrétneho výrobku.',
+      'V kvíze sa uzná odpoveď, ktorá sa od presnej hodnoty líši najviac o 0,01. Pri typických chybách (c = a + b, chýbajúca odmocnina, sčítanie namiesto odčítania, a² = 2a, celá základňa namiesto polovice) sa zobrazí cielená rada. Nič sa neukladá ani neodosiela.',
+      'Z histórie uvádzam len to, že Pytagoras zo Samu žil v 6. storočí pred Kr. a že vzťah bol známy už skôr (napr. v Babylone). Príbeh s povrazom je opísaný všeobecne, bez mien a dátumov.',
+      'Počítadlo návštev (GoatCounter) sa načíta len pri pripojení na internet. Animácia od neho nijako nezávisí a funguje rovnako aj bez neho.'
+    ]
+  }
+};
+</script>
+<style>
+/* ===== Farby a základ – rovnaká paleta ako predošlé animácie ===== */
+:root{
+  --bg:#04060c;--panel:rgba(12,16,28,.86);--line:rgba(140,160,215,.22);
+  --text:#e2e8f5;--muted:#a3adc6;--gold:#f3b453;--gold2:#ffd88a;--blue:#6fb4ff;--red:#ff7a6b;--green:#7fdc8f;--violet:#b9a3ff;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--text);background:var(--bg);
+  background-image:radial-gradient(ellipse at 50% -10%,#14204a 0%,#070b18 50%,#04060c 100%);background-attachment:fixed;
+  font:17px/1.5 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1440px;margin:0 auto;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.45);padding:16px}
+h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+h2{margin:0 0 10px;font-size:23px;line-height:1.25}
+h3{margin:0 0 6px;font-size:16px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:650}
+p{margin:0 0 10px}
+.sub{color:var(--muted);margin:4px 0 0;font-size:17px}
+button,select{font:inherit;font-size:16px;color:var(--text);background:rgba(255,255,255,.07);border:1px solid var(--line);
+  border-radius:10px;padding:8px 14px;min-height:44px;cursor:pointer;transition:background .15s,border-color .15s,color .15s;touch-action:manipulation}
+button:hover{background:rgba(255,255,255,.13);border-color:rgba(160,180,230,.4)}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
+button.on{background:rgba(243,180,83,.2);border-color:rgba(243,180,83,.65);color:var(--gold2)}
+button.primary{background:linear-gradient(135deg,#f3b453,#d9772f);color:#1a0e02;border:none;font-weight:700}
+button.primary:hover{filter:brightness(1.08)}
+button:disabled{cursor:default;opacity:.45}
+.mini{color:var(--muted);font-size:16px;margin:10px 0 4px}
+.cA{color:var(--gold2)}.cB{color:var(--blue)}.cC{color:var(--green)}
+.pr{color:var(--gold2);font-weight:800;font-size:1.15em;padding:0 .05em}
+.odm{white-space:nowrap}
+.odm>span{border-top:.09em solid currentColor;padding:0 .12em 0 .04em;margin-left:.02em}
+.vzorec{font-size:26px;font-weight:800;text-align:center;margin:8px 0 2px;letter-spacing:.03em;color:var(--gold2)}
+.zved{color:var(--violet)}
+
+/* ===== Hlavička a karty ===== */
+header.top{margin-bottom:12px}
+nav.karty{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+nav.karty button{border-radius:999px;padding:8px 15px}
+nav.karty button .cis{display:inline-block;min-width:1.4em;color:var(--muted)}
+nav.karty button.on .cis{color:var(--gold2)}
+
+/* ===== Rozloženie sekcie ===== */
+.sek{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:16px;align-items:start}
+.stlpec{display:flex;flex-direction:column;gap:16px;min-width:0}
+.cely{grid-column:1/-1}
+.cely .stage,.cely .fb,.cely .tlac{max-width:760px}
+@media (max-width:1000px){.sek{grid-template-columns:minmax(0,1fr)}}
+
+/* ===== Scéna ===== */
+.stageCard{padding:10px}
+.stageTop{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px}
+.stage{border-radius:10px;background:#08101c;overflow:hidden}
+.stage svg{display:block;width:100%;height:auto;max-height:78vh;user-select:none;-webkit-user-select:none}
+.stage svg .klik{cursor:pointer}
+.stage svg [data-tah]{cursor:grab}
+.seg{display:inline-flex;align-items:center;flex-wrap:wrap}
+.seg button{border-radius:0;margin-left:-1px}
+.seg button:first-of-type{border-radius:10px 0 0 10px;margin-left:0}
+.seg button:last-of-type{border-radius:0 10px 10px 0}
+.seg .lbl0{color:var(--muted);margin-right:8px}
+.rovBox{font-size:20px;margin-top:10px;min-height:56px;display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:center;text-align:center;font-variant-numeric:tabular-nums}
+.rovBox.vlavo{align-items:flex-start;text-align:left;font-size:18px}
+.rovBox b{color:var(--gold2)}
+
+/* ===== Prehrávač krokov ===== */
+.krokNum{color:var(--muted);font-size:16px;letter-spacing:.06em;text-transform:uppercase}
+.krokText{font-size:18px;min-height:110px;margin:4px 0 10px;line-height:1.6}
+.tlac{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sl{display:block;margin-top:8px}
+.sl .lbl{display:flex;justify-content:space-between;gap:10px}
+.sl .lbl b{color:var(--gold2);font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:40px;background:transparent;margin:2px 0 0;cursor:pointer;touch-action:pan-y}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;margin-top:-10px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02;box-shadow:0 0 0 2px var(--gold)}
+input[type=range]::-moz-range-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02}
+.volby{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.volby .lbl0{color:var(--muted);margin-right:2px}
+.hlaska{color:var(--gold2);font-size:16px;margin:10px 0 0;min-height:1.5em}
+.chk{display:flex;gap:10px;align-items:center;margin:10px 0;cursor:pointer;min-height:44px}
+.chk input{width:24px;height:24px;accent-color:var(--gold)}
+.box{margin:12px 0 0;padding:10px 13px;border-radius:10px;border:1px solid}
+.box b.h{display:block;font-size:16px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.box.omyl{background:rgba(255,122,107,.09);border-color:rgba(255,122,107,.45)}.box.omyl b.h{color:var(--red)}
+.box.pravda{background:rgba(127,220,143,.08);border-color:rgba(127,220,143,.4)}.box.pravda b.h{color:var(--green)}
+.box.info{background:rgba(111,180,255,.08);border-color:rgba(111,180,255,.4)}.box.info b.h{color:var(--blue)}
+.box.zlty{background:rgba(243,180,83,.09);border-color:rgba(243,180,83,.45)}.box.zlty b.h{color:var(--gold2)}
+
+/* ===== Výpočet ===== */
+.vstupy{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}
+.vstupy label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:16px}
+input.num{width:130px;height:50px;font:inherit;font-size:22px;font-weight:700;text-align:center;color:var(--text);background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:10px}
+ol.kroky{margin:4px 0 12px;padding-left:28px;font-size:18px;line-height:1.6}
+ol.kroky li{margin:6px 0;padding:4px 8px;border-radius:8px;transition:background .3s}
+ol.kroky li.akt{background:rgba(243,180,83,.12)}
+.bars{margin-top:10px;display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center;font-size:17px}
+.barRow{display:contents}
+.bar{height:26px;border-radius:6px;background:rgba(255,255,255,.06);display:flex;overflow:hidden}
+.bar i{display:block;height:100%;transition:width .35s}
+.skore{color:var(--muted);margin-left:auto}
+
+/* ===== Omyly ===== */
+.omylyGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr));gap:16px}
+.omylyGrid h3{color:var(--red);text-transform:none;letter-spacing:0;font-size:19px}
+.omylyGrid .stage{margin:8px 0}
+
+/* ===== Popis po kliknutí ===== */
+#info{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);width:min(580px,calc(100% - 24px));z-index:50;
+  background:rgba(8,12,24,.97);border:1px solid var(--gold);border-radius:14px;padding:12px 16px;box-shadow:0 10px 40px rgba(0,0,0,.7)}
+#info h4{margin:0 0 4px;font-size:20px;color:var(--gold2);padding-right:110px}
+#info button{position:absolute;right:10px;top:8px;min-height:40px}
+
+/* ===== Kvíz ===== */
+.otazka{padding:14px 0;border-bottom:1px solid var(--line)}
+.otazka .q{font-size:20px;margin-bottom:8px}
+.otazka .q .por{color:var(--muted)}
+.otazka .obr{max-width:340px;margin:6px 0 10px;border-radius:10px;background:#08101c}
+.otazka .obr svg{display:block;width:100%;height:auto}
+.moznosti{display:flex;flex-wrap:wrap;gap:8px}
+.moznosti button{min-width:84px;min-height:56px;font-size:20px}
+.otazka button.ok{background:rgba(127,220,143,.2);border-color:var(--green);color:#d7ffdf;opacity:1}
+.otazka button.zle{background:rgba(255,122,107,.2);border-color:var(--red);color:#ffe0dc;opacity:1}
+.vstup{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.fb{margin-top:10px;font-size:17px}
+.fb.ok>b:first-child{color:var(--green)}.fb.zle>b:first-child{color:var(--red)}
+#kvizVysl{font-size:21px;font-weight:700;color:var(--gold2);margin:14px 0}
+ul.poznList{margin:0;padding-left:22px}
+ul.poznList li{margin:8px 0}
+footer{color:var(--muted);text-align:center;font-size:16px;padding:20px 0 10px}
+@media (max-width:600px){
+  .wrap{padding:10px}
+  .card{padding:12px}
+  h2{font-size:21px}
+  .krokText{font-size:17px}
+  .tlac button{flex:1 1 auto}
+  .rovBox{font-size:18px}
+  .bars{grid-template-columns:1fr}
+  #info h4{padding-right:0;margin-top:34px}
+}
+</style>
+</head>
+<body>
+<!-- Vzory šrafovania – štvorce a plochy sa nelíšia len farbou (kvôli farboslepým žiakom) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <pattern id="hA" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="10" fill="#ffd88a" fill-opacity=".5"/></pattern>
+    <pattern id="hB" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="3" height="10" fill="#6fb4ff" fill-opacity=".5"/></pattern>
+    <pattern id="hC" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="6" cy="6" r="2.2" fill="#7fdc8f" fill-opacity=".6"/></pattern>
+    <pattern id="hH" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><rect width="2.5" height="9" fill="#ffffff" fill-opacity=".35"/></pattern>
+    <pattern id="cB" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="8" height="8" fill="#6fb4ff"/><rect width="3" height="8" fill="#2f6fbf"/></pattern>
+  </defs>
+</svg>
+
+<div class="wrap">
+<header class="top"><h1 data-t="titul"></h1><p class="sub" data-t="podtitul"></p></header>
+<nav class="karty" id="karty" role="tablist"></nav>
+
+<!-- ============ 0. ODMOCNINA ============ -->
+<section id="odm" class="sek" data-karta hidden>
+  <div class="stlpec">
+    <div class="card stageCard">
+      <div class="stage"><svg id="odm_svg" viewBox="0 0 540 545" role="img" aria-label="Štvorec na štvorcovej sieti"></svg></div>
+      <div class="rovBox" id="odm_rov"></div>
+    </div>
+  </div>
+  <div class="stlpec panel"><div class="card">
+    <h2 data-t="odm.nadpis"></h2>
+    <p data-t="odm.uvod"></p>
+    <div class="seg" id="odm_rezim"></div>
+    <div id="odm_A">
+      <label class="sl"><span class="lbl"><span data-t="odm.slStrana"></span><b id="odm_vs"></b></span><input type="range" id="odm_s" min="0.1" max="10" step="0.1" aria-label="Strana štvorca"></label>
+    </div>
+    <div id="odm_B" hidden>
+      <label class="sl"><span class="lbl"><span data-t="odm.slObsah"></span><b id="odm_vT"></b></span><input type="range" id="odm_T" min="1" max="100" step="1" aria-label="Hľadaný obsah"></label>
+      <div class="volby" id="odm_pres"></div>
+      <p id="odm_uloha" style="margin-top:12px"></p>
+      <label class="sl"><span class="lbl"><span data-t="odm.slHladam"></span><b id="odm_vh"></b></span><input type="range" id="odm_h" min="0" max="1000" step="1" aria-label="Moja strana"></label>
+      <div class="tlac" id="odm_tl"></div>
+      <div class="box zlty" id="odm_fb" aria-live="polite"></div>
+    </div>
+    <div class="box info" data-t="odm.zapamataj"></div>
+  </div></div>
+</section>
+
+<!-- ============ 1. POMENOVANIE STRÁN ============ -->
+<section id="str" class="sek" data-karta hidden>
+  <div class="stlpec">
+    <div class="card stageCard">
+      <div class="stage"><svg id="str_svg" viewBox="0 0 640 460" role="img" aria-label="Pravouhlý trojuholník"></svg></div>
+      <p class="mini" data-t="str.tipTahaj"></p>
+    </div>
+  </div>
+  <div class="stlpec panel"><div class="card">
+    <h2 data-t="str.nadpis"></h2>
+    <p data-t="str.uvod"></p>
+    <ul style="padding-left:20px;margin:0 0 10px"><li data-t="str.odvesny"></li><li data-t="str.prepona"></li></ul>
+    <div class="tlac" id="str_tl"></div>
+    <label class="sl"><span class="lbl"><span data-t="str.slRot"></span><b id="str_vr"></b></span><input type="range" id="str_rot" min="0" max="359" step="1" aria-label="Otočenie"></label>
+    <label class="chk"><input type="checkbox" id="str_prav" checked><span data-t="str.ukazPravidlo"></span></label>
+    <div class="box pravda" id="str_info" aria-live="polite"></div>
+    <p class="mini" data-t="str.tipKlik"></p>
+  </div></div>
+  <div class="card cely">
+    <h2 data-t="hra.nadpis"></h2>
+    <div class="seg" id="hra_rezim"></div>
+    <p id="hra_zad" style="margin-top:10px"></p>
+    <div class="stage"><svg id="hra_svg" viewBox="0 0 640 380" role="img" aria-label="Trojuholník do hry"></svg></div>
+    <div class="fb" id="hra_fb" aria-live="polite"></div>
+    <div class="tlac" style="margin-top:10px"><button class="primary" id="hra_dalsi"></button><span class="skore" id="hra_sk"></span></div>
+  </div>
+</section>
+
+<!-- ============ 2. ŠTVORCE NAD STRANAMI ============ -->
+<section id="stv" class="sek" data-karta hidden>
+  <div class="stlpec"><div class="card stageCard">
+    <div class="stage"><svg id="stv_svg" viewBox="0 0 640 600" role="img" aria-label="Štvorce nad stranami trojuholníka"></svg></div>
+    <div class="rovBox" id="stv_rov"></div>
+    <p class="mini" data-t="stv.legenda"></p>
+  </div></div>
+  <div class="stlpec panel"><div class="card">
+    <h2 data-t="stv.nadpis"></h2>
+    <p data-t="stv.uvod"></p>
+    <label class="sl"><span class="lbl"><span class="cA" data-t="stv.slA"></span><b id="stv_va"></b></span><input type="range" id="stv_a" min="1" max="12" step="1" aria-label="Odvesna a"></label>
+    <label class="sl"><span class="lbl"><span class="cB" data-t="stv.slB"></span><b id="stv_vb"></b></span><input type="range" id="stv_b" min="1" max="12" step="1" aria-label="Odvesna b"></label>
+    <div class="volby" id="stv_pres"></div>
+    <div class="tlac" style="margin-top:12px"><button class="primary" id="stv_preloz"></button><button id="stv_vrat"></button></div>
+    <p class="hlaska" id="stv_hl" aria-live="polite"></p>
+    <div class="box info" data-t="stv.veta"></div>
+    <div class="box omyl" id="stv_omyl"></div>
+    <div class="box zlty" data-t="stv.historia"></div>
+  </div></div>
+</section>
+
+<!-- ============ 3. DÔKAZ ============ -->
+<section id="dok" class="sek" data-karta hidden>
+  <div class="stlpec">
+    <div class="card stageCard">
+      <div class="stage"><svg id="dok_svg" viewBox="0 0 600 600" role="img" aria-label="Dôkaz prekladaním"></svg></div>
+      <div class="rovBox" id="dok_rov"></div>
+      <p class="mini" id="dok_kontrola"></p>
+    </div>
+    <div class="card" id="dok_hrac"></div>
+  </div>
+  <div class="stlpec panel"><div class="card">
+    <h2 data-t="dok.nadpis"></h2>
+    <p data-t="dok.uvod"></p>
+    <label class="sl"><span class="lbl"><span class="cA" data-t="dok.slA"></span><b id="dok_va"></b></span><input type="range" id="dok_a" min="1" max="12" step="1" aria-label="Odvesna a"></label>
+    <label class="sl"><span class="lbl"><span class="cB" data-t="dok.slB"></span><b id="dok_vb"></b></span><input type="range" id="dok_b" min="1" max="12" step="1" aria-label="Odvesna b"></label>
+    <div class="tlac" style="margin-top:12px"><button id="dok_ab"></button></div>
+    <label class="sl"><span class="lbl"><span data-t="dok.slM"></span><b id="dok_vm"></b></span><input type="range" id="dok_m" min="0" max="100" step="1" aria-label="Rozloženie A → B"></label>
+    <div class="box info" data-t="dok.myslienka"></div>
+  </div></div>
+</section>
+
+<!-- ============ 4. PYTAGOREJSKÉ TROJICE ============ -->
+<section id="troj" class="sek" data-karta hidden>
+  <div class="stlpec">
+    <div class="card stageCard">
+      <div class="stage"><svg id="troj_svg" viewBox="0 0 640 600" role="img" aria-label="Trojuholník pytagorejskej trojice so štvorcami"></svg></div>
+      <div class="rovBox" id="troj_rov"></div>
+    </div>
+    <div class="card stageCard"><h3 data-t="troj.podobne"></h3><div class="stage"><svg id="troj_pod" viewBox="0 0 640 300" role="img" aria-label="Podobné trojuholníky"></svg></div></div>
+  </div>
+  <div class="stlpec panel">
+    <div class="card">
+      <h2 data-t="troj.nadpis"></h2>
+      <p data-t="troj.uvod"></p>
+      <div class="volby" id="troj_zoz"></div>
+      <label class="sl"><span class="lbl"><span data-t="troj.slK"></span><b id="troj_vk"></b></span><input type="range" id="troj_k" min="1" max="5" step="1" aria-label="Násobok k"></label>
+      <div class="box info" id="troj_nas"></div>
+      <div class="box omyl" id="troj_nec" hidden></div>
+    </div>
+    <div class="card">
+      <h2 data-t="troj.povraz.nadpis"></h2>
+      <p data-t="troj.povraz.text"></p>
+      <div class="stage"><svg id="lano_svg" viewBox="0 0 640 300" role="img" aria-label="Povraz s uzlami"></svg></div>
+      <div class="tlac" style="margin-top:10px"><button class="primary" id="lano_play"></button><button id="lano_zac"></button></div>
+      <p class="hlaska" id="lano_hl" aria-live="polite"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. VÝPOČET ============ -->
+<section id="vyp" class="sek" data-karta hidden>
+  <div class="stlpec">
+    <div class="card stageCard"><div class="stage"><svg id="vyp_svg" viewBox="0 0 640 540" role="img" aria-label="Trojuholník so štvorcami"></svg></div></div>
+    <div class="card">
+      <h3 data-t="vyp.postup"></h3>
+      <ol class="kroky" id="vyp_kroky" aria-live="polite"></ol>
+      <div class="tlac"><button class="primary" id="vyp_dalej"></button><button id="vyp_vsetko"></button><button id="vyp_znova"></button></div>
+    </div>
+  </div>
+  <div class="stlpec panel">
+    <div class="card">
+      <h2 data-t="vyp.nadpis"></h2>
+      <p data-t="vyp.uvod"></p>
+      <div class="seg" id="vyp_hl"></div>
+      <div class="vstupy">
+        <label><span id="vyp_l1"></span><input class="num" id="vyp_x1" inputmode="decimal" autocomplete="off"></label>
+        <label><span id="vyp_l2"></span><input class="num" id="vyp_x2" inputmode="decimal" autocomplete="off"></label>
+      </div>
+      <div class="volby"><span class="lbl0" data-t="vyp.des"></span><div class="seg" id="vyp_des"></div></div>
+      <div class="tlac" style="margin-top:12px"><button class="primary" id="vyp_btn"></button></div>
+      <div class="box omyl" id="vyp_chyba" hidden aria-live="polite"></div>
+      <div class="volby"><span class="lbl0" data-t="vyp.uroven"></span><div class="seg" id="vyp_uroven"></div><button id="vyp_nah"></button></div>
+      <div class="box omyl" data-t="vyp.omyly"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. OBRÁTENÁ VETA ============ -->
+<section id="obr" class="sek" data-karta hidden>
+  <div class="stlpec"><div class="card stageCard">
+    <div class="stage"><svg id="obr_svg" viewBox="0 0 640 420" role="img" aria-label="Trojuholník z troch tyčiek"></svg></div>
+    <div class="bars" id="obr_bars"></div>
+  </div></div>
+  <div class="stlpec panel"><div class="card">
+    <h2 data-t="obr.nadpis"></h2>
+    <p data-t="obr.uvod"></p>
+    <div id="obr_sl"></div>
+    <div class="volby" id="obr_pres"></div>
+    <div class="tlac" style="margin-top:12px"><button id="obr_zloz"></button></div>
+    <p class="mini" data-t="obr.tip"></p>
+    <div class="box" id="obr_verdikt" aria-live="polite"></div>
+  </div></div>
+</section>
+
+<!-- ============ 7. V PRAXI ============ -->
+<section id="prax" class="sek" data-karta hidden>
+  <div class="stlpec"><div class="card stageCard">
+    <div class="stageTop"><div class="seg" id="prax_seg"></div></div>
+    <div class="stage"><svg id="prax_svg" viewBox="0 0 640 440" role="img" aria-label="Úloha z praxe"></svg></div>
+    <p class="mini" id="prax_tip"></p>
+  </div></div>
+  <div class="stlpec panel"><div class="card"><h2 data-t="prax.nadpis"></h2><div id="prax_panel"></div><p class="mini" data-t="prax.skryty"></p></div></div>
+</section>
+
+<!-- ============ 8. ČASTÉ OMYLY ============ -->
+<section id="omyly" data-karta hidden>
+  <div class="card" style="margin-bottom:16px"><h2 data-t="omyly.nadpis"></h2><p data-t="omyly.uvod" style="margin:0"></p></div>
+  <div class="omylyGrid" id="omyly_grid"></div>
+</section>
+
+<!-- ============ KVÍZ ============ -->
+<section id="kviz" data-karta hidden>
+  <div class="card">
+    <h2 data-t="kviz.nadpis"></h2>
+    <p data-t="kviz.uvod"></p>
+    <div class="volby" style="margin-bottom:8px"><span class="lbl0" data-t="kviz.uroven"></span><div class="seg" id="kv_uroven"></div></div>
+    <div id="kv_otazky"></div>
+    <div id="kvizVysl" aria-live="polite"></div>
+    <button class="primary" id="kv_novy"></button>
+  </div>
+</section>
+
+<!-- ============ ZJEDNODUŠENIA ============ -->
+<section id="pozn" data-karta hidden>
+  <div class="card"><h2 data-t="pozn.nadpis"></h2><ul class="poznList" id="poznList"></ul></div>
+</section>
+
+<footer data-t="pata"></footer>
+</div>
+
+<div id="info" hidden role="dialog" aria-live="polite"><h4 id="infoN"></h4><div id="infoT"></div><button id="infoX"></button></div>
+
+<script>
+'use strict';
+/* ===== Pomocné funkcie ===== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const U = TEXTY.ui;
+const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
+const r1 = x => Math.round(x * 10) / 10;          // zaokrúhlenie súradníc pre SVG (len grafika)
+const nahoda = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const vyber = p => p[Math.floor(Math.random() * p.length)];
+function zamiesaj(p) { const a = p.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function cesta(o, p) { return p.split('.').reduce((x, k) => x == null ? x : x[k], o); }
+function vypln(t, o) { return String(t).replace(/\{(\w+)\}/g, (x, k) => (o && o[k] !== undefined) ? o[k] : x); }
+function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+function tvar(n, t) { return n === 1 ? t[0] : (n >= 2 && n <= 4) ? t[1] : t[2]; }
+
+/* =====================================================================
+   MATEMATIKA
+   - Rozhodnutia (je pravouhlý, je trojica, je odmocnina presná) robím s celými číslami.
+   - Desatinné vstupy (najviac 2 miesta) prepočítam na celé stotiny → ich druhé mocniny sú presné.
+   - Odmocninu zaokrúhľujem len pri zobrazení, nikdy nie vo výpočte.
+   ===================================================================== */
+/* MATEMATIKA START */
+// slovenský zápis čísla s desatinnou čiarkou (d = najviac toľko desatinných miest)
+function cis(x, d = 2) {
+  const k = Math.pow(10, d);
+  let s = (Math.round(x * k) / k).toFixed(d);
+  if (s.indexOf('.') >= 0) s = s.replace(/0+$/, '').replace(/\.$/, '');
+  if (s === '-0') s = '0';
+  return s.replace('.', ',').replace('-', '−');
+}
+const JE_CELE = x => Math.abs(x - Math.round(x)) < 1e-9;
+const sto = x => Math.round(x * 100);                                   // dĺžka → celé stotiny
+function jeStvorec(n) { if (n < 0 || !Number.isInteger(n)) return false; const r = Math.round(Math.sqrt(n)); return r * r === n; }
+// je √v presné desatinné číslo? (v má najviac 4 desatinné miesta, napr. druhá mocnina čísla s 2 miestami)
+function presnaOdm(v) { return jeStvorec(Math.round(v * 10000)); }
+// pravouhlý trojuholník – len celé čísla
+function jePravouhly(a, b, c) { return a * a + b * b === c * c; }
+// trojuholníková nerovnosť pre zoradené strany a ≤ b ≤ c
+function vznikne(a, b, c) { return a + b > c; }
+/* MATEMATIKA KONIEC */
+
+const PR = '<b class="pr">≈</b>';
+function odmH(v) { return `<span class="odm">√<span>${cis(v, 4)}</span></span>`; }
+function odmS(t) { return `<span class="odm">√<span>${t}</span></span>`; }     // odmocnina z výrazu
+// „= 5“ alebo „≈ 3,61“ (znak ≈ vždy čitateľne zvýraznený)
+function odmVysl(v, d = 2, txt) { const p = presnaOdm(v); return (p ? '= ' : (txt ? '≈ ' : PR + ' ')) + cis(Math.sqrt(v), p ? 4 : d); }
+function odmRov(v, d = 2) { return `${odmH(v)} ${odmVysl(v, d)}`; }
+// prečítanie čísla zo vstupu: povolená desatinná čiarka aj bodka
+function citaj(s) { s = String(s).trim().replace(/\s/g, '').replace(',', '.'); return /^-?\d+(\.\d+)?$/.test(s) ? parseFloat(s) : NaN; }
+const maxDvaMiesta = x => Math.abs(x * 100 - Math.round(x * 100)) < 1e-6;
+
+/* ===== Vektory a SVG ===== */
+const V = {
+  add: (p, q) => [p[0] + q[0], p[1] + q[1]], sub: (p, q) => [p[0] - q[0], p[1] - q[1]], mul: (p, k) => [p[0] * k, p[1] * k],
+  len: p => Math.hypot(p[0], p[1]), unit: p => { const l = Math.hypot(p[0], p[1]) || 1; return [p[0] / l, p[1] / l]; },
+  mid: (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], lerp: (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t],
+  dot: (p, q) => p[0] * q[0] + p[1] * q[1]
+};
+const stred = P => [P.reduce((s, p) => s + p[0], 0) / P.length, P.reduce((s, p) => s + p[1], 0) / P.length];
+const plochaP = P => Math.abs(P.reduce((s, p, i) => { const q = P[(i + 1) % P.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;   // obsah mnohouholníka
+const F = { a: '#ffd88a', b: '#6fb4ff', c: '#7fdc8f', red: '#ff7a6b', text: '#e2e8f5', muted: '#a3adc6' };
+const VYPLN = { a: 'rgba(243,180,83,.18)', b: 'rgba(111,180,255,.18)', c: 'rgba(127,220,143,.16)' };
+const SRAF = { a: 'url(#hA)', b: 'url(#hB)', c: 'url(#hC)' };
+const pts = P => P.map(p => r1(p[0]) + ',' + r1(p[1])).join(' ');
+function polyS(P, a) { return `<polygon points="${pts(P)}" ${a || ''}/>`; }
+// plocha štvorca: farba + šrafovanie + obrys
+function plochaS(P, k, op) { return `<g opacity="${op ?? 1}">${polyS(P, `fill="${VYPLN[k]}"`)}${polyS(P, `fill="${SRAF[k]}" stroke="${F[k]}" stroke-width="2.5" stroke-linejoin="round"`)}</g>`; }
+function skryty(P) { return polyS(P, 'fill="rgba(255,255,255,.07)"') + polyS(P, 'fill="url(#hH)" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="5 4"'); }
+function ciara(p, q, a) { return `<line x1="${r1(p[0])}" y1="${r1(p[1])}" x2="${r1(q[0])}" y2="${r1(q[1])}" ${a || ''}/>`; }
+function popis(x, y, t, fs, fill, extra) {
+  fs = fs || 20;
+  return `<text x="${r1(x)}" y="${r1(y)}" font-size="${r1(fs)}" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="${fill || F.text}" stroke="#04060c" stroke-width="${fs > 18 ? 5 : 4}" stroke-linejoin="round" paint-order="stroke" ${extra || ''}>${t}</text>`;
+}
+function pravyUhol(V0, P, Q, s, farba, op) {
+  const u = V.unit(V.sub(P, V0)), w = V.unit(V.sub(Q, V0));
+  const p1 = V.add(V0, V.mul(u, s)), p3 = V.add(V0, V.mul(w, s)), p2 = V.add(p1, V.mul(w, s));
+  return `<polyline points="${pts([p1, p2, p3])}" fill="none" stroke="${farba || F.text}" stroke-width="2.5" opacity="${op ?? 1}"/>`;
+}
+// oblúk uhla pri vrchole V0 medzi smermi k bodom P a Q (menší z uhlov); vráti aj smer na popis
+function oblukS(V0, P, Q, r, farba, w, op) {
+  const a1 = Math.atan2(P[1] - V0[1], P[0] - V0[0]), a2 = Math.atan2(Q[1] - V0[1], Q[0] - V0[0]);
+  let d = a2 - a1; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+  const s = [V0[0] + r * Math.cos(a1), V0[1] + r * Math.sin(a1)], e = [V0[0] + r * Math.cos(a1 + d), V0[1] + r * Math.sin(a1 + d)];
+  const am = a1 + d / 2;
+  return { svg: `<path d="M${r1(s[0])},${r1(s[1])} A${r},${r} 0 0 ${d > 0 ? 1 : 0} ${r1(e[0])},${r1(e[1])}" fill="none" stroke="${farba}" stroke-width="${w || 3}" opacity="${op ?? 1}"/>`, smer: [Math.cos(am), Math.sin(am)] };
+}
+function sipka(p, q, farba, op) {
+  const d = V.unit(V.sub(q, p)), n = [-d[1], d[0]];
+  const h1 = V.add(V.sub(q, V.mul(d, 14)), V.mul(n, 7)), h2 = V.sub(V.sub(q, V.mul(d, 14)), V.mul(n, 7));
+  return `<g opacity="${op ?? 1}">${ciara(p, V.sub(q, V.mul(d, 8)), `stroke="${farba}" stroke-width="3" stroke-dasharray="8 6"`)}${polyS([q, h1, h2], `fill="${farba}"`)}</g>`;
+}
+function segment(el, volby, akt, fn) {
+  el.innerHTML = volby.map(([k, t]) => `<button data-k="${k}" class="${String(k) === String(akt) ? 'on' : ''}">${t}</button>`).join('');
+  $$('button', el).forEach(b => { b.onclick = () => { $$('button', el).forEach(x => x.classList.toggle('on', x === b)); fn(b.dataset.k); }; });
+}
+function info(n, t) { $('#infoN').innerHTML = n; $('#infoT').innerHTML = t; $('#info').hidden = false; }
+function svgBod(svg, e) {
+  const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+  const m = svg.getScreenCTM(); if (!m) return [0, 0];
+  const q = p.matrixTransform(m.inverse()); return [q.x, q.y];
+}
+// ťahanie myšou aj prstom; o.zaciatok(bod, cieľ) → true, ak sa ťahá
+function tahanie(svg, o) {
+  let akt = false, start = null, posun = false, ciel = null;
+  svg.addEventListener('pointerdown', e => {
+    const b = svgBod(svg, e);
+    if (!o.zaciatok(b, e.target)) return;
+    akt = true; start = b; posun = false; ciel = e.target;
+    try { svg.setPointerCapture(e.pointerId); } catch (x) { /* nič */ }
+    e.preventDefault();
+  });
+  svg.addEventListener('pointermove', e => {
+    if (!akt) return;
+    const b = svgBod(svg, e);
+    if (!posun && Math.hypot(b[0] - start[0], b[1] - start[1]) > 5) posun = true;
+    if (posun) o.pohyb(b, start);
+  });
+  const koniec = () => { if (!akt) return; akt = false; if (o.koniec) o.koniec(posun, ciel); };
+  svg.addEventListener('pointerup', koniec); svg.addEventListener('pointercancel', koniec);
+  // na dotykovej obrazovke: pri chytení ťahateľného objektu sa nemá posúvať stránka
+  svg.addEventListener('touchstart', e => { if (e.target.closest && e.target.closest('[data-tah]')) e.preventDefault(); }, { passive: false });
+}
+
+/* =====================================================================
+   PREHRÁVAČ KROKOV – číselné hodnoty stavu sa medzi krokmi plynule prelínajú
+   (requestAnimationFrame, časovanie podľa skutočného času)
+   ===================================================================== */
+let RYCHLOST = 1;
+function nastavRychlost(v) {
+  RYCHLOST = v;
+  $$('.rychl').forEach(r => { r.value = v; });
+  $$('.vR').forEach(b => { b.textContent = String(v).replace('.', ',') + '×'; });
+}
+class Prehravac {
+  constructor(el, kresli) {
+    this.kresli = kresli; this.kroky = []; this.i = 0; this.t = 1; this.hold = 0; this.hraje = false;
+    this.od = {}; this.cur = {}; this.ciel = {}; this.dur = 1.2;
+    el.innerHTML = `<div class="krokNum"></div><div class="krokText" aria-live="polite"></div>
+      <div class="tlac"><button class="primary bDalej">${U.krok}</button><button class="bPlay"></button><button class="bSpat">${U.spat}</button><button class="bZac">${U.znova}</button></div>
+      <label class="sl"><span class="lbl"><span>${U.rychlost}</span><b class="vR"></b></span><input type="range" class="rychl" min="0.25" max="3" step="0.25" aria-label="${U.rychlost}"></label>`;
+    this.e = { num: $('.krokNum', el), txt: $('.krokText', el), play: $('.bPlay', el), dalej: $('.bDalej', el), spat: $('.bSpat', el) };
+    this.e.play.onclick = () => this.prepni();
+    this.e.dalej.onclick = () => {   // krok za krokom: dokonči rozbehnutý krok, inak prejdi na ďalší
+      this.hraje = false;
+      if (this.t < 1) { this.t = 1; this.cur = Object.assign({}, this.ciel); this.kresli(this.cur); } else this.idi(this.i + 1);
+      this.ui();
+    };
+    this.e.spat.onclick = () => { this.hraje = false; if (this.i > 0) { this.i--; this.skoc(); } this.ui(); };
+    $('.bZac', el).onclick = () => { this.i = 0; this.skoc(); this.hraje = true; this.hold = 0; this.ui(); };   // prehrať znova od začiatku
+    const r = $('.rychl', el); r.oninput = () => nastavRychlost(+r.value);
+    nastavRychlost(RYCHLOST);
+  }
+  nastav(kroky) { this.kroky = kroky; this.i = 0; this.skoc(); this.ui(); }
+  skoc() { this.ciel = Object.assign({}, this.kroky[this.i].n); this.cur = Object.assign({}, this.ciel); this.od = this.cur; this.t = 1; this.kresli(this.cur); }
+  idi(i) {
+    if (i < 0 || i >= this.kroky.length) return;
+    this.od = Object.assign({}, this.cur); this.i = i; this.ciel = Object.assign({}, this.kroky[i].n);
+    this.dur = this.kroky[i].dur ?? 1.2; this.t = 0; this.hold = 0; this.ui();
+  }
+  chod(n, dur) { this.hraje = false; this.od = Object.assign({}, this.cur); this.ciel = Object.assign({}, this.cur, n); this.dur = dur ?? 1.6; this.t = 0; this.ui(); }
+  nastavHned(n) { this.hraje = false; this.cur = Object.assign({}, this.cur, n); this.ciel = Object.assign({}, this.cur); this.od = this.cur; this.t = 1; this.kresli(this.cur); this.ui(); }
+  tick(dt) {
+    if (this.t < 1) {
+      this.t = Math.min(1, this.t + dt * RYCHLOST / this.dur);
+      const e = ease(this.t), n = {};
+      for (const k in this.ciel) { const x = this.od[k] ?? this.ciel[k]; n[k] = x + (this.ciel[k] - x) * e; }
+      this.cur = n; this.kresli(n);
+      if (this.t >= 1) this.ui();
+    } else if (this.hraje) {
+      this.hold += dt * RYCHLOST;
+      if (this.hold >= this.drz()) { if (this.i < this.kroky.length - 1) this.idi(this.i + 1); else { this.hraje = false; this.ui(); } }
+    }
+  }
+  text() { const k = this.kroky[this.i]; return k ? (typeof k.text === 'function' ? k.text() : k.text) : ''; }
+  drz() { return Math.max(2.6, this.text().replace(/<[^>]+>/g, '').length / 18); }   // čas na prečítanie
+  prepni() {
+    if (this.hraje) this.hraje = false;
+    else { if (this.i >= this.kroky.length - 1 && this.t >= 1) { this.i = 0; this.skoc(); } this.hraje = true; this.hold = 0; }
+    this.ui();
+  }
+  ui() {
+    const n = this.kroky.length;
+    this.e.num.textContent = n ? vypln(U.krokX, { i: this.i + 1, n }) : '';
+    const html = this.text(); if (this.e.txt.innerHTML !== html) this.e.txt.innerHTML = html;
+    this.e.play.textContent = this.hraje ? U.pauza : U.spustit;
+    this.e.spat.disabled = this.i <= 0;
+    this.e.dalej.disabled = this.i >= n - 1 && this.t >= 1;
+  }
+}
+
+const TIKY = {};     // animácie jednotlivých kariet: karta → funkcia(dt)
+let AKT = 'odm';
+
+/* =====================================================================
+   0. ODMOCNINA – strana štvorca s daným obsahom
+   ===================================================================== */
+const D0 = TEXTY.odm;
+const S0 = { rezim: 'A', s: 5, T: 25, h: 300, anim: null };
+function kresli0() {
+  const u = 48, ox = 30, oy = 510;
+  const s = S0.rezim === 'A' ? S0.s : S0.h / 100;
+  let h = '', d = '';
+  for (let i = 0; i <= 10; i++) d += `M${ox + i * u},${oy}V${oy - 10 * u}M${ox},${oy - i * u}H${ox + 10 * u}`;
+  h += `<path d="${d}" stroke="rgba(160,180,230,.28)" stroke-width="1" fill="none"/>`;
+  for (let i = 0; i <= 10; i++) h += `<text x="${ox + i * u}" y="${oy + 24}" font-size="16" text-anchor="middle" fill="${F.muted}">${i}</text>`;
+  const w = s * u;
+  if (w > 0) {
+    h += plochaS([[ox, oy - w], [ox + w, oy - w], [ox + w, oy], [ox, oy]], 'a');
+    const cisluj = JE_CELE(s) && s <= 6;    // pri celej strane do 6 očísluj štvorčeky – dajú sa spočítať
+    if (cisluj) {
+      let k = 0;
+      for (let j = 0; j < s; j++) for (let i = 0; i < s; i++) { k++; h += popis(ox + i * u + u / 2, oy - j * u - u / 2, k, 16, '#ffe8bd'); }
+    }
+    const S = s * s;
+    if (w > 120 && !cisluj) h += popis(ox + w / 2, oy - w / 2, 'obsah ' + cis(S, 4), 24, F.a);
+    else if (w <= 120) h += popis(ox + w + 70, oy - w / 2, 'obsah ' + cis(S, 4), 18, F.a);
+    h += popis(ox + w / 2, oy - w - 16, 'strana ' + cis(s), 17, F.a);
+  }
+  $('#odm_svg').innerHTML = h;
+  if (S0.rezim === 'A') {
+    const S10 = Math.round(s * 10) ** 2 / 100;    // presne: strana má 1 desatinné miesto
+    let t = vypln(D0.rovA, { s: cis(s), S: cis(S10, 4) });
+    if (JE_CELE(s)) t += D0.rovAcele; else if (s >= 1) t += vypln(D0.rovAdes, { n: Math.floor(s) * Math.floor(s) });
+    $('#odm_rov').innerHTML = `<div>${t}</div>`;
+    $('#odm_vs').textContent = cis(s);
+  } else {
+    $('#odm_rov').innerHTML = `<div>${vypln(D0.rovB, { s: cis(s), S: cis(S0.h * S0.h / 10000, 4), T: S0.T })}</div>`;
+    $('#odm_vh').textContent = cis(s);
+    $('#odm_h').value = S0.h;
+    fb0();
+  }
+}
+function fb0() {
+  const T = S0.T, hh = S0.h, S = hh * hh / 10000;      // strana v celých stotinách → obsah presne
+  let s1 = Math.floor(Math.sqrt(T * 10000)); while ((s1 + 1) * (s1 + 1) <= T * 10000) s1++; while (s1 * s1 > T * 10000) s1--;
+  const presna = s1 * s1 === T * 10000;
+  let t;
+  if (hh * hh === T * 10000) t = vypln(D0.presne, { o: `${odmH(T)} = ${cis(hh / 100)}`, s: cis(hh / 100), T });
+  else if (!presna && (hh === s1 || hh === s1 + 1)) t = vypln(D0.medzi, { s1: cis(s1 / 100), S1: cis(s1 * s1 / 10000, 4), s2: cis((s1 + 1) / 100), S2: cis((s1 + 1) * (s1 + 1) / 10000, 4), T, o: odmRov(T), odm: odmH(T) });
+  else t = vypln(hh * hh < T * 10000 ? D0.malo : D0.vela, { S: cis(S, 4), T });
+  $('#odm_fb').innerHTML = t;
+}
+function rezim0(r) { S0.rezim = r; S0.anim = null; $('#odm_A').hidden = r !== 'A'; $('#odm_B').hidden = r !== 'B'; kresli0(); }
+function nastavT(T) { S0.T = T; $('#odm_T').value = T; $('#odm_vT').textContent = T; $('#odm_uloha').innerHTML = vypln(D0.uloha, { T }); kresli0(); }
+function init0() {
+  segment($('#odm_rezim'), [['A', D0.rezimA], ['B', D0.rezimB]], 'A', rezim0);
+  const sl = $('#odm_s'); sl.value = S0.s;
+  sl.oninput = () => { S0.s = +sl.value; kresli0(); };
+  const st = $('#odm_T'); st.oninput = () => nastavT(+st.value);
+  $('#odm_pres').innerHTML = [25, 2, 49, 10, 81, 50].map(n => `<button data-n="${n}">${n}</button>`).join('');
+  $$('#odm_pres button').forEach(b => { b.onclick = () => { S0.h = 100; nastavT(+b.dataset.n); }; });
+  const sh = $('#odm_h'); sh.oninput = () => { S0.anim = null; S0.h = +sh.value; kresli0(); };
+  $('#odm_tl').innerHTML = [[-10, '−0,1'], [-1, '−0,01'], [1, '+0,01'], [10, '+0,1']].map(([d, t]) => `<button data-d="${d}">${t}</button>`).join('') + `<button class="primary" id="odm_ukaz">${D0.ukaz}</button>`;
+  $$('#odm_tl [data-d]').forEach(b => { b.onclick = () => { S0.anim = null; S0.h = clamp(S0.h + +b.dataset.d, 0, 1000); kresli0(); }; });
+  $('#odm_ukaz').onclick = () => { S0.anim = { od: S0.h, ciel: Math.round(Math.sqrt(S0.T) * 100), t: 0 }; };
+  nastavT(25);
+  TIKY.odm = dt => {
+    if (!S0.anim) return;
+    const a = S0.anim; a.t = Math.min(1, a.t + dt * RYCHLOST / 1.4);
+    S0.h = Math.round(a.od + (a.ciel - a.od) * ease(a.t));
+    if (a.t >= 1) { S0.h = a.ciel; S0.anim = null; }
+    kresli0();
+  };
+}
+
+/* =====================================================================
+   1. POMENOVANIE STRÁN – trojuholník v ľubovoľnej polohe
+   Vrcholy: C = pravý uhol, strana a = BC, b = CA, c = AB (oproti C).
+   Mená strán sa určujú podľa pravého uhla, nie podľa polohy na obrazovke.
+   ===================================================================== */
+const D1 = TEXTY.str;
+const S1 = { a: 4, b: 6, rot: 0, zrk: false, pos: [320, 235], prav: true };
+function troj1(st, u) {
+  const La = [st.b * u, 0], Lb = [0, -st.a * u], Lc = [0, 0];
+  const G = [st.b * u / 3, -st.a * u / 3];
+  const th = st.rot * Math.PI / 180, co = Math.cos(th), si = Math.sin(th);
+  const tr = p => { let x = p[0] - G[0]; const y = p[1] - G[1]; if (st.zrk) x = -x; return [st.pos[0] + x * co - y * si, st.pos[1] + x * si + y * co]; };
+  return { A: tr(La), B: tr(Lb), C: tr(Lc) };
+}
+function udrz(st, u, W, H, m) {   // trojuholník nesmie odísť z obrázka
+  const t = troj1(st, u), xs = [t.A[0], t.B[0], t.C[0]], ys = [t.A[1], t.B[1], t.C[1]];
+  let dx = 0, dy = 0;
+  if (Math.min(...xs) < m) dx = m - Math.min(...xs); else if (Math.max(...xs) > W - m) dx = W - m - Math.max(...xs);
+  if (Math.min(...ys) < m) dy = m - Math.min(...ys); else if (Math.max(...ys) > H - m) dy = H - m - Math.max(...ys);
+  st.pos = [st.pos[0] + dx, st.pos[1] + dy];
+}
+const U1 = 38;
+function kresli1() {
+  const t = troj1(S1, U1), G = stred([t.A, t.B, t.C]);
+  const strany = { a: [t.B, t.C], b: [t.C, t.A], c: [t.A, t.B] };
+  let h = `<g data-tah="1">`;
+  h += polyS([t.A, t.B, t.C], 'fill="rgba(185,163,255,.16)" data-tah="1"');
+  for (const k of ['a', 'b', 'c']) {
+    const [p, q] = strany[k];
+    h += ciara(p, q, `stroke="${F[k]}" stroke-width="${k === 'c' ? 8 : 5}" stroke-linecap="round" ${k === 'b' ? 'stroke-dasharray="14 5"' : ''} pointer-events="none"`);
+    h += ciara(p, q, `stroke="transparent" stroke-width="30" stroke-linecap="round" class="klik" data-s="${k}" data-tah="1"`);
+  }
+  h += pravyUhol(t.C, t.A, t.B, 22, F.text);
+  if (S1.prav) { const M = V.mid(t.A, t.B), d = V.unit(V.sub(M, t.C)); h += sipka(V.add(t.C, V.mul(d, 34)), V.sub(M, V.mul(d, 10)), F.c); }
+  for (const [n, P] of [['A', t.A], ['B', t.B], ['C', t.C]]) { const d = V.unit(V.sub(P, G)); h += popis(P[0] + d[0] * 24, P[1] + d[1] * 24, n, 20, F.muted); }
+  for (const k of ['a', 'b', 'c']) {
+    const M = V.mid(...strany[k]), d = V.unit(V.sub(M, G));
+    h += popis(M[0] + d[0] * 26, M[1] + d[1] * 26, k, 28, F[k]);
+    h += popis(M[0] + d[0] * 52, M[1] + d[1] * 52, D1.slovo[k], 17, F[k]);
+  }
+  h += '</g>';
+  $('#str_svg').innerHTML = h;
+  const c2 = S1.a * S1.a + S1.b * S1.b;
+  let tx = vypln(D1.stav, { a: S1.a, b: S1.b, c: odmVysl(c2) });
+  if (S1.rot !== 0 || S1.zrk) tx += vypln(D1.poloha, { r: S1.rot, z: S1.zrk ? D1.preklopeny : '' });
+  $('#str_info').innerHTML = tx;
+  $('#str_rot').value = S1.rot; $('#str_vr').textContent = S1.rot + '°';
+}
+function zmen1(f) { f(); udrz(S1, U1, 640, 460, 64); kresli1(); }
+function init1() {
+  const tl = [['L', D1.otocL], ['P', D1.otocP], ['Z', D1.preklop], ['N', D1.nahodne], ['T', D1.tvar]];
+  $('#str_tl').innerHTML = tl.map(([k, t]) => `<button data-k="${k}">${t}</button>`).join('');
+  const akcie = {
+    L: () => { S1.rot = (S1.rot + 315) % 360; }, P: () => { S1.rot = (S1.rot + 45) % 360; }, Z: () => { S1.zrk = !S1.zrk; },
+    N: () => { S1.rot = nahoda(0, 359); S1.zrk = Math.random() < .5; S1.pos = [nahoda(200, 440), nahoda(170, 290)]; },
+    T: () => { let a, b; do { a = nahoda(2, 7); b = nahoda(2, 7); } while (a === S1.a && b === S1.b); S1.a = a; S1.b = b; }
+  };
+  $$('#str_tl button').forEach(b => { b.onclick = () => zmen1(akcie[b.dataset.k]); });
+  $('#str_rot').oninput = e => zmen1(() => { S1.rot = +e.target.value; });
+  $('#str_prav').onchange = e => { S1.prav = e.target.checked; kresli1(); };
+  const svg = $('#str_svg'); let pos0 = null;
+  tahanie(svg, {
+    zaciatok: (b, ciel) => { if (!ciel.closest('[data-tah]')) return false; pos0 = S1.pos.slice(); return true; },
+    pohyb: (b, start) => zmen1(() => { S1.pos = [pos0[0] + b[0] - start[0], pos0[1] + b[1] - start[1]]; }),
+    koniec: (posun, ciel) => { if (!posun && ciel && ciel.dataset && ciel.dataset.s) { const i = D1.info[ciel.dataset.s]; info(i.n, i.t); } }
+  });
+  zmen1(() => {});
+  initHra();
+}
+
+/* ----- Mini hra: klikni na preponu (náhodne otočené trojuholníky) ----- */
+const DH = TEXTY.hra;
+const HRA = { rezim: 'c', n: 0, ok: 0, st: null, pis: null, odp: null };
+function novaHra() {
+  HRA.st = { a: nahoda(2, 6), b: nahoda(2, 6), rot: nahoda(0, 359), zrk: Math.random() < .5, pos: [320, 190] };
+  udrz(HRA.st, 32, 640, 380, 44);
+  HRA.pis = zamiesaj(vyber([['K', 'L', 'M'], ['P', 'R', 'S'], ['X', 'Y', 'Z'], ['D', 'E', 'F'], ['T', 'U', 'V']]));
+  HRA.odp = null;
+  $('#hra_fb').innerHTML = '';
+  $('#hra_zad').innerHTML = HRA.rezim === 'c' ? DH.zadC : DH.zadO;
+  kresliHru();
+}
+function menoStrany(k) { const p = HRA.pis; return k === 'a' ? p[1] + p[2] : k === 'b' ? p[2] + p[0] : p[0] + p[1]; }
+function kresliHru() {
+  const t = troj1(HRA.st, 32), G = stred([t.A, t.B, t.C]);
+  const strany = { a: [t.B, t.C], b: [t.C, t.A], c: [t.A, t.B] };
+  let h = polyS([t.A, t.B, t.C], 'fill="rgba(185,163,255,.14)"');
+  for (const k of ['a', 'b', 'c']) {
+    const [p, q] = strany[k];
+    let farba = '#c9d2e8', hr = 7;
+    if (HRA.odp) {
+      const dobra = HRA.rezim === 'c' ? k === 'c' : k !== 'c';
+      if (dobra && (HRA.rezim === 'c' || k === HRA.odp || !HRA.dobre)) { farba = F.c; hr = 10; }
+      if (k === HRA.odp && !HRA.dobre) farba = F.red;
+    }
+    h += ciara(p, q, `stroke="${farba}" stroke-width="${hr}" stroke-linecap="round" pointer-events="none"`);
+    h += ciara(p, q, `stroke="transparent" stroke-width="34" stroke-linecap="round" class="klik" data-s="${k}"`);
+  }
+  h += pravyUhol(t.C, t.A, t.B, 20, F.text);
+  if (HRA.odp) { const M = V.mid(t.A, t.B), d = V.unit(V.sub(M, t.C)); h += sipka(V.add(t.C, V.mul(d, 30)), V.sub(M, V.mul(d, 10)), F.c, .9); }
+  [t.A, t.B, t.C].forEach((P, i) => { const d = V.unit(V.sub(P, G)); h += popis(P[0] + d[0] * 24, P[1] + d[1] * 24, HRA.pis[i], 21, F.muted); });
+  $('#hra_svg').innerHTML = h;
+  $('#hra_sk').textContent = vypln(DH.skore, { ok: HRA.ok, n: HRA.n });
+}
+function klikHra(k) {
+  if (HRA.odp) return;
+  HRA.odp = k; HRA.n++;
+  HRA.dobre = HRA.rezim === 'c' ? k === 'c' : k !== 'c';
+  if (HRA.dobre) HRA.ok++;
+  const v = HRA.pis[2];
+  let t;
+  if (HRA.rezim === 'c') t = HRA.dobre ? vypln(DH.okC, { s: menoStrany('c'), v }) : vypln(DH.zleC, { s: menoStrany('c'), v });
+  else t = HRA.dobre ? vypln(DH.okO, { s: menoStrany(k), v }) : vypln(DH.zleO, { s: menoStrany('c'), v, o1: menoStrany('a'), o2: menoStrany('b') });
+  const fb = $('#hra_fb'); fb.className = 'fb ' + (HRA.dobre ? 'ok' : 'zle'); fb.innerHTML = t;
+  kresliHru();
+}
+function initHra() {
+  segment($('#hra_rezim'), [['c', DH.rezimC], ['o', DH.rezimO]], 'c', k => { HRA.rezim = k; novaHra(); });
+  $('#hra_dalsi').textContent = DH.dalsi; $('#hra_dalsi').onclick = novaHra;
+  $('#hra_svg').addEventListener('click', e => { const s = e.target.closest('[data-s]'); if (s) klikHra(s.dataset.s); });
+  novaHra();
+}
+
+/* =====================================================================
+   2. ŠTVORCE NAD STRANAMI
+   Súradnice v jednotkách (y hore): C = (0,0), A = (b,0), B = (0,a).
+   ===================================================================== */
+function geomStvorce(a, b) {
+  const c = Math.hypot(a, b), A = [b, 0], B = [0, a], C = [0, 0];
+  const e1 = [-b / c, a / c], e2 = [a / c, b / c];   // e1 pozdĺž prepony, e2 von z trojuholníka
+  return { a, b, c, A, B, C, e1, e2,
+    sq: { a: [[0, 0], [0, a], [-a, a], [-a, 0]], b: [[0, 0], [b, 0], [b, -b], [0, -b]], c: [A, B, V.add(B, V.mul(e2, c)), V.add(A, V.mul(e2, c))] } };
+}
+function mriezka(T, P, e1, e2, n) {
+  let d = '';
+  for (let k = 1; k < n; k++) {
+    const p1 = T(V.add(P, V.mul(e1, k))), p2 = T(V.add(V.add(P, V.mul(e1, k)), V.mul(e2, n)));
+    const q1 = T(V.add(P, V.mul(e2, k))), q2 = T(V.add(V.add(P, V.mul(e2, k)), V.mul(e1, n)));
+    d += `M${r1(p1[0])},${r1(p1[1])}L${r1(p2[0])},${r1(p2[1])}M${r1(q1[0])},${r1(q1[1])}L${r1(q2[0])},${r1(q2[1])}`;
+  }
+  return d ? `<path d="${d}" stroke="rgba(226,232,245,.35)" stroke-width="1" fill="none"/>` : '';
+}
+// jednotkové štvorčeky z a² a b²; p = 0 … na mieste, p = 1 … preložené do c² (len pri celom c)
+function bunky(g, T, p, cInt) {
+  const a = g.a, b = g.b, src = [];
+  for (let j = 0; j < a; j++) for (let i = 0; i < a; i++) src.push({ c: [-a + i + .5, j + .5], f: 'a' });
+  for (let j = 0; j < b; j++) for (let i = 0; i < b; i++) src.push({ c: [i + .5, -b + j + .5], f: 'b' });
+  const N = src.length; let tg = null, th = 0;
+  if (cInt && p > 0) {
+    tg = []; const n = Math.round(g.c);
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) tg.push(V.add(g.A, V.add(V.mul(g.e1, i + .5), V.mul(g.e2, j + .5))));
+    const t0 = Math.atan2(g.e1[1], g.e1[0]); th = t0 - Math.PI / 2 * Math.round(t0 / (Math.PI / 2));
+  }
+  const hh = .45, d = { a: '', b: '' };
+  src.forEach((s, k) => {
+    let c = s.c, ph = 0;
+    if (tg) { const t = ease(clamp(p * 1.6 - .6 * (N > 1 ? k / (N - 1) : 0), 0, 1)); c = V.lerp(s.c, tg[k], t); ph = th * t; }
+    const co = Math.cos(ph), si = Math.sin(ph);
+    const P = [[-hh, -hh], [hh, -hh], [hh, hh], [-hh, hh]].map(([x, y]) => T([c[0] + x * co - y * si, c[1] + x * si + y * co]));
+    d[s.f] += 'M' + P.map(q => r1(q[0]) + ',' + r1(q[1])).join('L') + 'Z';
+  });
+  // zlaté štvorčeky plné, modré pruhované – dajú sa rozlíšiť aj bez farieb
+  return `<path d="${d.a}" fill="#f3b453" fill-opacity=".85" stroke="#3a2608" stroke-width=".8"/><path d="${d.b}" fill="url(#cB)" stroke="#0e2a4a" stroke-width=".8"/>`;
+}
+// trojuholník so štvorcami nad stranami (karty 2, 4 a 5); o.lab = popisy strán, o.pl = popisy plôch
+function figStvorce(a, b, o) {
+  const g = geomStvorce(a, b), W = o.W, H = o.H, m = 24;
+  const vs = g.sq.a.concat(g.sq.b, g.sq.c);
+  const x0 = Math.min(...vs.map(p => p[0])), x1 = Math.max(...vs.map(p => p[0]));
+  const y0 = Math.min(...vs.map(p => p[1])), y1 = Math.max(...vs.map(p => p[1]));
+  const s = Math.min((W - 2 * m) / (x1 - x0), (H - 2 * m) / (y1 - y0));   // automatické zmenšenie, aby sa všetko zmestilo
+  const ox = (W - s * (x1 - x0)) / 2 - s * x0, oy = (H - s * (y1 - y0)) / 2 + s * y1;
+  const T = p => [ox + s * p[0], oy - s * p[1]];
+  const cInt = JE_CELE(g.c);
+  let h = '';
+  for (const k of ['a', 'b', 'c']) h += plochaS(g.sq[k].map(T), k);
+  if (o.mriezka) { h += mriezka(T, [-a, 0], [1, 0], [0, 1], a) + mriezka(T, [0, -b], [1, 0], [0, 1], b); if (cInt) h += mriezka(T, g.A, g.e1, g.e2, Math.round(g.c)); }
+  if (o.bunky != null) h += bunky(g, T, o.bunky, cInt);
+  const tA = T(g.A), tB = T(g.B), tC = T(g.C);
+  h += polyS([tA, tB, tC], 'fill="rgba(185,163,255,.3)"');
+  h += ciara(tB, tC, `stroke="${F.a}" stroke-width="4" stroke-linecap="round"`) + ciara(tC, tA, `stroke="${F.b}" stroke-width="4" stroke-linecap="round"`) + ciara(tA, tB, `stroke="${F.c}" stroke-width="6" stroke-linecap="round"`);
+  h += pravyUhol(tC, tA, tB, clamp(s * .35, 8, 18), F.text);
+  const kon = { a: [g.B, g.C], b: [g.C, g.A], c: [g.A, g.B] };
+  for (const k of ['a', 'b', 'c']) {
+    const px = (k === 'c' ? g.c : g[k]) * s, st = T(stred(g.sq[k]));
+    if (px >= 160) {
+      if (o.pl && o.pl[k]) h += popis(st[0], st[1], o.pl[k], clamp(px * .11, 16, 26), F[k]);
+      if (o.lab && o.lab[k]) { const M = T(V.mid(...kon[k])), d = V.unit(V.sub(st, M)); h += popis(M[0] + d[0] * 24, M[1] + d[1] * 24, o.lab[k], 16, F[k]); }
+    } else {
+      const fs = clamp(px * .14, 11, 17);
+      if (o.lab && o.lab[k]) h += popis(st[0], st[1] - fs * .7, o.lab[k], fs, F[k]);
+      if (o.pl && o.pl[k]) h += popis(st[0], st[1] + fs * .7, o.pl[k], fs, F[k]);
+    }
+  }
+  return h;
+}
+const D2 = TEXTY.stv;
+const S2 = { a: 3, b: 4, p: 0, ciel: 0 };
+function kresli2() {
+  const a = S2.a, b = S2.b, c2 = a * a + b * b, cInt = jeStvorec(c2), c = Math.sqrt(c2);
+  $('#stv_svg').innerHTML = figStvorce(a, b, { W: 640, H: 600, mriezka: true, bunky: S2.p,
+    lab: { a: 'a = ' + a, b: 'b = ' + b, c: 'c ' + odmVysl(c2, 2, true) },
+    pl: { a: 'a² = ' + a * a, b: 'b² = ' + b * b, c: 'c² = ' + c2 } });
+  $('#stv_va').textContent = a; $('#stv_vb').textContent = b;
+  $('#stv_rov').innerHTML = `<div>${a}² + ${b}² = ${a * a} + ${b * b} = <b>${c2}</b>${cInt ? ` = ${Math.round(c)}²` : ''}</div><div>c = ${odmRov(c2)}</div>`;
+  $('#stv_preloz').disabled = !cInt || S2.ciel === 1;
+  $('#stv_vrat').disabled = S2.p === 0 && S2.ciel === 0;
+  const o = { a, b, c: cis(c), a2: a * a, b2: b * b, c2 };
+  $('#stv_hl').innerHTML = !cInt ? vypln(D2.necela, { a2: a * a, b2: b * b, c2, c: odmVysl(c2) }) : S2.p >= 1 ? vypln(D2.hotovo, o) : vypln(D2.trojica, o);
+  $('#stv_omyl').innerHTML = vypln(D2.omyl, { a, b, s: a + b, c: odmVysl(c2) });
+}
+function init2() {
+  const sa = $('#stv_a'), sb = $('#stv_b'); sa.value = S2.a; sb.value = S2.b;
+  const zmena = () => { S2.a = +sa.value; S2.b = +sb.value; S2.p = 0; S2.ciel = 0; kresli2(); };
+  sa.oninput = zmena; sb.oninput = zmena;
+  $('#stv_pres').innerHTML = `<span class="lbl0">${D2.trojice}</span>` + [[3, 4], [6, 8], [5, 12], [9, 12], [2, 3], [1, 1]].map(([a, b]) => `<button data-a="${a}" data-b="${b}">${a} a ${b}</button>`).join('');
+  $$('#stv_pres button').forEach(x => { x.onclick = () => { sa.value = x.dataset.a; sb.value = x.dataset.b; zmena(); }; });
+  $('#stv_preloz').textContent = D2.preloz; $('#stv_preloz').onclick = () => { S2.ciel = 1; kresli2(); };
+  $('#stv_vrat').textContent = D2.vrat; $('#stv_vrat').onclick = () => { S2.ciel = 0; S2.p = 0; kresli2(); };
+  kresli2();
+  TIKY.stv = dt => {
+    if (S2.p === S2.ciel) return;
+    const N = S2.a * S2.a + S2.b * S2.b, dur = 2.6 + N / 50;
+    S2.p = S2.ciel > S2.p ? Math.min(S2.ciel, S2.p + dt * RYCHLOST / dur) : Math.max(S2.ciel, S2.p - dt * RYCHLOST / dur);
+    kresli2();
+  };
+}
+
+/* =====================================================================
+   3. DÔKAZ PREKLADANÍM
+   Veľký štvorec so stranou S = a + b, súradnice v jednotkách (y dole).
+   Rozloženie B (m = 0): trojuholníky v rohoch, v strede naklonený štvorec c²
+     s vrcholmi (a,0), (S,a), (b,S), (0,b) – každý je vo vzdialenosti a od rohu.
+   Rozloženie A (m = 1): trojuholník 1 posunutý o (0, a), 3 o (−b, 0), 4 o (a, −b), 2 ostáva.
+     Dva obdĺžniky a × b, voľné sú štvorce a² = [0,a]×[0,a] a b² = [a,S]×[a,S].
+   Trojuholníky sa len posúvajú, nemenia tvar ani veľkosť.
+   ===================================================================== */
+const D3 = TEXTY.dok;
+const S3 = { a: 3, b: 4 };
+let P3 = null;
+function troj3(a, b) {
+  const S = a + b;
+  // p = vrcholy v rozložení B [pravý uhol, vrchol, vrchol], d = posun do rozloženia A, l = popisy odvesien
+  return [
+    { p: [[0, 0], [a, 0], [0, b]], d: [0, a], l: ['a', 'b'] },
+    { p: [[S, 0], [a, 0], [S, a]], d: [0, 0], l: ['b', 'a'] },
+    { p: [[S, S], [b, S], [S, a]], d: [-b, 0], l: ['a', 'b'] },
+    { p: [[0, S], [b, S], [0, b]], d: [a, -b], l: ['b', 'a'] }
+  ];
+}
+// overenie geometrie rozloženia B výpočtom: vrcholy nakloneného štvorca na stranách vo vzdialenosti a od rohov, strany c, uhly 90°
+function overGeometriu3(a, b) {
+  const S = a + b, c = Math.hypot(a, b), E = 1e-9, chyby = [];
+  const TR = troj3(a, b), vrch = [];
+  TR.forEach(t => [t.p[1], t.p[2]].forEach(p => { if (!vrch.some(q => V.len(V.sub(p, q)) < E)) vrch.push(p); }));
+  if (vrch.length !== 4) chyby.push('nie sú 4 vrcholy');
+  const rohy = [[0, 0], [S, 0], [S, S], [0, S]], poradie = [];
+  rohy.forEach((K, i) => {
+    const smer = V.unit(V.sub(rohy[(i + 1) % 4], K)), ocak = V.add(K, V.mul(smer, a));
+    const j = vrch.findIndex(p => V.len(V.sub(p, ocak)) < E);
+    if (j < 0) chyby.push(`na strane ${i + 1} chýba vrchol vo vzdialenosti a od rohu`); else poradie.push(vrch[j]);
+  });
+  if (poradie.length === 4) for (let i = 0; i < 4; i++) {
+    const p = poradie[i], q = poradie[(i + 1) % 4], r = poradie[(i + 2) % 4];
+    if (Math.abs(V.len(V.sub(q, p)) - c) > 1e-9) chyby.push('strana nemá dĺžku c');
+    if (Math.abs(V.dot(V.sub(q, p), V.sub(r, q))) > 1e-9) chyby.push('uhol nie je pravý');
+  }
+  return chyby;
+}
+// samotest: obe rozloženia majú celkovú plochu (a + b)², zvyšok je a² + b² (A) a c² (B), trojuholníky sa neprekrývajú
+function testDokaz3(a, b, N = 160) {
+  const S = a + b, TR = troj3(a, b);
+  const vnutri = (P, x, y) => { let zn = 0; for (let i = 0; i < 3; i++) { const p = P[i], q = P[(i + 1) % 3]; const cr = (q[0] - p[0]) * (y - p[1]) - (q[1] - p[1]) * (x - p[0]); if (cr > 0) zn |= 1; else if (cr < 0) zn |= 2; } return zn !== 3; };
+  const vStvorci = (P, x, y) => { let zn = 0; for (let i = 0; i < P.length; i++) { const p = P[i], q = P[(i + 1) % P.length]; const cr = (q[0] - p[0]) * (y - p[1]) - (q[1] - p[1]) * (x - p[0]); if (cr > 0) zn |= 1; else if (cr < 0) zn |= 2; } return zn !== 3; };
+  const vysl = {};
+  for (const roz of ['A', 'B']) {
+    const T = TR.map(t => t.p.map(p => roz === 'A' ? V.add(p, t.d) : p));
+    const volne = roz === 'A' ? [[[0, 0], [a, 0], [a, a], [0, a]], [[a, a], [S, a], [S, S], [a, S]]] : [[[a, 0], [S, a], [b, S], [0, b]]];
+    let prekryv = 0, nesedi = 0;
+    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+      const x = (i + .5) / N * S + 1.3e-7, y = (j + .5) / N * S + 2.9e-7;   // posun, aby body neležali presne na hranách
+      const kolko = T.filter(P => vnutri(P, x, y)).length, volny = volne.some(P => vStvorci(P, x, y));
+      if (kolko > 1) prekryv++;
+      if ((kolko === 0) !== volny) nesedi++;
+    }
+    const trojPl = T.reduce((s, P) => s + plochaP(P), 0), volnePl = volne.reduce((s, P) => s + plochaP(P), 0);
+    vysl[roz] = { celkom: trojPl + volnePl, zvysok: volnePl, prekryv, nesedi };
+  }
+  const E = 1e-9, c2 = a * a + b * b;
+  vysl.ok = Math.abs(vysl.A.celkom - S * S) < E && Math.abs(vysl.B.celkom - S * S) < E && Math.abs(vysl.A.zvysok - c2) < E && Math.abs(vysl.B.zvysok - c2) < E
+    && !vysl.A.prekryv && !vysl.B.prekryv && !vysl.A.nesedi && !vysl.B.nesedi && overGeometriu3(a, b).length === 0;
+  return vysl;
+}
+function cisla3() {
+  const a = S3.a, b = S3.b, S = a + b, c2 = a * a + b * b, T = a * b / 2;
+  return { a, b, S, S2: S * S, T: cis(T), T4: cis(4 * T), a2: a * a, b2: b * b, c2, ct: odmVysl(c2) };
+}
+function kresli3(n) {
+  const a = S3.a, b = S3.b, S = a + b, L = 500, O = 56, u = L / S;
+  const P = p => [O + p[0] * u, O + p[1] * u];
+  let h = `<rect x="${O}" y="${O}" width="${L}" height="${L}" fill="#111a2e"/>`;
+  // zvýraznenie zvyšnej plochy (A: a² a b², B: c²) – farba aj šrafovanie
+  const aAB = n.hlAB * clamp(n.m * 4 - 3, 0, 1), aC = n.hlC * clamp(1 - n.m * 4, 0, 1);
+  if (aAB > .01) { h += plochaS([[0, 0], [a, 0], [a, a], [0, a]].map(P), 'a', r1(aAB * 10) / 10) + plochaS([[a, a], [S, a], [S, S], [a, S]].map(P), 'b', r1(aAB * 10) / 10); }
+  if (aC > .01) h += plochaS([[a, 0], [S, a], [b, S], [0, b]].map(P), 'c', r1(aC * 10) / 10);
+  const TR = troj3(a, b);
+  // trojuholníky 1, 3, 4 sa posúvajú postupne (pri ťahaní z A do B: najprv 4, potom 3, nakoniec 1)
+  const mv = [clamp(n.m * 3, 0, 1), 0, clamp(n.m * 3 - 1, 0, 1), clamp(n.m * 3 - 2, 0, 1)].map(ease);
+  const popisuj = u * Math.min(a, b) >= 56;
+  if (n.tri > .01) {
+    TR.forEach((t, i) => {
+      const Q = t.p.map(p => P(V.add(p, V.mul(t.d, mv[i])))), G = stred(Q);
+      h += `<g opacity="${r1(n.tri * 10) / 10}">` + polyS(Q, 'fill="#4b3d86" stroke="#cbbcff" stroke-width="2" stroke-linejoin="round"');
+      h += pravyUhol(Q[0], Q[1], Q[2], clamp(u * .3, 7, 16), '#cbbcff');
+      if (popisuj) [[Q[0], Q[1], t.l[0]], [Q[0], Q[2], t.l[1]], [Q[1], Q[2], 'c']].forEach(([p, q, k]) => { const M = V.mid(p, q), d = V.unit(V.sub(G, M)); h += popis(M[0] + d[0] * 13, M[1] + d[1] * 13, k, 16, F[k]); });
+      h += popis(G[0], G[1], i + 1, 22, '#ffffff') + '</g>';
+    });
+  }
+  const c = cisla3();
+  if (aAB > .3) {
+    h += popis(...P([a / 2, a / 2]), 'a² = ' + c.a2, clamp(u * a * .2, 13, 30), F.a, `opacity="${r1(aAB * 10) / 10}"`);
+    h += popis(...P([a + b / 2, a + b / 2]), 'b² = ' + c.b2, clamp(u * b * .2, 13, 30), F.b, `opacity="${r1(aAB * 10) / 10}"`);
+  }
+  if (aC > .3) h += popis(O + L / 2, O + L / 2, 'c² = ' + c.c2, clamp(u * Math.sqrt(c.c2) * .16, 16, 34), F.c, `opacity="${r1(aC * 10) / 10}"`);
+  // uhly pri vrchole nakloneného štvorca (len v rozložení B)
+  if (n.ang > .01 && n.m < .05) {
+    const V0 = P([a, 0]), r = clamp(u * .55, 18, 30);
+    const o1 = oblukS(V0, P([0, 0]), P([0, b]), r, '#ff9a8b', 3, n.ang), o2 = oblukS(V0, P([S, 0]), P([S, a]), r, '#e6a0ff', 3, n.ang);
+    h += o1.svg + o2.svg + pravyUhol(V0, P([0, b]), P([S, a]), r * .6, '#ffffff', n.ang);
+    h += popis(V0[0] + o1.smer[0] * (r + 13), V0[1] + o1.smer[1] * (r + 13), 'β', 18, '#ff9a8b', `opacity="${n.ang}"`);
+    h += popis(V0[0] + o2.smer[0] * (r + 13), V0[1] + o2.smer[1] * (r + 13), 'α', 18, '#e6a0ff', `opacity="${n.ang}"`);
+  }
+  h += `<rect x="${O}" y="${O}" width="${L}" height="${L}" fill="none" stroke="#ffffff" stroke-width="3"/>`;
+  // rozmery veľkého štvorca: hore a + b (v oboch rozloženiach), vľavo podľa rozloženia
+  const kot = (p, q, t, k, off) => {
+    const d = V.unit(V.sub(q, p)), nn = [d[1] * off, -d[0] * off];
+    return ciara(V.add(p, nn), V.add(q, nn), `stroke="${F[k]}" stroke-width="2"`) + ciara(V.add(p, V.mul(nn, .6)), V.add(p, V.mul(nn, 1.4)), `stroke="${F[k]}" stroke-width="2"`) + ciara(V.add(q, V.mul(nn, .6)), V.add(q, V.mul(nn, 1.4)), `stroke="${F[k]}" stroke-width="2"`) + popis(...V.add(V.mid(p, q), V.mul(nn, 2.1)), t, 18, F[k]);
+  };
+  h += kot(P([0, 0]), P([a, 0]), 'a', 'a', 14) + kot(P([a, 0]), P([S, 0]), 'b', 'b', 14);
+  if (n.m >= .5) h += kot(P([0, a]), P([0, 0]), 'a', 'a', 14) + kot(P([0, S]), P([0, a]), 'b', 'b', 14);
+  else h += kot(P([0, b]), P([0, 0]), 'b', 'b', 14) + kot(P([0, S]), P([0, b]), 'a', 'a', 14);
+  $('#dok_svg').innerHTML = h;
+  $('#dok_m').value = Math.round((1 - n.m) * 100); $('#dok_vm').textContent = Math.round((1 - n.m) * 100) + ' %';
+  let r = '';
+  if (n.tri > .5) r = `<div>${vypln(D3.rov, c)}</div><div>${n.m >= .5 ? vypln(D3.rovAB, c) : vypln(D3.rovC, c)}</div>`;
+  else r = `<div>(a + b)² = ${c.S}² = <b>${c.S2}</b></div>`;
+  $('#dok_rov').innerHTML = r;
+}
+function kroky3() {
+  const z = { m: 1, tri: 1, hlC: 0, hlAB: 0, ang: 0 };
+  const n = o => Object.assign({}, z, o);
+  return [
+    { n: n({ tri: 0 }) }, { n: n({}) }, { n: n({ hlAB: 1 }) },
+    { n: n({ m: 0, hlAB: 1 }), dur: 3.4 }, { n: n({ m: 0, hlC: 1, ang: 1 }) }, { n: n({ m: 0, hlC: 1, hlAB: 1 }) }
+  ].map((k, i) => Object.assign(k, { text: () => vypln(D3.kroky[i], cisla3()) }));
+}
+function init3() {
+  P3 = new Prehravac($('#dok_hrac'), kresli3);
+  const sa = $('#dok_a'), sb = $('#dok_b'); sa.value = S3.a; sb.value = S3.b;
+  const zmena = () => {
+    S3.a = +sa.value; S3.b = +sb.value; $('#dok_va').textContent = S3.a; $('#dok_vb').textContent = S3.b;
+    const ch = overGeometriu3(S3.a, S3.b);
+    $('#dok_kontrola').innerHTML = ch.length ? vypln(D3.kontrolaZle, { chyby: ch.join(', ') }) : vypln(D3.kontrolaOk, { a: S3.a, b: S3.b });
+    kresli3(P3.cur); P3.ui();
+  };
+  sa.oninput = zmena; sb.oninput = zmena;
+  $('#dok_ab').textContent = D3.prepni;
+  $('#dok_ab').onclick = () => P3.chod({ m: P3.cur.m < .5 ? 1 : 0, tri: 1, hlC: 1, hlAB: 1, ang: 0 }, 2.8);
+  $('#dok_m').oninput = e => P3.nastavHned({ m: 1 - +e.target.value / 100, tri: 1, hlC: 1, hlAB: 1, ang: 0 });
+  P3.nastav(kroky3());
+  zmena();
+  TIKY.dok = dt => P3.tick(dt);
+}
+
+/* =====================================================================
+   4. PYTAGOREJSKÉ TROJICE – násobky, podobnosť, povraz s 12 uzlami
+   ===================================================================== */
+const D4 = TEXTY.troj;
+const TROJICE = [[3, 4, 5], [5, 12, 13], [8, 15, 17], [7, 24, 25], [20, 21, 29], [9, 40, 41]];
+const S4 = { i: 0, k: 1, lano: 0, lanoHraj: false };
+function zaklad4() { return S4.i === 'n' ? [1, 1, null] : TROJICE[S4.i]; }
+function kresli4() {
+  const [a0, b0, c0] = zaklad4(), k = S4.k, a = a0 * k, b = b0 * k, c2 = a * a + b * b, cInt = jeStvorec(c2), c = Math.round(Math.sqrt(c2));
+  $('#troj_svg').innerHTML = figStvorce(a, b, { W: 640, H: 600, mriezka: cInt && c <= 45,
+    lab: { a: 'a = ' + a, b: 'b = ' + b, c: 'c ' + odmVysl(c2, 2, true) }, pl: { a: 'a² = ' + a * a, b: 'b² = ' + b * b, c: 'c² = ' + c2 } });
+  $('#troj_rov').innerHTML = `<div>${vypln(D4.rov, { a, b, A: a * a, B: b * b, S: c2 })}${cInt && jePravouhly(a, b, c) ? vypln(D4.rovCela, { c }) : vypln(D4.rovNecela, { odm: odmRov(c2) })}</div>`;
+  $('#troj_vk').textContent = k;
+  const nas = $('#troj_nas'), nec = $('#troj_nec');
+  if (c0) { nas.hidden = false; nec.hidden = true; nas.innerHTML = vypln(D4.nasobok, { a: a0, b: b0, c: c0, k, A: a, B: b, C: c0 * k }); }
+  else { nas.hidden = true; nec.hidden = false; nec.innerHTML = vypln(D4.necele, { a, b, A: a * a, B: b * b, S: c2, odm: odmRov(c2) }); }
+  $$('#troj_zoz button').forEach(x => x.classList.toggle('on', x.dataset.i === String(S4.i)));
+  // podobné trojuholníky k = 1 … 5 so spoločným vrcholom pravého uhla
+  const s = Math.min(560 / (5 * b0), 250 / (5 * a0)), C = [40, 280];
+  let h = '';
+  for (let j = 5; j >= 1; j--) {
+    const A = [C[0] + j * b0 * s, C[1]], B = [C[0], C[1] - j * a0 * s], akt = j === k;
+    h += polyS([C, A, B], akt ? 'fill="rgba(185,163,255,.35)" stroke="#e2e8f5" stroke-width="3"' : 'fill="none" stroke="rgba(226,232,245,.35)" stroke-width="1.5" stroke-dasharray="5 4"');
+    if (akt) {
+      h += ciara(A, B, `stroke="${F.c}" stroke-width="5"`) + pravyUhol(C, A, B, 14, F.text);
+      h += popis((C[0] + A[0]) / 2, C[1] + 0, 'b = ' + b0 * j, 16, F.b) + popis(C[0] + 0, (C[1] + B[1]) / 2, 'a = ' + a0 * j, 16, F.a, 'text-anchor="start" dx="6"');
+      const M = V.mid(A, B); h += popis(M[0] + 30, M[1] - 18, 'c ' + odmVysl((a0 * j) ** 2 + (b0 * j) ** 2, 2, true), 16, F.c);
+    }
+  }
+  $('#troj_pod').innerHTML = h;
+}
+// povraz: 12 rovnakých dielov, uzly 0 … 12; ohyb pri uzle 4 a pri uzle 9 (strany 4, 5, 3 dielov)
+function kresliLano() {
+  const t = S4.lano, u = 40, ox = 80 + 160 * ease(t), oy = 255;
+  const tA = Math.PI - Math.atan2(3, 4), tB = Math.PI - Math.atan2(4, 3);   // vonkajšie uhly ohybu
+  const P = [[0, 0]];
+  for (let i = 1; i <= 12; i++) { const hd = (i > 4 ? tA * t : 0) + (i > 9 ? tB * t : 0); const q = P[i - 1]; P.push([q[0] + Math.cos(hd), q[1] + Math.sin(hd)]); }
+  const X = p => [ox + p[0] * u, oy - p[1] * u];
+  let h = `<polyline points="${pts(P.map(X))}" fill="none" stroke="#c8a165" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>`;
+  P.forEach((p, i) => { const q = X(p); h += `<circle cx="${r1(q[0])}" cy="${r1(q[1])}" r="${i === 0 || i === 12 ? 8 : 6}" fill="#e2e8f5" stroke="#04060c" stroke-width="2"/>`; });
+  if (t >= .999) {
+    h += pravyUhol(X([0, 0]), X([4, 0]), X([0, 3]), 20, F.c);
+    h += popis(...V.add(X([2, 0]), [0, 22]), '4 diely', 17, F.b) + popis(...V.add(X([0, 1.5]), [-44, 0]), '3 diely', 17, F.a) + popis(...V.add(X([2, 1.5]), [36, -14]), '5 dielov', 17, F.c);
+    $('#lano_hl').innerHTML = D4.povraz.hotovo;
+  } else { if (t === 0) h += popis(ox + 6 * u, oy + 28, '12 dielov', 17, F.muted); $('#lano_hl').innerHTML = D4.povraz.pred; }
+  $('#lano_svg').innerHTML = h;
+}
+function init4() {
+  $('#troj_zoz').innerHTML = TROJICE.map((t, i) => `<button data-i="${i}">(${t.join(', ')})</button>`).join('') + `<button data-i="n">${D4.necBtn}</button>`;
+  $$('#troj_zoz button').forEach(x => { x.onclick = () => { S4.i = x.dataset.i === 'n' ? 'n' : +x.dataset.i; kresli4(); }; });
+  const sk = $('#troj_k'); sk.value = 1; sk.oninput = () => { S4.k = +sk.value; kresli4(); };
+  $('#lano_play').textContent = D4.povraz.napni; $('#lano_play').onclick = () => { if (S4.lano >= 1) S4.lano = 0; S4.lanoHraj = true; };
+  $('#lano_zac').textContent = D4.povraz.znova; $('#lano_zac').onclick = () => { S4.lano = 0; S4.lanoHraj = false; kresliLano(); };
+  kresli4(); kresliLano();
+  TIKY.troj = dt => { if (!S4.lanoHraj) return; S4.lano = Math.min(1, S4.lano + dt * RYCHLOST / 3); if (S4.lano >= 1) S4.lanoHraj = false; kresliLano(); };
+}
+
+/* =====================================================================
+   5. VÝPOČET CHÝBAJÚCEJ STRANY
+   Vstupy sa prepočítajú na celé stotiny → druhé mocniny a súčty sú celé čísla (presné).
+   ===================================================================== */
+const D5 = TEXTY.vyp;
+const S5 = { hl: 'c', des: 2, uroven: 1, v: { c: [6, 8], a: [10, 8], b: [13, 5] }, kroky: [], i: 0, data: null };
+// známe strany podľa toho, čo hľadám: [prvá, druhá]
+const ZNAME5 = { c: ['a', 'b'], a: ['c', 'b'], b: ['c', 'a'] };
+function vypocitaj5() {
+  const x1 = citaj($('#vyp_x1').value), x2 = citaj($('#vyp_x2').value), ch = $('#vyp_chyba');
+  ch.hidden = true;
+  if (!(x1 > 0) || !(x2 > 0) || !maxDvaMiesta(x1) || !maxDvaMiesta(x2) || x1 > 10000 || x2 > 10000) { ch.hidden = false; ch.innerHTML = D5.chybaCislo; return; }
+  const hl = S5.hl, [k1, k2] = ZNAME5[hl];
+  if (hl !== 'c' && x1 <= x2) { ch.hidden = false; ch.innerHTML = vypln(D5.chybaPrepona, { c: cis(x1), o: cis(x2) }); return; }
+  S5.v[hl] = [x1, x2];
+  const X1 = sto(x1), X2 = sto(x2), N = hl === 'c' ? X1 * X1 + X2 * X2 : X1 * X1 - X2 * X2;   // v desaťtisícinách, celé číslo
+  const v = N / 10000, presne = jeStvorec(N), r = Math.sqrt(N) / 100, d = S5.des;
+  const rT = presne ? cis(r, 4) : cis(r, d);
+  const op = hl === 'c' ? '+' : '−', u = hl, kz = k2;
+  const vzorec = hl === 'c' ? odmS('(a² + b²)') : odmS(`(c² − ${kz}²)`);
+  const kroky = [
+    hl === 'c' ? vypln(D5.zadC, { p: cis(x1), q: cis(x2) }) : vypln(D5.zadO, { p: cis(x1), q: cis(x2), k: kz, u }),
+    hl === 'c' ? vypln(D5.vzC, { vz: vzorec }) : vypln(D5.vzO, { vz: vzorec, u, k: kz }),
+    vypln(D5.dos, { u, vz: odmS(`(${cis(x1)}² ${op} ${cis(x2)}²)`) }),
+    vypln(D5.med, { u, vz: odmS(`(${cis(X1 * X1 / 10000, 4)} ${op} ${cis(X2 * X2 / 10000, 4)})`), odm: odmH(v), N: cis(v, 4) }),
+    presne ? vypln(D5.odmP, { u, r: rT }) : vypln(D5.odmZ, { u, r: rT, pr: PR, d, m: tvar(d, D5.miesta) }),
+    hl === 'c' ? vypln(D5.odpC, { txt: (presne ? '' : D5.priblizne + ' ') + rT, r: rT, max: cis(Math.max(x1, x2)) })
+      : vypln(D5.odpO, { u, txt: (presne ? '' : D5.priblizne + ' ') + rT, r: rT, c: cis(x1) })
+  ];
+  // dĺžky pre obrázok: a, b (odvesny)
+  const dl = hl === 'c' ? { a: x1, b: x2 } : hl === 'a' ? { a: r, b: x2 } : { a: x2, b: r };
+  const dlC = hl === 'c' ? r : x1;
+  const txtStr = k => k === u ? `${k} ${presne ? '=' : '≈'} ${rT}` : `${k} = ${cis(k === 'c' ? dlC : dl[k])}`;
+  const plv = {};   // obsahy štvorcov nad stranami
+  if (hl === 'c') { plv.a = X1 * X1 / 10000; plv.b = X2 * X2 / 10000; plv.c = v; } else { plv.c = X1 * X1 / 10000; plv[kz] = X2 * X2 / 10000; plv[u] = v; }
+  const txtPl = (k, i) => k === u && i < 3 ? `${k}² = ?` : `${k}² = ${cis(plv[k], 4)}`;
+  S5.data = { a: dl.a, b: dl.b, u, lab: i => ({ a: i >= 4 || u !== 'a' ? txtStr('a') : 'a = ?', b: i >= 4 || u !== 'b' ? txtStr('b') : 'b = ?', c: i >= 4 || u !== 'c' ? txtStr('c') : 'c = ?' }), pl: i => ({ a: txtPl('a', i), b: txtPl('b', i), c: txtPl('c', i) }) };
+  S5.kroky = kroky; S5.i = 0; kresli5();
+}
+function kresli5() {
+  if (!S5.data) return;
+  const i = S5.i;
+  $('#vyp_svg').innerHTML = figStvorce(S5.data.a, S5.data.b, { W: 640, H: 540, lab: S5.data.lab(i), pl: S5.data.pl(i) });
+  $('#vyp_kroky').innerHTML = S5.kroky.slice(0, i + 1).map((t, j) => `<li class="${j === i ? 'akt' : ''}">${t}</li>`).join('');
+  $('#vyp_dalej').disabled = $('#vyp_vsetko').disabled = i >= S5.kroky.length - 1;
+}
+function hladaj5(k) {
+  S5.hl = k;
+  $$('#vyp_hl button').forEach(b => b.classList.toggle('on', b.dataset.k === k));
+  $('#vyp_l1').textContent = D5.lbl[ZNAME5[k][0]]; $('#vyp_l2').textContent = D5.lbl[ZNAME5[k][1]];
+  $('#vyp_x1').value = cis(S5.v[k][0]); $('#vyp_x2').value = cis(S5.v[k][1]);
+  vypocitaj5();
+}
+// náhodný príklad: ľahká = celý výsledok, stredná = výsledok nie je celé číslo, ťažšia = hľadá sa odvesna
+function nahodny5() {
+  if (S5.uroven === 1) { const [a, b] = vyber([[3, 4], [6, 8], [5, 12], [8, 15], [9, 12], [12, 16], [7, 24]]); S5.v.c = Math.random() < .5 ? [a, b] : [b, a]; hladaj5('c'); return; }
+  if (S5.uroven === 2) { let a, b; do { a = nahoda(1, 15); b = nahoda(1, 15); } while (jeStvorec(a * a + b * b)); if (Math.random() < .4) a += .5; S5.v.c = [a, b]; hladaj5('c'); return; }
+  const hl = vyber(['a', 'b']); let c, o;
+  if (Math.random() < .5) { const t = vyber([[3, 4, 5], [5, 12, 13], [8, 15, 17], [6, 8, 10], [9, 12, 15], [7, 24, 25]]); c = t[2]; o = vyber([t[0], t[1]]); }
+  else { c = nahoda(5, 20); o = nahoda(1, c - 1); }
+  S5.v[hl] = [c, o]; hladaj5(hl);
+}
+function init5() {
+  segment($('#vyp_hl'), Object.entries(D5.hl), 'c', hladaj5);
+  segment($('#vyp_des'), [[1, '1'], [2, '2'], [3, '3']], 2, k => { S5.des = +k; const i = S5.i; vypocitaj5(); S5.i = i; kresli5(); });
+  segment($('#vyp_uroven'), Object.entries(D5.urovne), 1, k => { S5.uroven = +k; });
+  $('#vyp_nah').textContent = D5.nahodny; $('#vyp_nah').onclick = nahodny5;
+  $('#vyp_btn').textContent = D5.btn; $('#vyp_btn').onclick = vypocitaj5;
+  $$('#vyp_x1, #vyp_x2').forEach(x => { x.onkeydown = e => { if (e.key === 'Enter') vypocitaj5(); }; });
+  $('#vyp_dalej').textContent = D5.dalej; $('#vyp_dalej').onclick = () => { S5.i = Math.min(S5.kroky.length - 1, S5.i + 1); kresli5(); };
+  $('#vyp_vsetko').textContent = D5.vsetko; $('#vyp_vsetko').onclick = () => { S5.i = S5.kroky.length - 1; kresli5(); };
+  $('#vyp_znova').textContent = D5.znova; $('#vyp_znova').onclick = () => { S5.i = 0; kresli5(); };
+  hladaj5('c');
+}
+
+/* =====================================================================
+   6. OBRÁTENÁ VETA – tri tyčky sa zložia do trojuholníka
+   Strany sú celé čísla, rozhodnutie a² + b² === c² je celočíselné.
+   ===================================================================== */
+const D6 = TEXTY.obr;
+const S6 = { x: [3, 4, 5], t: 1, hraj: false };
+function strany6() { const [a, b, c] = S6.x.slice().sort((p, q) => p - q); return { a, b, c }; }
+function druh6(a, b, c) { if (!vznikne(a, b, c)) return 'nie'; const L = a * a + b * b, R = c * c; return L === R ? 'prav' : L > R ? 'ostry' : 'tupy'; }
+function kresli6() {
+  const { a, b, c } = strany6(), A2 = a * a, B2 = b * b, C2 = c * c, S = A2 + B2, dr = druh6(a, b, c), troj = dr !== 'nie';
+  const W = 640, H = 420, t = ease(S6.t);
+  let px, py, thA, thB;
+  if (troj) { px = (b * b + c * c - a * a) / (2 * c); py = Math.sqrt(Math.max(0, b * b - px * px)); thA = Math.atan2(py, px); thB = Math.atan2(py, px - c); }
+  else { py = Math.min(a, b); thA = 0; thB = Math.PI; }   // nevznikne: tyčky sa sklopia na základňu a nestretnú sa
+  const s = Math.min((W - 60) / (a + b + c), (H - 120) / Math.max(py, a, b, .01));
+  const ox = 30 + s * b + ((W - 60) - s * (a + b + c)) / 2, oy = H - 60;
+  const T = p => [ox + s * p[0], oy - s * p[1]];
+  const fA = Math.PI + (thA - Math.PI) * t, fB = thB * t;   // uhly tyčiek: na začiatku ležia vedľa základne
+  const pA = T([0, 0]), pB = T([c, 0]), kb = T([b * Math.cos(fA), b * Math.sin(fA)]), ka = T([c + a * Math.cos(fB), a * Math.sin(fB)]);
+  let h = ciara([20, oy + 4], [W - 20, oy + 4], 'stroke="rgba(160,180,230,.25)" stroke-width="2"');
+  if (troj && S6.t >= 1) h += polyS([pA, pB, kb], 'fill="rgba(185,163,255,.18)"');
+  h += ciara(pA, pB, `stroke="${F.c}" stroke-width="8" stroke-linecap="round"`);
+  h += ciara(pA, kb, `stroke="${F.b}" stroke-width="7" stroke-linecap="round" stroke-dasharray="16 5"`);
+  h += ciara(pB, ka, `stroke="${F.a}" stroke-width="7" stroke-linecap="round"`);
+  if (S6.t >= 1 && troj) {
+    for (const [p, q, n] of [[pB, kb, a], [kb, pA, b], [pA, pB, c]]) for (let i = 0; i <= n; i++) { const P = V.lerp(p, q, i / n); h += `<circle cx="${r1(P[0])}" cy="${r1(P[1])}" r="3.5" fill="#e2e8f5" stroke="#04060c" stroke-width="1.5"/>`; }
+    const G = stred([pA, pB, kb]), g = Math.acos(clamp((A2 + B2 - C2) / (2 * a * b), -1, 1)) * 180 / Math.PI;
+    if (dr === 'prav') h += pravyUhol(kb, pA, pB, 24, F.c); else h += oblukS(kb, pA, pB, 30, dr === 'tupy' ? F.red : F.b, 3).svg;
+    const dC = V.unit(V.sub(kb, G)); h += popis(kb[0] + dC[0] * 30, kb[1] + dC[1] * 30, 'γ ' + (dr === 'prav' ? '= 90' : '≈ ' + cis(g, 1)) + '°', 18, dr === 'prav' ? F.c : dr === 'tupy' ? F.red : F.b);
+  }
+  h += popis(...V.add(V.mid(pA, pB), [0, 26]), 'c = ' + c, 20, F.c);
+  h += popis(...V.add(V.mid(pA, kb), [-30, -10]), 'b = ' + b, 20, F.b) + popis(...V.add(V.mid(pB, ka), [30, -10]), 'a = ' + a, 20, F.a);
+  if (!troj && S6.t >= 1) h += popis(...V.mid(kb, ka), D6.medzera, 17, F.red, 'dy="-26"');
+  $('#obr_svg').innerHTML = h;
+  const z = { a, b, c, A: A2, B: B2, C: C2, S, s: a + b, g: troj ? cis(Math.acos(clamp((A2 + B2 - C2) / (2 * a * b), -1, 1)) * 180 / Math.PI, 1) : '' };
+  const box = $('#obr_verdikt');
+  if (dr === 'nie') { box.className = 'box omyl'; box.innerHTML = vypln(D6.nieTroj, z); }
+  else if (dr === 'prav') { box.className = 'box pravda'; box.innerHTML = vypln(D6.prav, z); }
+  else { box.className = 'box zlty'; box.innerHTML = vypln(D6.nie, z) + vypln(dr === 'ostry' ? D6.ostry : D6.tupy, z); }
+  const mx = Math.max(S, C2);
+  $('#obr_bars').innerHTML = troj ? `<div class="barRow"><span>${vypln(D6.barL, z)}</span><div class="bar"><i style="width:${A2 / mx * 100}%;background:#f3b453"></i><i style="width:${B2 / mx * 100}%;background:repeating-linear-gradient(-45deg,#6fb4ff 0 6px,#2f6fbf 6px 9px)"></i></div></div>
+    <div class="barRow"><span>${vypln(D6.barR, z)}</span><div class="bar"><i style="width:${C2 / mx * 100}%;background:radial-gradient(circle,#2f8a44 2px,#7fdc8f 2.5px) 0 0/8px 8px"></i></div></div>` : '';
+  S6.x.forEach((v, i) => { $('#obr_v' + i).textContent = v; $('#obr_s' + i).value = v; });
+}
+function zloz6() { S6.t = 0; S6.hraj = true; }
+function init6() {
+  $('#obr_sl').innerHTML = D6.sl.map((t, i) => `<label class="sl"><span class="lbl"><span>${t}</span><b id="obr_v${i}"></b></span><input type="range" id="obr_s${i}" min="1" max="25" step="1" aria-label="${t}"></label>`).join('');
+  S6.x.forEach((v, i) => { $('#obr_s' + i).oninput = e => { S6.x[i] = +e.target.value; S6.t = 1; S6.hraj = false; kresli6(); }; $('#obr_s' + i).onchange = zloz6; });
+  const pres = [[3, 4, 5], [5, 12, 13], [7, 24, 25], [13, 5, 12], [6, 8, 11], [5, 6, 7], [5, 5, 7], [1, 2, 5], [2, 3, 5]];
+  $('#obr_pres').innerHTML = `<span class="lbl0">${D6.skus}</span>` + pres.map((p, i) => `<button data-i="${i}">${p.join(', ')}</button>`).join('');
+  $$('#obr_pres button').forEach(b => { b.onclick = () => { S6.x = pres[+b.dataset.i].slice(); zloz6(); kresli6(); }; });
+  $('#obr_zloz').textContent = D6.zloz; $('#obr_zloz').onclick = zloz6;
+  kresli6();
+  TIKY.obr = dt => { if (!S6.hraj) return; S6.t = Math.min(1, S6.t + dt * RYCHLOST / 1.8); if (S6.t >= 1) S6.hraj = false; kresli6(); };
+}
+
+/* =====================================================================
+   7. V PRAXI – rebrík, uhlopriečka obdĺžnika, body v sieti, rovnoramenný trojuholník
+   V každej úlohe je šrafovaný pravouhlý trojuholník, ktorý sa v situácii skrýva.
+   ===================================================================== */
+const D7 = TEXTY.prax;
+const PRED7 = { tv: { w: 104, v: 59, j: 'cm' }, dvere: { w: 80, v: 197, j: 'cm' }, ihrisko: { w: 40, v: 30, j: 'm' }, ciste: { w: 6, v: 8, j: 'cm' } };
+const S7 = { sc: 'rebrik', L: 5, d: 3, pred: 'tv', w: 104, v: 59, j: 'cm', A: [1, 1], B: [4, 5], z: 10, r: 13 };
+function sl7(id, t, min, max, step, val) { return `<label class="sl"><span class="lbl"><span>${t}</span><b id="${id}_v">${cis(val, 1)}</b></span><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}" aria-label="${t}"></label>`; }
+function panel7() {
+  const p = $('#prax_panel'), sc = S7.sc, D = D7[sc];
+  const vys = '<div class="rovBox vlavo" id="pr_rov"></div><div class="box zlty" id="pr_box"></div>';
+  if (sc === 'rebrik') {
+    p.innerHTML = `<p>${D.uvod}</p>${sl7('pr_L', D.slL, 1, 10, .5, S7.L)}${sl7('pr_d', D.slD, .1, S7.L - .1, .1, S7.d)}${vys}`;
+    $('#pr_L').oninput = e => { S7.L = +e.target.value; S7.d = Math.min(S7.d, r1(S7.L - .1)); $('#pr_d').max = r1(S7.L - .1); $('#pr_d').value = S7.d; kresli7(); };
+    $('#pr_d').oninput = e => { S7.d = +e.target.value; kresli7(); };
+  } else if (sc === 'obdlznik') {
+    p.innerHTML = `<p>${D.uvod}</p><div class="volby" id="pr_pred"></div>${sl7('pr_w', D.slW, 1, 200, 1, S7.w)}${sl7('pr_vv', D.slV, 1, 200, 1, S7.v)}${vys}`;
+    segment($('#pr_pred'), Object.entries(D.predvolby), S7.pred, k => { S7.pred = k; Object.assign(S7, PRED7[k]); $('#pr_w').value = S7.w; $('#pr_vv').value = S7.v; kresli7(); });
+    $('#pr_w').oninput = e => { S7.w = +e.target.value; kresli7(); };
+    $('#pr_vv').oninput = e => { S7.v = +e.target.value; kresli7(); };
+  } else if (sc === 'body') {
+    p.innerHTML = `<p>${D.uvod}</p>${vys}`;
+  } else {
+    p.innerHTML = `<p>${D.uvod}</p>${sl7('pr_z', D.slZ, 2, 30, 1, S7.z)}${sl7('pr_r', D.slR, 1, 30, .5, S7.r)}${vys}`;
+    $('#pr_z').oninput = e => { S7.z = +e.target.value; kresli7(); };
+    $('#pr_r').oninput = e => { S7.r = +e.target.value; kresli7(); };
+  }
+  $('#prax_tip').textContent = D.tip;
+  kresli7();
+}
+const R7 = { zem: 400, stena: 560 };
+function kresli7() {
+  const sc = S7.sc; let h = '';
+  if (sc === 'rebrik') {
+    const D = D7.rebrik, L = S7.L, d = S7.d, k = 330 / L;
+    const Lh = sto(L), dh = sto(d), N = Lh * Lh - dh * dh, hv = Math.sqrt(N) / 100;     // presne v celých stotinách
+    const Z = R7.zem, X = R7.stena, pata = [X - d * k, Z], vrch = [X, Z - hv * k];
+    h += `<rect x="${X}" y="30" width="44" height="${Z - 30}" fill="#3a2a22" stroke="#8a6a55"/>`;
+    for (let y = 30; y < Z; y += 22) h += ciara([X, y], [X + 44, y], 'stroke="#5a443a" stroke-width="1"');
+    h += `<rect x="16" y="${Z}" width="${X + 44 - 16}" height="30" fill="#1d3322"/>` + ciara([16, Z], [X + 44, Z], 'stroke="#6aa877" stroke-width="3"');
+    h += skryty([pata, [X, Z], vrch]);
+    const dd = V.unit(V.sub(vrch, pata)), n = [-dd[1] * 8, dd[0] * 8];
+    h += ciara(V.add(pata, n), V.add(vrch, n), 'stroke="#d9a35b" stroke-width="5" stroke-linecap="round"') + ciara(V.sub(pata, n), V.sub(vrch, n), 'stroke="#d9a35b" stroke-width="5" stroke-linecap="round"');
+    const pocet = Math.max(3, Math.floor(L / .3));
+    for (let i = 1; i < pocet; i++) { const P = V.lerp(pata, vrch, i / pocet); h += ciara(V.add(P, n), V.sub(P, n), 'stroke="#d9a35b" stroke-width="3"'); }
+    h += pravyUhol([X, Z], [X - 10, Z], [X, Z - 10], 20, F.text);
+    const M = V.mid(pata, vrch);
+    h += popis(M[0] - 50, M[1] - 18, 'L = ' + cis(L) + ' m', 19, F.c);
+    h += popis((pata[0] + X) / 2, Z + 16, 'd = ' + cis(d) + ' m', 18, F.b);
+    const hy = (Z + vrch[1]) / 2;   // popis výšky na stene (otočený), aby nezakrýval rebrík
+    h += popis(X + 22, hy, 'h ' + odmVysl(N / 10000, 2, true) + ' m', 18, F.a, `transform="rotate(-90 ${X + 22} ${r1(hy)})"`);
+    h += `<circle cx="${r1(pata[0])}" cy="${Z}" r="26" fill="rgba(243,180,83,.18)" stroke="${F.a}" stroke-width="2" stroke-dasharray="4 4" data-tah="pata"/>`;
+    $('#pr_rov').innerHTML = `<div>${vypln(D.vypocet, { L: cis(L), d: cis(d), L2: cis(Lh * Lh / 10000, 4), d2: cis(dh * dh / 10000, 4), h2: cis(N / 10000, 4), odm: odmRov(N / 10000) })}</div>`;
+    $('#pr_box').innerHTML = vypln(D.vysledok, { h: (presnaOdm(N / 10000) ? '' : PR + ' ') + cis(hv) });
+    $('#pr_L_v').textContent = cis(L); $('#pr_d_v').textContent = cis(d);
+  } else if (sc === 'obdlznik') {
+    const D = D7.obdlznik, w = S7.w, v = S7.v, j = S7.j, k = Math.min(520 / w, 340 / v);
+    const x0 = (640 - w * k) / 2, y0 = (440 + v * k) / 2, P = p => [x0 + p[0] * k, y0 - p[1] * k];
+    const rect = `x="${r1(x0)}" y="${r1(y0 - v * k)}" width="${r1(w * k)}" height="${r1(v * k)}"`;
+    if (S7.pred === 'tv') h += `<rect ${rect} rx="6" fill="#0b1220" stroke="#c9d2e8" stroke-width="6"/>` + ciara(P([w / 2, 0]), V.add(P([w / 2, 0]), [0, 22]), 'stroke="#c9d2e8" stroke-width="6"') + ciara(V.add(P([w / 2, 0]), [-40, 24]), V.add(P([w / 2, 0]), [40, 24]), 'stroke="#c9d2e8" stroke-width="6" stroke-linecap="round"');
+    else if (S7.pred === 'dvere') h += `<rect ${rect} fill="#5a3a24" stroke="#c9a27a" stroke-width="4"/><circle cx="${r1(P([w * .85, v * .48])[0])}" cy="${r1(P([w * .85, v * .48])[1])}" r="6" fill="#e6c27a"/>`;
+    else if (S7.pred === 'ihrisko') h += `<rect ${rect} fill="#1d4a2a" stroke="#e2e8f5" stroke-width="3"/>` + ciara(P([w / 2, 0]), P([w / 2, v]), 'stroke="rgba(226,232,245,.5)" stroke-width="2"');
+    else h += `<rect ${rect} fill="#1a2438" stroke="#c9d2e8" stroke-width="3"/>`;
+    h += skryty([P([0, 0]), P([w, 0]), P([w, v])]);
+    h += ciara(P([0, 0]), P([w, v]), `stroke="${F.c}" stroke-width="5"`) + pravyUhol(P([w, 0]), P([0, 0]), P([w, v]), 18, F.text);
+    const u2 = w * w + v * v;
+    h += popis(...V.add(P([w / 2, 0]), [0, S7.pred === 'tv' ? 44 : 18]), w + ' ' + j, 18, F.b) + popis(...V.add(P([w, v / 2]), [34, 0]), v + ' ' + j, 18, F.a);
+    h += popis(...V.add(P([w * .4, v * .4]), [-34, -18]), 'u ' + odmVysl(u2, 2, true) + ' ' + j, 19, F.c);
+    $('#pr_rov').innerHTML = `<div>${vypln(D.vypocet, { w, v, w2: w * w, v2: v * v, u2, odm: odmRov(u2), j })}</div>`;
+    const uT = (presnaOdm(u2) ? '' : PR + ' ') + cis(Math.sqrt(u2));
+    $('#pr_box').innerHTML = vypln(D.vysledok, { u: uT, j }) + (S7.pred === 'tv' && j === 'cm' ? ' ' + vypln(D.palce, { u: cis(Math.sqrt(u2)), p: cis(Math.sqrt(u2) / 2.54, 0) }) : '');
+    $('#pr_w_v').textContent = w + ' ' + j; $('#pr_vv_v').textContent = v + ' ' + j;
+  } else if (sc === 'body') {
+    const D = D7.body, u = 52, ox = 50, oy = 400, X = p => [ox + p[0] * u, oy - p[1] * u];
+    let d = '';
+    for (let i = 0; i <= 10; i++) d += `M${ox + i * u},${oy}V${oy - 7 * u}`;
+    for (let j = 0; j <= 7; j++) d += `M${ox},${oy - j * u}H${ox + 10 * u}`;
+    h += `<path d="${d}" stroke="rgba(160,180,230,.25)" stroke-width="1" fill="none"/>`;
+    h += ciara([ox, oy], [ox + 10 * u + 14, oy], 'stroke="#c9d2e8" stroke-width="2"') + ciara([ox, oy], [ox, oy - 7 * u - 14], 'stroke="#c9d2e8" stroke-width="2"');
+    for (let i = 0; i <= 10; i++) h += `<text x="${ox + i * u}" y="${oy + 22}" font-size="16" text-anchor="middle" fill="${F.muted}">${i}</text>`;
+    for (let j = 1; j <= 7; j++) h += `<text x="${ox - 14}" y="${oy - j * u + 5}" font-size="16" text-anchor="middle" fill="${F.muted}">${j}</text>`;
+    h += popis(ox + 10 * u + 24, oy, 'x', 17, F.muted) + popis(ox, oy - 7 * u - 24, 'y', 17, F.muted);
+    const A = S7.A, B = S7.B, R = [B[0], A[1]], dx = B[0] - A[0], dy = B[1] - A[1];
+    if (dx && dy) {
+      h += skryty([X(A), X(R), X(B)]);
+      h += ciara(X(A), X(R), `stroke="${F.b}" stroke-width="4" stroke-dasharray="8 6"`) + ciara(X(R), X(B), `stroke="${F.a}" stroke-width="4" stroke-dasharray="8 6"`);
+      h += pravyUhol(X(R), X(A), X(B), 16, F.text);
+      h += popis(...V.add(X(V.mid(A, R)), [0, dy > 0 ? 18 : -18]), '|' + dx + '| = ' + Math.abs(dx), 17, F.b) + popis(...V.add(X(V.mid(R, B)), [dx > 0 ? 34 : -34, 0]), '|' + dy + '| = ' + Math.abs(dy), 17, F.a);
+    }
+    h += ciara(X(A), X(B), `stroke="${F.c}" stroke-width="5"`);
+    const d2 = dx * dx + dy * dy;
+    for (const [Bd, n, id] of [[A, 'A', 'A'], [B, 'B', 'B']]) {
+      const b = X(Bd);
+      h += `<circle cx="${b[0]}" cy="${b[1]}" r="10" fill="${id === 'A' ? '#ff9a8b' : '#e6a0ff'}" stroke="#04060c" stroke-width="2"/><circle cx="${b[0]}" cy="${b[1]}" r="26" fill="transparent" data-tah="${id}"/>`;
+      h += popis(b[0], b[1] - 24, `${n}[${Bd[0]}; ${Bd[1]}]`, 17, id === 'A' ? '#ff9a8b' : '#e6a0ff', 'pointer-events="none"');
+    }
+    const zz = x => x < 0 ? `(${cis(x)})` : x;
+    $('#pr_rov').innerHTML = (dx && dy) ? `<div>${vypln(D.vypocet, { vz: odmS('(x<sub>B</sub> − x<sub>A</sub>)² + (y<sub>B</sub> − y<sub>A</sub>)²'), vz2: odmS(`(${B[0]} − ${A[0]})² + (${B[1]} − ${A[1]})²`), vz3: odmS(`${zz(dx)}² + ${zz(dy)}²`), odm: `${odmS(`${dx * dx} + ${dy * dy}`)} = ${odmRov(d2)}` })}</div>`
+      : `<div>${vypln(D.rovno, { d: Math.abs(dx) + Math.abs(dy) })}</div>`;
+    $('#pr_box').innerHTML = `|AB| ${odmVysl(d2)}`;
+  } else {
+    const D = D7.rovno, z = S7.z, r = S7.r, Zh = sto(z), Rh = sto(r), N = Rh * Rh - (Zh / 2) * (Zh / 2);   // v desaťtisícinách
+    const ok = 2 * Rh > Zh;
+    const v = ok ? Math.sqrt(N) / 100 : 0, k = Math.min(520 / z, 330 / Math.max(v, .5)), cx = 320, oy = 400;
+    const L = [cx - z / 2 * k, oy], Pp = [cx + z / 2 * k, oy], Vr = [cx, oy - v * k], Pa = [cx, oy];
+    if (ok) {
+      h += polyS([L, Pp, Vr], 'fill="rgba(185,163,255,.16)" stroke="#e2e8f5" stroke-width="3" stroke-linejoin="round"');
+      h += skryty([Pa, Pp, Vr]);
+      h += ciara(Pa, Vr, `stroke="${F.a}" stroke-width="4" stroke-dasharray="8 6"`) + ciara(Pp, Vr, `stroke="${F.c}" stroke-width="5"`) + ciara(Pa, Pp, `stroke="${F.b}" stroke-width="5"`);
+      h += pravyUhol(Pa, Pp, Vr, 16, F.text);
+      h += popis((Pa[0] + Pp[0]) / 2, oy + 18, 'z : 2 = ' + cis(z / 2), 17, F.b) + popis((L[0] + Pa[0]) / 2, oy + 18, cis(z / 2), 17, F.muted);
+      h += popis(...V.add(V.mid(Pp, Vr), [44, -8]), 'r = ' + cis(r), 18, F.c) + popis(...V.add(V.mid(L, Vr), [-36, -8]), 'r', 18, F.muted);
+      h += popis(cx - 38, (oy + Vr[1]) / 2, 'v ' + odmVysl(N / 10000, 2, true), 18, F.a);
+      $('#pr_rov').innerHTML = `<div>${vypln(D.vypocet, { r: cis(r), h: cis(z / 2), r2: cis(Rh * Rh / 10000, 4), h2: cis(Zh * Zh / 40000, 4), v2: cis(N / 10000, 4), odm: odmRov(N / 10000) })}</div>`;
+      $('#pr_box').innerHTML = vypln(D.vysledok, { v: (presnaOdm(N / 10000) ? '' : PR + ' ') + cis(v) });
+    } else {
+      h += ciara(L, Pp, `stroke="${F.b}" stroke-width="5"`) + ciara(L, V.add(L, [r * k * .7, -r * k * .7]), `stroke="${F.c}" stroke-width="5"`) + ciara(Pp, V.add(Pp, [-r * k * .7, -r * k * .7]), `stroke="${F.c}" stroke-width="5"`);
+      $('#pr_rov').innerHTML = '';
+      $('#pr_box').innerHTML = vypln(D.zle, { h: cis(z / 2) });
+    }
+    $('#pr_z_v').textContent = cis(z); $('#pr_r_v').textContent = cis(r);
+  }
+  $('#prax_svg').innerHTML = h;
+}
+function init7() {
+  segment($('#prax_seg'), Object.entries(D7.sc), 'rebrik', k => { S7.sc = k; panel7(); });
+  let tah = null;
+  tahanie($('#prax_svg'), {
+    zaciatok: (b, ciel) => { const t = ciel.closest('[data-tah]'); if (!t) return false; tah = t.dataset.tah; return true; },
+    pohyb: b => {
+      if (tah === 'pata') { const k = 330 / S7.L; S7.d = clamp(Math.round((R7.stena - b[0]) / k * 10) / 10, .1, r1(S7.L - .1)); $('#pr_d').value = S7.d; }
+      else { const p = [clamp(Math.round((b[0] - 50) / 52), 0, 10), clamp(Math.round((400 - b[1]) / 52), 0, 7)]; const druhy = tah === 'A' ? S7.B : S7.A; if (p[0] !== druhy[0] || p[1] !== druhy[1]) S7[tah] = p; }
+      kresli7();
+    }
+  });
+  panel7();
+}
+
+/* =====================================================================
+   8. ČASTÉ OMYLY – každý omyl má krátku animáciu (t = 0 … 1) a opravu
+   ===================================================================== */
+const D8 = TEXTY.omyly;
+const OM = D8.zoznam.map(() => ({ t: 0, hraj: false }));
+const KRESLI_OM = [
+  // 1. c = a + b
+  t => {
+    const u = 30, C = [40, 210], A = [40 + 4 * u, 210], B = [40, 210 - 3 * u];
+    let h = polyS([A, B, C], 'fill="rgba(185,163,255,.2)"') + ciara(B, C, `stroke="${F.a}" stroke-width="5"`) + ciara(C, A, `stroke="${F.b}" stroke-width="5" stroke-dasharray="12 4"`) + ciara(A, B, `stroke="${F.c}" stroke-width="7"`) + pravyUhol(C, A, B, 14);
+    h += popis(26, 165, '3', 18, F.a) + popis(100, 230, '4', 18, F.b) + popis(115, 150, '5', 18, F.c);
+    const q = 22, x = 200, w = ease(t);
+    h += `<rect x="${x}" y="80" width="${r1(3 * q * w)}" height="26" fill="#f3b453"/><rect x="${r1(x + 3 * q * w)}" y="80" width="${r1(4 * q * w)}" height="26" fill="url(#cB)"/>`;
+    h += `<rect x="${x}" y="150" width="${r1(5 * q * w)}" height="26" fill="#7fdc8f"/>`;
+    h += popis(x + 77, 64, 'a + b = 3 + 4 = 7', 17, F.a) + popis(x + 55, 196, 'c = 5', 17, F.c);
+    if (t > .9) h += popis(x + 130, 130, '7 > 5', 22, F.red);
+    return h;
+  },
+  // 2. √(a² + b²) ≠ a + b – plochy
+  t => {
+    const u = 13, y0 = 235;
+    let h = plochaS([[20, y0 - 3 * u], [20 + 3 * u, y0 - 3 * u], [20 + 3 * u, y0], [20, y0]], 'a') + plochaS([[80, y0 - 4 * u], [80 + 4 * u, y0 - 4 * u], [80 + 4 * u, y0], [80, y0]], 'b');
+    h += popis(40, y0 - 3 * u - 14, '9', 17, F.a) + popis(106, y0 - 4 * u - 14, '16', 17, F.b) + popis(66, y0 - 20, '+', 20);
+    const e = ease(t);
+    h += plochaS([[160, y0 - 5 * u], [160 + 5 * u, y0 - 5 * u], [160 + 5 * u, y0], [160, y0]], 'c', r1(e * 10) / 10) + popis(192, y0 - 5 * u - 14, '25 → strana 5', 16, F.c, `opacity="${r1(e * 10) / 10}"`);
+    const e2 = ease(clamp(t * 2 - 1, 0, 1));
+    h += `<rect x="260" y="${y0 - 7 * u}" width="${7 * u}" height="${7 * u}" fill="none" stroke="${F.red}" stroke-width="2.5" stroke-dasharray="6 4" opacity="${r1(e2 * 10) / 10}"/>`;
+    h += popis(305, y0 - 7 * u - 14, '7 · 7 = 49', 16, F.red, `opacity="${r1(e2 * 10) / 10}"`) + popis(200, 40, '√(9 + 16) = √25 = 5 ≠ 3 + 4', 18, F.text);
+    return h;
+  },
+  // 3. platí len v pravouhlom – uhol γ sa mení z 80° na 100°
+  t => {
+    const g = 80 + 20 * t, gr = g * Math.PI / 180, u = 32, C = [140, 210], A = [140 + 5 * u, 210], B = [140 + 4 * u * Math.cos(gr), 210 - 4 * u * Math.sin(gr)];
+    const c2 = 41 - 40 * Math.cos(gr);   // kosínusová veta – len na zobrazenie
+    let h = polyS([A, B, C], 'fill="rgba(185,163,255,.2)"') + ciara(B, C, `stroke="${F.a}" stroke-width="5"`) + ciara(C, A, `stroke="${F.b}" stroke-width="5" stroke-dasharray="12 4"`) + ciara(A, B, `stroke="${F.c}" stroke-width="7"`);
+    h += Math.abs(g - 90) < .25 ? pravyUhol(C, A, B, 16, F.c) : oblukS(C, A, B, 24, g < 90 ? F.b : F.red, 3).svg;
+    h += popis(120, 160, 'a = 4', 16, F.a) + popis(220, 230, 'b = 5', 16, F.b) + popis(200, 30, `γ = ${cis(g, 0)}°`, 20);
+    const zn = Math.abs(g - 90) < .25 ? '=' : c2 < 41 ? '<' : '>';
+    h += popis(200, 60, `c² ${zn === '=' ? '=' : '≈'} ${cis(zn === '=' ? 41 : c2, 1)}   ${zn}   a² + b² = 41`, 17, zn === '=' ? F.c : F.red);
+    return h;
+  },
+  // 4. c je prepona v ľubovoľnej polohe
+  t => {
+    const st = { a: 3, b: 4, rot: 20 + 320 * ease(t), zrk: false, pos: [200, 130] }, T = troj1(st, 28), G = stred([T.A, T.B, T.C]);
+    let h = polyS([T.A, T.B, T.C], 'fill="rgba(185,163,255,.2)"') + ciara(T.B, T.C, `stroke="${F.a}" stroke-width="5"`) + ciara(T.C, T.A, `stroke="${F.b}" stroke-width="5" stroke-dasharray="12 4"`) + ciara(T.A, T.B, `stroke="${F.c}" stroke-width="8"`) + pravyUhol(T.C, T.A, T.B, 14);
+    const M = V.mid(T.A, T.B), d = V.unit(V.sub(M, G));
+    h += popis(M[0] + d[0] * 30, M[1] + d[1] * 30, 'c – prepona', 17, F.c);
+    return h;
+  },
+  // 5. a² ≠ 2a
+  t => {
+    const u = 30, x0 = 30, y0 = 230; let h = '';
+    const riadky = t < .4 ? 2 : Math.min(5, 2 + Math.floor((t - .4) / .6 * 3.999));
+    for (let j = 0; j < 5; j++) for (let i = 0; i < 5; i++) {
+      const vypl = j < riadky;
+      h += `<rect x="${x0 + i * u}" y="${y0 - (j + 1) * u}" width="${u - 2}" height="${u - 2}" fill="${vypl ? (j < 2 ? '#f3b453' : 'url(#cB)') : 'none'}" stroke="rgba(226,232,245,.4)"/>`;
+    }
+    h += popis(290, 110, riadky < 5 ? '2 · 5 = 10 štvorčekov' : '5 · 5 = 25 štvorčekov', 18, riadky < 5 ? F.red : F.c);
+    h += popis(290, 150, '5² = 25, nie 10', 18, F.text, `opacity="${riadky === 5 ? 1 : 0}"`);
+    return h;
+  },
+  // 6. pri odvesne sa odčítava
+  t => {
+    const u = 30, x0 = 30, y0 = 230, e = ease(t); let h = '';
+    for (let j = 0; j < 5; j++) for (let i = 0; i < 5; i++) {
+      const vA = i < 3 && j < 3, dx = vA ? e * 200 : 0, op = vA ? 1 - e * .6 : 1;
+      h += `<rect x="${r1(x0 + i * u + dx)}" y="${y0 - (j + 1) * u}" width="${u - 2}" height="${u - 2}" fill="${vA ? '#f3b453' : 'url(#cB)'}" opacity="${r1(op * 10) / 10}" stroke="#04060c"/>`;
+    }
+    h += popis(105, 60, 'c² = 25', 18, F.c) + popis(325, 60, 'a² = 9', 18, F.a, `opacity="${r1(e * 10) / 10}"`);
+    h += popis(260, 250, 'b² = 25 − 9 = 16, b = 4', 18, F.b, `opacity="${t >= 1 ? 1 : 0}"`);
+    return h;
+  }
+];
+function kresli8(i) { $('#om_svg' + i).innerHTML = KRESLI_OM[i](OM[i].t); }
+function init8() {
+  $('#omyly_grid').innerHTML = D8.zoznam.map((o, i) => `<div class="card"><h3>✘ Omyl: ${o.omyl}</h3><div class="stage"><svg id="om_svg${i}" viewBox="0 0 400 260" role="img" aria-label="Animácia omylu"></svg></div>
+    <div class="tlac"><button class="primary" data-i="${i}" data-a="hraj">${D8.ukaz}</button><button data-i="${i}" data-a="zac">${D8.znova}</button></div>
+    <div class="box pravda" id="om_op${i}" hidden><b class="h">✔ Oprava</b>${o.oprava}</div></div>`).join('');
+  $$('#omyly_grid button').forEach(b => { b.onclick = () => { const i = +b.dataset.i; if (b.dataset.a === 'hraj') { OM[i].t = 0; OM[i].hraj = true; $('#om_op' + i).hidden = false; } else { OM[i].t = 0; OM[i].hraj = false; $('#om_op' + i).hidden = true; kresli8(i); } }; });
+  OM.forEach((o, i) => kresli8(i));
+  TIKY.omyly = dt => OM.forEach((o, i) => { if (!o.hraj) return; o.t = Math.min(1, o.t + dt * RYCHLOST / 2.4); if (o.t >= 1) o.hraj = false; kresli8(i); });
+}
+
+/* =====================================================================
+   KVÍZ – otázky sa generujú náhodne, správna odpoveď sa vždy počíta v kóde
+   Tolerancia ±0,01 voči presnej hodnote. Nič sa neukladá ani neodosiela.
+   ===================================================================== */
+const KZ = TEXTY.kviz, KV = KZ.v;
+const TROJ_L = [[3, 4, 5], [6, 8, 10], [5, 12, 13]], TROJ_S = [[8, 15, 17], [9, 12, 15], [7, 24, 25], [12, 16, 20], [20, 21, 29], [9, 40, 41], [15, 20, 25], [10, 24, 26]];
+function trojicaU(u) { const t = vyber(u === 1 ? TROJ_L : TROJ_L.concat(TROJ_S)); return Math.random() < .5 ? t : [t[1], t[0], t[2]]; }
+const blizko = (x, y) => Math.abs(x - y) < .015;
+// odvesny pre úroveň: 1 = trojica, 2 = celé čísla s necelou preponou, 3 = desatinné čísla
+function odvesnyU(u) {
+  if (u === 1) { const [a, b] = trojicaU(1); return [a, b]; }
+  if (u === 2) { let a, b; do { a = nahoda(1, 12); b = nahoda(1, 12); } while (jeStvorec(a * a + b * b)); return [a, b]; }
+  return [nahoda(10, 95) / 10, nahoda(10, 95) / 10];
+}
+const kv = x => cis(x, 4);
+// spoločná diagnostika typických chýb pri prepone a odvesne
+function chybyC(a, b) { const A = a * a, B = b * b; return x => blizko(x, a + b) ? KV.sucet : blizko(x, A + B) ? KV.bezOdm : blizko(x, Math.sqrt(2 * a + 2 * b)) || blizko(x, 2 * a + 2 * b) ? KV.dvaA : blizko(x, Math.sqrt(Math.abs(A - B))) ? KV.minus : ''; }
+function chybyO(c, a) { const C = c * c, A = a * a; return x => blizko(x, Math.sqrt(C + A)) ? KV.plus : blizko(x, c - a) ? KV.rozdiel : blizko(x, C - A) ? KV.bezOdm : blizko(x, Math.sqrt(2 * c - 2 * a)) ? KV.dvaA : ''; }
+function svgMaly(st, stranyP, vrcholyP) {
+  const t = troj1(st, 34), G = stred([t.A, t.B, t.C]);
+  let h = polyS([t.A, t.B, t.C], 'fill="rgba(185,163,255,.18)" stroke="#c9d2e8" stroke-width="4" stroke-linejoin="round"') + pravyUhol(t.C, t.A, t.B, 16, F.text);
+  const s = [[t.B, t.C], [t.C, t.A], [t.A, t.B]];
+  if (stranyP) s.forEach(([p, q], i) => { const M = V.mid(p, q), d = V.unit(V.sub(M, G)); h += popis(M[0] + d[0] * 20, M[1] + d[1] * 20, stranyP[i], 22, F.a); });
+  if (vrcholyP) [t.A, t.B, t.C].forEach((P, i) => { const d = V.unit(V.sub(P, G)); h += popis(P[0] + d[0] * 20, P[1] + d[1] * 20, vrcholyP[i], 18, F.muted); });
+  return `<svg viewBox="0 0 340 260" role="img" aria-label="Trojuholník">${h}</svg>`;
+}
+function stMaly(u) { const st = { a: nahoda(2, 4), b: nahoda(2, 4), rot: nahoda(0, 359), zrk: Math.random() < .5, pos: [170, 130] }; if (u === 3) { st.a = nahoda(1, 4); st.b = nahoda(3, 4); } udrz(st, 34, 340, 260, 34); return st; }
+const GEN = {
+  prepona(u) {
+    const p = zamiesaj(['x', 'y', 'z']);
+    return { typ: 'vyber', text: KZ.q.prepona, obr: svgMaly(stMaly(u), p), mozn: ['x', 'y', 'z'], spravna: p[2], vysv: () => vypln(KV.prepona, { p: p[2] }) };
+  },
+  rovnica() {
+    const v = zamiesaj(['K', 'L', 'M']), s = v.map(x => x.toLowerCase());
+    const rov = h => { const o = ['k', 'l', 'm'].filter(x => x !== h); return `${o[0]}² + ${o[1]}² = ${h}²`; };
+    return { typ: 'vyber', text: KZ.q.rovnica, obr: svgMaly(stMaly(1), s, v), mozn: ['k', 'l', 'm'].map(rov), spravna: rov(s[2]), vysv: () => vypln(KV.rovnica, { V: v[2], h: s[2], r: rov(s[2]) }) };
+  },
+  vypC(u) {
+    const [a, b] = odvesnyU(u), N = sto(a) ** 2 + sto(b) ** 2, C = N / 10000, c = Math.sqrt(N) / 100;
+    return { typ: 'cislo', text: vypln(KZ.q.vypC, { a: cis(a), b: cis(b), z: jeStvorec(N) ? '' : KZ.q.zaokr }), spravna: c, presne: jeStvorec(N),
+      vysv: () => vypln(KV.vypC, { a: cis(a), b: cis(b), A: kv(a * a), B: kv(b * b), C: kv(C), odm: odmRov(C) }), chyba: chybyC(a, b) };
+  },
+  vypB(u) {
+    let c, a;
+    if (u === 3) { c = nahoda(5, 20); a = nahoda(1, c - 1); } else { const t = trojicaU(u); c = t[2]; a = t[0]; }
+    const N = c * c - a * a, b = Math.sqrt(N);
+    return { typ: 'cislo', text: vypln(KZ.q.vypB, { a, c, z: jeStvorec(N) ? '' : KZ.q.zaokr }), spravna: b, presne: jeStvorec(N),
+      vysv: () => vypln(KV.vypB, { a, c, A: a * a, C: c * c, B: N, odm: odmRov(N) }), chyba: chybyO(c, a) };
+  },
+  obratena(u) {
+    let a, b, c, ano = Math.random() < .5;
+    if (ano) [a, b, c] = trojicaU(u).slice().sort((p, q) => p - q);
+    else do { [a, b, c] = trojicaU(u).slice().sort((p, q) => p - q); const i = nahoda(0, 2); const n = [a, b, c]; n[i] += vyber([-1, 1]); [a, b, c] = n.sort((p, q) => p - q); } while (jePravouhly(a, b, c) || !vznikne(a, b, c));
+    const por = u === 1 ? [a, b, c] : zamiesaj([a, b, c]), zle = por[2] !== c, z = { a, b, c, A: a * a, B: b * b, C: c * c, S: a * a + b * b };
+    if (u === 3) {   // ťažšia: pravouhlý / ostrouhlý / tupouhlý
+      const d = druh6(a, b, c);
+      return { typ: 'vyber', text: vypln(KZ.q.druh, { x: por[0], y: por[1], z: por[2] }), mozn: Object.values(KZ.druhy), spravna: KZ.druhy[d],
+        vysv: () => vypln(KV.obr, z) + vypln(KV.druh, { S: z.S, C: z.C, zn: d === 'prav' ? '=' : d === 'ostry' ? '>' : '<', d: KZ.druhy[d] }) + (zle ? KV.najdlhsia : '') };
+    }
+    return { typ: 'vyber', text: vypln(KZ.q.obratena, { x: por[0], y: por[1], z: por[2] }), mozn: [KZ.ano, KZ.nie], spravna: jePravouhly(a, b, c) ? KZ.ano : KZ.nie,
+      vysv: () => vypln(KV.obr, z) + (jePravouhly(a, b, c) ? KV.obrAno : KV.obrNie) + (zle ? KV.najdlhsia : '') };
+  },
+  rebrik(u) {
+    let c, a;
+    if (u === 1) { const t = vyber([[3, 4, 5], [6, 8, 10]]); c = t[2]; a = t[0]; }
+    else if (u === 2) { c = nahoda(3, 8); a = nahoda(1, c - 1); }
+    else { c = nahoda(30, 80) / 10; a = nahoda(5, Math.floor(c * 10) - 5) / 10; }
+    const N = sto(c) ** 2 - sto(a) ** 2, B = N / 10000, h = Math.sqrt(N) / 100;
+    return { typ: 'cislo', text: vypln(KZ.q.rebrik, { c: cis(c), a: cis(a), z: jeStvorec(N) ? '' : KZ.q.zaokr }), spravna: h, presne: jeStvorec(N),
+      vysv: () => vypln(KV.rebrik, { c: cis(c), a: cis(a), C: kv(c * c), A: kv(a * a), B: kv(B), odm: odmRov(B) }), chyba: chybyO(c, a) };
+  },
+  obdlznik(u) {
+    const [a, b] = u === 3 ? vyber([[104, 59], [80, 197], [120, 68], [60, 90]]) : odvesnyU(u), C = a * a + b * b;
+    return { typ: 'cislo', text: vypln(KZ.q.obdlznik, { a: cis(a), b: cis(b), z: jeStvorec(Math.round(C * 10000)) ? '' : KZ.q.zaokr }), spravna: Math.sqrt(C), presne: presnaOdm(C),
+      vysv: () => vypln(KV.obdlznik, { a: cis(a), b: cis(b), A: kv(a * a), B: kv(b * b), C: kv(C), odm: odmRov(C) }), chyba: chybyC(a, b) };
+  },
+  rovno() {
+    const [z0, r] = vyber([[10, 13], [16, 10], [24, 13], [30, 17], [6, 5], [12, 10], [8, 6], [14, 9]]), h = z0 / 2, N = r * r - h * h;
+    return { typ: 'cislo', text: vypln(KZ.q.rovno, { z0, r, z: jeStvorec(N) ? '' : KZ.q.zaokr }), spravna: Math.sqrt(N), presne: jeStvorec(N),
+      vysv: () => vypln(KV.rovno, { r, h, R: r * r, H: h * h, V: N, odm: odmRov(N) }),
+      chyba: x => blizko(x, Math.sqrt(r * r - z0 * z0 > 0 ? r * r - z0 * z0 : -1)) || blizko(x, Math.sqrt(r * r + z0 * z0)) ? KV.celaZakl : chybyO(r, h)(x) };
+  }
+};
+// zostavy kvízu pre úrovne (10 otázok)
+const ZOSTAVY = {
+  1: ['prepona', 'rovnica', 'vypC', 'vypC', 'vypB', 'obratena', 'obratena', 'rebrik', 'obdlznik', 'prepona'],
+  2: ['prepona', 'rovnica', 'vypC', 'vypC', 'vypB', 'vypB', 'obratena', 'obratena', 'rebrik', 'obdlznik'],
+  3: ['prepona', 'vypC', 'vypC', 'vypB', 'vypB', 'obratena', 'obratena', 'rebrik', 'obdlznik', 'rovno']
+};
+const KVIZ = { u: 1, otazky: [] };
+function hodnotaHTML(q, v) { return q.typ === 'cislo' ? (q.presne ? cis(v, 4) : PR + ' ' + cis(v)) : v; }
+function vykresliOtazku(q, el, cislo) {
+  el.innerHTML = `<div class="q"><span class="por">${cislo}.</span> ${q.text}</div>${q.obr ? `<div class="obr">${q.obr}</div>` : ''}<div class="odp"></div><div class="fb" aria-live="polite"></div>`;
+  q.el = el;
+  const odp = $('.odp', el);
+  if (q.typ === 'vyber') {
+    odp.innerHTML = `<div class="moznosti">${q.mozn.map((v, j) => `<button data-j="${j}">${v}</button>`).join('')}</div>`;
+    $$('button', odp).forEach(b => { b.onclick = () => odpovedz(q, q.mozn[+b.dataset.j], b); });
+  } else {
+    odp.innerHTML = `<div class="vstup"><input class="num" inputmode="decimal" autocomplete="off" aria-label="odpoveď"><button class="primary bOver">${KZ.over}</button></div><p class="mini chyba"></p>`;
+    const inp = $('input', odp);
+    const over = () => { const x = citaj(inp.value); if (isNaN(x)) { $('.chyba', odp).textContent = KZ.vyplnCislo; return; } $('.chyba', odp).textContent = ''; odpovedz(q, x, null); };
+    $('.bOver', odp).onclick = over; inp.onkeydown = e => { if (e.key === 'Enter') over(); };
+  }
+}
+function odpovedz(q, x, btn) {
+  if (q.hotovo) return;
+  q.hotovo = true;
+  const ok = q.typ === 'vyber' ? x === q.spravna : Math.abs(x - q.spravna) <= .01 + 1e-9;
+  const pozn = !ok && q.chyba ? q.chyba(x) : '';
+  q.ok = ok;
+  $$('.odp button, .odp input', q.el).forEach(z => { z.disabled = true; });
+  if (btn) { btn.classList.add(ok ? 'ok' : 'zle'); $$('.odp button', q.el).forEach(b => { if (q.mozn[+b.dataset.j] === q.spravna) b.classList.add('ok'); }); }
+  const fb = $('.fb', q.el); fb.className = 'fb ' + (ok ? 'ok' : 'zle');
+  fb.innerHTML = ok ? `<b>✔ ${KZ.dobre}</b> <div style="margin-top:6px">${q.vysv()}</div>`
+    : `<b>✘ ${KZ.zle}</b> ${pozn ? pozn + ' ' : ''}${KZ.spravne} <b>${hodnotaHTML(q, q.spravna)}</b><div style="margin-top:6px"><b>${KZ.postup}</b> ${q.vysv()}</div>`;
+  if (KVIZ.otazky.every(z => z.hotovo)) {
+    const b = KVIZ.otazky.filter(z => z.ok).length, n = KVIZ.otazky.length;
+    $('#kvizVysl').textContent = vypln(KZ.vysl, { b, n }) + (b >= n - 1 ? KZ.vyslDobre : KZ.vyslSkus);
+  }
+}
+function novyKviz() {
+  KVIZ.otazky = ZOSTAVY[KVIZ.u].map(t => GEN[t](KVIZ.u));
+  $('#kvizVysl').textContent = '';
+  const box = $('#kv_otazky'); box.innerHTML = '';
+  KVIZ.otazky.forEach((q, i) => { const d = document.createElement('div'); d.className = 'otazka'; box.appendChild(d); vykresliOtazku(q, d, i + 1); });
+}
+function initKviz() {
+  segment($('#kv_uroven'), Object.entries(KZ.urovne), 1, k => { KVIZ.u = +k; novyKviz(); });
+  $('#kv_novy').textContent = KZ.novy; $('#kv_novy').onclick = novyKviz; novyKviz();
+}
+
+/* =====================================================================
+   ŠTART
+   ===================================================================== */
+function ukazKartu(k) {
+  AKT = k;
+  $$('[data-karta]').forEach(s => { s.hidden = s.id !== k; });
+  $$('#karty button').forEach(b => { const on = b.dataset.k === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  $('#info').hidden = true;
+  try { history.replaceState(null, '', '#' + k); } catch (e) { /* nič */ }
+}
+function init() {
+  $$('[data-t]').forEach(el => { const v = cesta(TEXTY, el.dataset.t); if (typeof v === 'string') el.innerHTML = v; });
+  const nav = $('#karty'); let i = 0;
+  for (const k in TEXTY.karty) {
+    const b = document.createElement('button'); b.dataset.k = k; b.setAttribute('role', 'tab');
+    b.innerHTML = (i < 9 ? `<span class="cis">${i}.</span> ` : '') + TEXTY.karty[k];
+    b.onclick = () => ukazKartu(k); nav.appendChild(b); i++;
+  }
+  $('#infoX').textContent = U.zavriet; $('#infoX').onclick = () => { $('#info').hidden = true; };
+  $('#poznList').innerHTML = TEXTY.pozn.polozky.map(t => `<li>${t}</li>`).join('');
+  init0(); init1(); init2(); init3(); init4(); init5(); init6(); init7(); init8(); initKviz();
+  const h = (location.hash || '').slice(1);
+  ukazKartu(TEXTY.karty[h] ? h : 'odm');
+  let posl = performance.now();
+  const snimka = now => {   // jedna slučka pre všetky animácie, časovanie podľa skutočného času
+    const dt = Math.min(.1, Math.max(0, (now - posl) / 1000)); posl = now;
+    const f = TIKY[AKT]; if (f) f(dt);
+    requestAnimationFrame(snimka);
+  };
+  requestAnimationFrame(snimka);
+}
+init();
+</script>
+<script data-goatcounter="https://jasvarc.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
