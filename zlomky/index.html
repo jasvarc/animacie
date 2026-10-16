@@ -518,7 +518,7 @@ footer{color:var(--muted);text-align:center;font-size:16px;padding:20px 0 10px}
       <h2 data-t="zc.nadpis"></h2>
       <p data-t="zc.uvod"></p>
       <div class="editRow"><div id="zc_ed"></div><span class="editLbl">z</span>
-        <div class="editor male"><button id="zc_n-" aria-label="Menej guľôčok">−</button><span class="cislo" id="zc_n" data-cast="celok" tabindex="0"></span><button id="zc_n+" aria-label="Viac guľôčok">+</button></div></div>
+        <div class="editor male"><button id="zc_nMinus" aria-label="Menej guľôčok">−</button><span class="cislo" id="zc_n" data-cast="celok" tabindex="0"></span><button id="zc_nPlus" aria-label="Viac guľôčok">+</button></div></div>
       <p class="mini" data-t="zc.pocet"></p>
       <div class="volby"><button id="zc_btn" class="primary" data-t="zc.btn"></button></div>
     </div>
@@ -1341,7 +1341,7 @@ function kresli5(s) {
   svg.innerHTML = out;
   const el = $('#zc_rov'); if (el.dataset.h !== s.rov) { el.dataset.h = s.rov; el.innerHTML = formatuj(s.rov); }
 }
-function obnov5() { ed5.nastav(S5.c, S5.m); $('#zc_n').textContent = S5.n; const p = pocty5(S5.m); $('#zc_n-').disabled = S5.n <= p[0]; $('#zc_n+').disabled = S5.n >= p[p.length - 1]; }
+function obnov5() { ed5.nastav(S5.c, S5.m); $('#zc_n').textContent = S5.n; const p = pocty5(S5.m); $('#zc_nMinus').disabled = S5.n <= p[0]; $('#zc_nPlus').disabled = S5.n >= p[p.length - 1]; }
 function zmena5(hraj) { obnov5(); h5.nastav(krokyZc(), { hraj }); }
 function init5() {
   ed5 = editor($('#zc_ed'), { c: S5.c, m: S5.m, minC: 1, minM: 2, maxM: 12, trieda: 'male', zmena: (c, m) => {
@@ -1349,8 +1349,8 @@ function init5() {
     const p = pocty5(m); S5.n = p.reduce((naj, x) => Math.abs(x - S5.n) < Math.abs(naj - S5.n) ? x : naj, p[0]);   // najbližší násobok
     zmena5(false);
   } });
-  $('#zc_n-').onclick = () => { S5.n -= S5.m; if (S5.n < pocty5(S5.m)[0]) S5.n += S5.m; zmena5(false); };
-  $('#zc_n+').onclick = () => { if (S5.n + S5.m <= 48) S5.n += S5.m; zmena5(false); };
+  $('#zc_nMinus').onclick = () => { S5.n -= S5.m; if (S5.n < pocty5(S5.m)[0]) S5.n += S5.m; zmena5(false); };
+  $('#zc_nPlus').onclick = () => { if (S5.n + S5.m <= 48) S5.n += S5.m; zmena5(false); };
   h5 = new Hrac({ sek: 'zc', ui: $('#zc_hrac'), kresli: kresli5,
     nahodny: () => { const m = nahoda(2, 10); S5.m = m; S5.c = nahoda(1, m - 1); const p = pocty5(m).filter(x => x <= 40); S5.n = p[nahoda(0, p.length - 1)]; zmena5(true); } });
   $('#zc_btn').onclick = () => h5.nastav(krokyZc(), { hraj: true });
