@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rovnica ako váhy</title>
+<link rel="icon" href="data:,">
+<script>
+/* =====================================================================
+   TEXTY – všetko, čo žiak číta, je na jednom mieste. Upravuj len texty v úvodzovkách.
+   HTML značky (<b>, <br>) sú povolené.
+   {x} – sem program doplní číslo alebo výraz.
+   ===================================================================== */
+const TEXTY = {
+  titul: 'Rovnica ako váhy',
+  podtitul: 'Rovnica je váha v rovnováhe. Keď s oboma stranami urobíš to isté, váha ostane vyrovnaná a x sa nezmení.',
+  pata: 'Rovnica ako váhy · interaktívna animácia pre 7. ročník ZŠ · funguje aj offline',
+  karty: {
+    vahy: 'Váhy – skús to',
+    ries: 'Vyrieš rovnicu',
+    preco: 'Prečo to funguje',
+    vyn: 'Pozor, výnimky',
+    omyly: 'Časté omyly',
+    kviz: 'Kvíz'
+  },
+
+  ui: {
+    spustit: '▶ Spustiť', pauza: '❚❚ Pauza', spat: '◀ Krok späť', reset: '⟲ Reset',
+    rychlost: 'Rýchlosť animácie', kroky: 'Počet krokov: <b>{n}</b>'
+  },
+
+  /* ---------- KARTA: VÁHY – SKÚS TO ---------- */
+  vahy: {
+    nadpis: 'Váhy – skús to',
+    uvod: 'Vyber rovnicu, číslo <b>n</b> a operáciu. Sleduj, či váha ostane v rovnováhe. Cieľ: nech na jednej miske zostane <b>samotné vrecko x</b>.',
+    priklady: 'Príklady:', nahodna: '🎲 Náhodná rovnica',
+    kde: 'Kde:', kdeVolby: { obe: 'na oboch stranách', L: 'len na ľavej', P: 'len na pravej' },
+    co: 'Čo:', coVolby: { cislo: 'číslo n (kocky)', x: 'n · x (vrecká)' },
+    cislo: 'Číslo n',
+    operacie: 'Operácia:',
+    legenda: '<b class="cX">Vrecko x</b> – tajná hmotnosť (celé číslo 1 až 10). <b class="cK">Kocka ■</b> – hmotnosť 1. <b class="cZ">Balónik ◯ so znamienkom −</b> – záporné množstvo, misku dvíha. Čiastočne zaplnený predmet je zlomok.',
+    historia: 'Postup',
+    stranaL: 'ľavá', stranaP: 'pravá',
+    lenL: '(len vľavo)', lenP: '(len vpravo)',
+    uvodHlaska: 'Váha je v rovnováhe. Vyber operáciu.',
+    zostala: '<b>✔ Rovnováha zostala.</b> S oboma stranami sme urobili to isté, hodnota x sa nezmenila.',
+    vyrovnala: '<b>✔ Váha je znova v rovnováhe.</b> Teraz sú obe strany opäť rovnako ťažké.',
+    porusila: '<b>⚠ Rovnováha sa porušila.</b> {s} strana je ťažšia o <b>{o}</b> (vľavo {l}, vpravo {p}). Vráť krok späť alebo urob to isté aj na druhej strane.',
+    stale: '<b>⚠ Váha je stále naklonená.</b> {s} strana je ťažšia o <b>{o}</b> (vľavo {l}, vpravo {p}).',
+    vyriesene: '<br><b>🎉 Vyriešené! x = {x}.</b> Vrecko sme otvorili. Skúška v pôvodnej rovnici: vľavo {sl}, vpravo {sp} ✔',
+    velke: '<b>⚠ Tento krok nerobím.</b> Čísla by boli príliš veľké. Vráť krok späť alebo skús iný krok.',
+    nulaZatial: 'Pri n = 0 sú × a ÷ vypnuté. Čo spraví × 0 a ÷ 0, uvidíš v karte „Pozor, výnimky“.',
+    xNasobenie: 'Násobiť a deliť sa dá len číslom, nie x.',
+    skratene: '{n} × {co}',
+    nazvy: { vrece: 'vrecko', kocka: 'kocka', balon1: 'balónik −1', balonX: 'balónik −x' },
+    aria: 'Váha. Ľavá miska: {l}. Pravá miska: {p}. {s}',
+    ariaRov: 'Váha je v rovnováhe.', ariaNakl: 'Váha je naklonená.'
+  },
+
+  /* ---------- KARTA: VYRIEŠ ROVNICU ---------- */
+  ries: {
+    nadpis: 'Vyrieš rovnicu',
+    uvod: 'Úpravami na <b>oboch stranách</b> dostaň rovnicu do tvaru <b>x = číslo</b>. Jeden krok = jedna operácia.',
+    uroven: 'Úroveň:',
+    urovne: { 1: '1: x ± a = b', 2: '2: a · x = b', 3: '3: a · x + b = c', 4: '4: x na oboch stranách' },
+    nova: '🎲 Nová rovnica',
+    pocet: 'Kroky: <b>{n}</b> · minimum: <b>{m}</b>',
+    uvodHlaska: 'Váha je v rovnováhe. Aký bude prvý krok?',
+    ok: '<b>✔ Rovnováha zostala.</b> Pokračuj ďalším krokom.',
+    daleko: '<b>Platí, ale vzďaľuješ sa od cieľa.</b> Čísla narástli nad 40. Rovnováha je v poriadku, len cesta k x sa predĺžila.',
+    spatInline: '◀ Krok späť',
+    hotovo: '<b>🎉 Máš to: x = {x}.</b> Počet krokov: {n}, minimum: {m}. {pozn} Over riešenie skúškou.',
+    hotovoMin: 'Toto je najkratší postup.',
+    hotovoViac: 'Dá sa to aj na menej krokov – môžeš skúsiť znova.',
+    skuskaBtn: '✔ Skúška dosadením',
+    skuska: '<b>✔ Skúška:</b> dosadím x = {x} do pôvodnej rovnice. Ľavá strana: {l}. Pravá strana: {p}. <b>Ľavá = pravá.</b><br>V stĺpci <b>Skúška</b> je x = {x} dosadené do <b>každého riadku</b> postupu a rovnosť platí v každom. Úpravy menili tvar rovnice, ale riešenie ostalo rovnaké – preto ich voláme <b>ekvivalentné úpravy</b>.',
+    hlRov: 'Rovnica', hlOp: 'Úprava', hlSk: 'Skúška (x = {x})',
+    napoveda: {
+      btn: '💡 Nápoveda {i}/3', vsetky: '💡 Všetky 3 nápovedy použité',
+      pouzite: 'Použité nápovedy: <b>{n}</b>',
+      hotovo: 'Rovnica je už vyriešená, nápoveda netreba.',
+      stupen: ['Čo chceme dosiahnuť:', 'Aký typ operácie:', 'Presná operácia:'],
+      ciel: {
+        zlomok: 'Chceme sa zbaviť zlomkov, aby sa s rovnicou ľahšie počítalo.',
+        konst: 'Na {s} miske sú vrecká. Chceme, aby pri nich nezostali žiadne {co}.',
+        x: 'Chceme mať vrecká x len na jednej miske. Na {s} miske nech nie sú žiadne.',
+        koef: 'Na {s} miske je {k} vreciek x. Chceme tam mať jedno jediné vrecko.',
+        nema: 'Vrecká by sa vyrušili úplne – takúto rovnicu tu nevyriešime. Vráť sa krokom späť.'
+      },
+      co: { kladne: 'kocky', zaporne: 'balóniky' },
+      strana: { L: 'ľavej', P: 'pravej' },
+      typ: {
+        zlomok: 'Vynásob obe strany tým istým číslom (×).',
+        konstMinus: 'Odober kocky z oboch strán (−, „číslo n“).',
+        konstPlus: 'Pridaj kocky na obe strany (+, „číslo n“) – zrušia balóniky.',
+        xMinus: 'Odober vrecká z oboch strán (−, „n · x“).',
+        xPlus: 'Pridaj vrecká na obe strany (+, „n · x“) – zrušia balóniky −x.',
+        koef: 'Vydeľ obe strany tým istým číslom (÷).'
+      },
+      presna: 'Na oboch stranách urob <b>{op}</b>.',
+      dlhe: 'Táto cesta je príliš zložitá pre čísla do 12. Vráť sa krokom späť.'
+    }
+  },
+
+  /* ---------- KARTA: PREČO TO FUNGUJE ---------- */
+  preco: {
+    nadpis: 'Prečo to funguje',
+    uvod: 'Každá úprava robí s <b>oboma miskami to isté</b>. Pozri sa, čo sa deje pri štyroch operáciách.',
+    mini: [
+      { nazov: '+ n: pridám na obe misky', veta: 'Ak na obe misky pridám rovnako, rozdiel medzi nimi sa nezmení – ostane nulový.' },
+      { nazov: '− n: odoberiem z oboch misiek', veta: 'Ak z oboch misiek odoberiem rovnako, rozdiel medzi nimi sa tiež nezmení.' },
+      { nazov: '× n: znásobím obe misky', veta: 'Obe misky sa zväčšia n-krát, ich vzájomný pomer ostane – rovnaké hmotnosti ostanú rovnaké.' },
+      { nazov: '÷ n: vydelím obe misky', veta: 'Obe misky rozdelím na n rovnakých častí a vezmem jednu. Rovnaké hmotnosti majú rovnaké časti.' }
+    ],
+    ekvNadpis: 'Ekvivalentné úpravy',
+    ekv: 'Po úprave sa <b>mení tvar rovnice</b> (napríklad 2x + 3 = 11 → 2x = 8). <b>Nemení sa rovnováha ani riešenie</b> – v oboch rovniciach je x = 4. Úpravám, ktoré zachovajú riešenie, hovoríme <b>ekvivalentné úpravy</b>.',
+    pravNadpis: 'Pravidlo: s každým členom',
+    prav: 'Operáciu treba urobiť s <b>každým členom</b> strany – s vreckami aj s kockami. Pri násobení dvomi: 2x + 3 = 11 | · 2 → <b>4x + 6 = 22</b>.',
+    btnSpravne: '× 2 každý člen', btnChyba: '× 2 len vrecká (chyba)', btnSpat: '⟲ Späť',
+    start: 'Vyber, ako vynásobiť obe strany rovnice 2x + 3 = 11 dvomi.',
+    spravne: '<b>✔ 4x + 6 = 22.</b> Zdvojnásobili sa vrecká (2x → 4x), kocky (3 → 6) aj pravá strana (11 → 22). Váha je v rovnováhe.',
+    chyba: '<b>✘ 4x + 3 ≠ 22.</b> Vrecká sme zdvojnásobili, ale kocky 3 nie. Váha sa naklonila: vľavo {l}, vpravo {p}.',
+    play: '▶ Spustiť animácie', pauza: '❚❚ Pauza animácií'
+  },
+
+  /* spoločné: počet riešení a popisy chýb (karty Výnimky, Omyly, Kvíz) */
+  riesenieTyp: { jedno: 'x = {x}', kazde: 'každé číslo', ziadne: 'žiadne číslo' },
+  ekvAno: 'Riešenie pred úpravou: <b>{a}</b>, po úprave: <b>{b}</b> → úprava <b>je</b> ekvivalentná.',
+  ekvNie: 'Riešenie pred úpravou: <b>{a}</b>, po úprave: <b>{b}</b> → úprava <b>nie je</b> ekvivalentná.',
+  chyby: {
+    jednaStrana: 'Úprava {op} sa urobila len na {s} strane.',
+    jedenClen: 'Úprava {op} sa urobila na {s} strane len s jedným členom – zabudlo sa na {c}.',
+    znamienko: 'Člen sa „presunul“ na druhú stranu bez zmeny znamienka: na jednej strane {op}, na druhej opačne.',
+    strana: { L: 'ľavej', P: 'pravej' }, clen: { k: 'kocky (číslo)', q: 'vrecká x' }
+  },
+
+  /* ---------- KARTA: POZOR, VÝNIMKY ---------- */
+  vyn: {
+    nadpis: 'Pozor, výnimky',
+    uvod: 'Skoro každá úprava na oboch stranách zachová riešenie. Výnimky sú dve: <b>násobenie nulou</b> a <b>delenie nulou</b>.',
+    btnNula: '× 0 na oboch stranách', btnDelNula: '÷ 0 na oboch stranách', btnSpat: '⟲ Späť na 2x + 3 = 11',
+    slX: 'Skúšam x =',
+    tipX: 'Posuvníkom meníš, koľko váži vrecko x. Sleduj, pri ktorom x je váha v rovnováhe.',
+    start: '<b>x = {x}:</b> vľavo {l}, vpravo {p}. {s}',
+    startOk: 'Váha je v rovnováhe.',
+    startZle: 'Váha je naklonená – rovnováhu dáva len x = 4.',
+    nula: '<b>× 0 → 0 = 0.</b> Všetky predmety zmizli, váha je prázdna. Je vyrovnaná pri <b>každom</b> x (teraz x = {x}: vľavo 0, vpravo 0). Informáciu o riešení x = 4 sme stratili, preto násobenie nulou <b>nie je ekvivalentná úprava</b>.',
+    delNula: '<b>✘ Nedá sa rozdeliť na 0 skupín.</b> Váha sa nezmenila. Delenie nulou nemá výsledok, preto sa v rovniciach nerobí.',
+    riesenia: 'Riešenie pôvodnej rovnice: <b>{a}</b> · riešenie toho, čo je teraz na váhe: <b>{b}</b>',
+    zvedNadpis: 'Pre zvedavých: kedy sa riešenie stratí alebo pribudne',
+    zved: '<ul style="margin:6px 0 0;padding-left:20px">' +
+      '<li><b>× 0:</b> zmiznú všetky predmety. Rovnováhe potom vyhovuje každé číslo – pribudli „falošné“ riešenia a to pravé sa stratilo medzi nimi.</li>' +
+      '<li><b>÷ 0:</b> nedá sa vôbec urobiť.</li>' +
+      '<li><b>Úprava len na jednej strane alebo len s jedným členom:</b> riešenie sa zmení na iné číslo (pozri kartu Časté omyly).</li>' +
+      '<li>Ak sa vrecká na oboch miskách navzájom celkom vyrušia, môže ostať napr. 5 = 5 (vyhovuje každé číslo) alebo 3 = 5 (nevyhovuje žiadne). To nie je chyba úpravy – taká rovnica jednoducho nemá jedno riešenie.</li>' +
+      '<li>Vo vyšších ročníkoch prídu úpravy (napr. umocnenie oboch strán), ktoré môžu riešenie pridať. Preto sa na konci vždy oplatí <b>skúška dosadením</b>.</li></ul>'
+  },
+
+  /* ---------- KARTA: ČASTÉ OMYLY ---------- */
+  omyly: {
+    nadpis: 'Časté omyly',
+    uvod: 'Každý omyl si pozri na váhe: najprv chybu, potom opravu. Pri každej úprave program porovná riešenie pred ňou a po nej.',
+    reset: '⟲',
+    polozky: [
+      { nadpis: 'Operácia len na jednej strane', popis: 'Rovnica 2x + 3 = 11. Chceme odstrániť 3 kocky.',
+        btnZle: '✘ − 3 len vľavo', btnDobre: '✔ − 3 na oboch stranách',
+        zle: '<b>✘ Váha sa naklonila.</b> Kocky ubudli len na ľavej miske.', dobre: '<b>✔ Rovnováha zostala.</b> Z oboch misiek ubudli 3 kocky.' },
+      { nadpis: 'Násobenie len jedného člena', popis: '2x + 3 = 11 | · 2. Násobiť treba <b>každý</b> člen.',
+        btnZle: '✘ 4x + 3 = 22', btnDobre: '✔ 4x + 6 = 22',
+        zle: '<b>✘ Kocky sa nevynásobili.</b> Vrecká sa zdvojnásobili, 3 kocky ostali – váha sa naklonila.', dobre: '<b>✔ Zdvojnásobilo sa všetko:</b> 2x → 4x, 3 → 6, 11 → 22.' },
+      { nadpis: 'Delenie len jedného člena', popis: '2x + 4 = 10 | : 2. Deliť treba <b>každý</b> člen.',
+        btnZle: '✘ x + 4 = 5', btnDobre: '✔ x + 2 = 5',
+        zle: '<b>✘ Kocky sa nevydelili.</b> Vrecká sa rozdelili na polovicu, 4 kocky ostali – váha sa naklonila.', dobre: '<b>✔ Rozdelilo sa všetko:</b> 2x → x, 4 → 2, 10 → 5.' },
+      { nadpis: '„Presuniem na druhú stranu“', popis: 'Skratka 2x + 3 = 11 → 2x = 11 − 3. Čo je za ňou?',
+        btnZle: '✘ Presun bez zmeny znamienka', btnDobre: '✔ Čo naozaj robí skratka',
+        zle: '<b>✘ 2x = 11 + 3 je chyba.</b> Vľavo 3 kocky ubudli, vpravo 3 pribudli – váha sa naklonila.',
+        dobre: '<b>✔ „Presun so zmenou znamienka“ je odčítanie na oboch stranách:</b> 2x + 3 − 3 = 11 − 3, teda 2x = 8. Z oboch misiek ubudli 3 kocky. Skratka je v poriadku, keď vieš, čo za ňou je.' },
+      { nadpis: 'Delenie bez rozmyslu', popis: '3x + 2 = 11. Ak delíme hneď, čísla sa nemusia dať deliť bezo zvyšku.',
+        btnZle: '÷ 2 hneď', btnDobre: '✔ − 2, potom ÷ 3', zleInfo: true,
+        zle: '<b>Nie je to chyba.</b> ÷ 2 je správna úprava – váha je v rovnováhe. Vznikli však zlomky (čiastočne zaplnené vrecká a kocky) a ďalej sa počíta ťažšie.',
+        dobre: '<b>✔ Výhodnejšie:</b> najprv − 2 (3x = 9), potom ÷ 3 (x = 3). Čísla ostanú celé.' }
+    ]
+  },
+
+  /* ---------- KARTA: KVÍZ ---------- */
+  kviz: {
+    nadpis: 'Kvíz',
+    uvod: 'Desať náhodných otázok. Správne odpovede počíta program. Nič sa neukladá ani neodosiela.',
+    uroven: 'Obtiažnosť:', urovne: { 1: 'ľahká', 2: 'stredná', 3: 'ťažká' },
+    novy: '🎲 Nový kvíz',
+    typy: { 1: 'Ďalší krok', 2: 'Vyrieš', 3: 'Je úprava správna?', 4: 'Nájdi chybu' },
+    t1: 'Ktorý krok na oboch stranách ťa najviac priblíži k tvaru x = číslo?',
+    t2: 'Vyrieš rovnicu. Napíš x – celé číslo, zlomok (napr. 19/4) alebo desatinné číslo (4,75 aj 4.75).',
+    t3: 'Žiak upravil rovnicu takto. Je úprava správna (zachová riešenie)?',
+    t4: 'V jednom kroku je chyba. Ktorý krok je zlý?',
+    ano: 'Áno, správna', nie: 'Nie, chybná', krok: 'Krok {i}',
+    over: 'Over', vyplnCislo: 'Napíš číslo, napr. 3, −2, 19/4 alebo 4,75.',
+    dobre: '✔ Správne.', zle: '✘ Nie.', spravne: 'Správna odpoveď:',
+    v1: 'Správne je <b>{op}</b>. {ciel} Po úprave: {po}.',
+    v1zle: ' Krok {tvoj} tiež zachová rovnováhu, ale k cieľu ťa nepribližuje.',
+    v2: 'Postup: {postup}. Skúška: vľavo {l}, vpravo {p}.',
+    v3ok: 'Obe rovnice majú rovnaké riešenie ({a}) – úprava je ekvivalentná.',
+    v3zle: '{chyba} Riešenie pred úpravou: {a}, po úprave: {b}. Váha s pôvodným x sa nakloní.',
+    v4: 'Chyba je v kroku {k}. {chyba} Pred týmto krokom: {a}, po ňom: {b}.',
+    vysl: 'Výsledok: {b} z {n}.', vyslDobre: ' Výborne!', vyslSkus: ' Prezri si vysvetlenia a skús nový kvíz.'
+  }
+};
+</script>
+<style>
+/* ===== Farby a základ – rovnaká paleta ako predošlé animácie ===== */
+:root{
+  --bg:#04060c;--panel:rgba(12,16,28,.86);--line:rgba(140,160,215,.22);
+  --text:#e2e8f5;--muted:#a3adc6;--gold:#f3b453;--gold2:#ffd88a;--blue:#6fb4ff;--red:#ff7a6b;--green:#7fdc8f;--violet:#b9a3ff;
+  --vrece:#c8914a;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--text);background:var(--bg);
+  background-image:radial-gradient(ellipse at 50% -10%,#14204a 0%,#070b18 50%,#04060c 100%);background-attachment:fixed;
+  font:17px/1.5 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1440px;margin:0 auto;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.45);padding:16px}
+h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+h2{margin:0 0 10px;font-size:23px;line-height:1.25}
+h3{margin:0 0 6px;font-size:16px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:650}
+p{margin:0 0 10px}
+.sub{color:var(--muted);margin:4px 0 0;font-size:17px}
+button,select{font:inherit;font-size:16px;color:var(--text);background:rgba(255,255,255,.07);border:1px solid var(--line);
+  border-radius:10px;padding:8px 14px;min-height:44px;cursor:pointer;transition:background .15s,border-color .15s,color .15s;touch-action:manipulation}
+button:hover{background:rgba(255,255,255,.13);border-color:rgba(160,180,230,.4)}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
+button.on{background:rgba(243,180,83,.2);border-color:rgba(243,180,83,.65);color:var(--gold2)}
+button.primary{background:linear-gradient(135deg,#f3b453,#d9772f);color:#1a0e02;border:none;font-weight:700}
+button.primary:hover{filter:brightness(1.08)}
+button:disabled{cursor:default;opacity:.4}
+.mini{color:var(--muted);font-size:16px;margin:10px 0 4px}
+.cX{color:var(--vrece)}.cK{color:var(--blue)}.cZ{color:var(--red)}
+
+/* ===== Hlavička a karty ===== */
+header.top{margin-bottom:12px}
+nav.karty{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+nav.karty button{border-radius:999px;padding:8px 15px}
+
+/* ===== Rozloženie sekcie ===== */
+.sek{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:16px;align-items:start}
+.stlpec{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:1000px){.sek{grid-template-columns:minmax(0,1fr)}}
+
+/* ===== Scéna ===== */
+.stageCard{padding:10px}
+.stage{border-radius:10px;background:#08101c;overflow:hidden}
+.stage svg{display:block;width:100%;height:auto;max-height:70vh;user-select:none;-webkit-user-select:none}
+.seg{display:inline-flex;align-items:stretch;flex-wrap:wrap}
+.seg button{border-radius:0;margin-left:-1px}
+.seg button:first-of-type{border-radius:10px 0 0 10px;margin-left:0}
+.seg button:last-of-type{border-radius:0 10px 10px 0}
+.riadok{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.riadok .lbl0{color:var(--muted);min-width:3.2em}
+
+/* ===== Rovnica a postup ===== */
+.rovnica{font-size:32px;font-weight:800;text-align:center;margin:10px 0 4px;letter-spacing:.02em;font-variant-numeric:tabular-nums;min-height:52px}
+.rovnica .rel{color:var(--gold2);padding:0 .25em}
+.rovnica .rel.zle{color:var(--red)}
+.zl{display:inline-flex;flex-direction:column;vertical-align:middle;font-size:max(.68em,16px);line-height:1.1;text-align:center;margin:0 .08em}
+.zl>span:first-child{border-bottom:.1em solid currentColor;padding:0 .12em}
+i.x{font-style:italic;font-family:Georgia,"Times New Roman",serif;color:var(--gold2)}
+.hlaska{margin:8px 0 0;padding:10px 13px;border-radius:10px;border:1px solid var(--line);min-height:3em;font-size:17px}
+.hlaska.ok{background:rgba(127,220,143,.08);border-color:rgba(127,220,143,.45)}.hlaska.ok>b:first-child{color:var(--green)}
+.hlaska.zle{background:rgba(255,122,107,.09);border-color:rgba(255,122,107,.5)}.hlaska.zle>b:first-child{color:var(--red)}
+.hist{margin-top:12px}
+.histBox{max-height:230px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+table.postup{width:100%;border-collapse:collapse;font-size:20px;font-variant-numeric:tabular-nums}
+table.postup td{padding:5px 12px;border-bottom:1px solid rgba(140,160,215,.12);white-space:nowrap}
+table.postup td.r{text-align:center;width:65%}
+table.postup td.o{color:var(--gold2);border-left:2px solid var(--line);width:35%}
+table.postup td.o small{color:var(--red);font-size:16px}
+table.postup tr.akt td.r{background:rgba(243,180,83,.1);font-weight:700}
+table.postup tr.zle td.r{color:#ffc2b9}
+table.postup .rel{padding:0 .3em;color:var(--gold2)}
+table.postup .rel.zle{color:var(--red)}
+
+/* ===== Ovládanie ===== */
+.ops{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.ops button{font-size:24px;font-weight:800;min-height:60px;padding:6px 4px}
+.ops button .sym{display:block;font-size:30px;line-height:1}
+.nBox{display:flex;align-items:center;gap:10px;margin-top:6px}
+.nBox button{min-width:52px;font-size:24px;font-weight:800}
+.nBox output{min-width:2.2em;text-align:center;font-size:28px;font-weight:800;color:var(--gold2)}
+.nBox input{flex:1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:40px;background:transparent;margin:2px 0 0;cursor:pointer;touch-action:pan-y}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;margin-top:-10px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02;box-shadow:0 0 0 2px var(--gold)}
+input[type=range]::-moz-range-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02}
+.sl{display:block;margin-top:10px}
+.sl .lbl{display:flex;justify-content:space-between;gap:10px}
+.sl .lbl b{color:var(--gold2)}
+.tlac{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+.pocitadlo{margin-left:auto;color:var(--muted)}
+.pocitadlo b{color:var(--gold2)}
+.prikl{display:flex;flex-wrap:wrap;gap:6px}
+.prikl button{font-variant-numeric:tabular-nums}
+footer{color:var(--muted);text-align:center;font-size:16px;padding:20px 0 10px}
+
+/* ===== Časť 2: Vyrieš rovnicu, Prečo to funguje ===== */
+.hlaska.info{background:rgba(111,180,255,.08);border-color:rgba(111,180,255,.45)}.hlaska.info>b:first-child{color:var(--blue)}
+.hlaska button{margin-top:8px}
+table.postup th{font-size:16px;font-weight:650;color:var(--muted);text-align:left;padding:6px 12px;border-bottom:1px solid var(--line)}
+table.postup td.s{color:var(--green);border-left:2px solid var(--line)}
+table.postup td.o .nap{color:var(--muted);font-size:16px}
+#r_skuska{width:100%;margin-top:10px;font-size:19px;min-height:52px}
+.napov{margin-top:14px;padding:10px 13px;border-radius:10px;border:1px solid rgba(243,180,83,.45);background:rgba(243,180,83,.07)}
+.napov ol{margin:6px 0 0;padding-left:22px}
+.napov li{margin:4px 0}
+.napov li b.st{color:var(--gold2)}
+.mriezka{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:16px}
+.mriezka h3{color:var(--gold2);text-transform:none;letter-spacing:0;font-size:19px}
+.mriezka .rovnica{font-size:22px;min-height:0;margin:8px 0}
+.nz{white-space:nowrap}
+.box{margin:0;padding:12px 14px;border-radius:10px;border:1px solid}
+.box b.h{display:block;font-size:16px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.box.info{background:rgba(111,180,255,.08);border-color:rgba(111,180,255,.4)}.box.info b.h{color:var(--blue)}
+.box.zlty{background:rgba(243,180,83,.09);border-color:rgba(243,180,83,.45)}.box.zlty b.h{color:var(--gold2)}
+.precoHore{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.precoHore p{margin:0}
+
+/* ===== Časť 3: Výnimky, Omyly, Kvíz ===== */
+[data-karta]{animation:prechod .25s ease-out}
+@keyframes prechod{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){[data-karta]{animation:none}}
+.riesenia{color:var(--muted);text-align:center;margin:6px 0 0}
+.riesenia b{color:var(--gold2)}
+.omyl .tlac button{flex:1 1 auto}
+.omyl .rovnica{font-size:21px;line-height:1.7}
+.otazka{padding:14px 0;border-bottom:1px solid var(--line)}
+.otazka:last-child{border-bottom:none}
+.otazka .q{font-size:19px;margin-bottom:6px}
+.otazka .q .por{color:var(--muted)}
+.otazka .q .typ{display:inline-block;font-size:16px;color:var(--gold2);border:1px solid rgba(243,180,83,.45);border-radius:999px;padding:0 10px;margin-left:6px}
+.otazka .rovnica{font-size:24px;min-height:0;text-align:left;margin:6px 0 10px;line-height:1.7}
+.otazka table.postup{max-width:520px;margin-bottom:10px}
+.moznosti{display:flex;flex-wrap:wrap;gap:8px}
+.moznosti button{min-width:84px;min-height:52px;font-size:20px}
+.otazka button.ok{background:rgba(127,220,143,.2);border-color:var(--green);color:#d7ffdf;opacity:1}
+.otazka button.zle{background:rgba(255,122,107,.2);border-color:var(--red);color:#ffe0dc;opacity:1}
+.vstup{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+input.num{width:150px;height:50px;font:inherit;font-size:22px;font-weight:700;text-align:center;color:var(--text);background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:10px}
+.fb{margin-top:10px;font-size:17px}
+.fb.ok>b:first-child{color:var(--green)}.fb.zle>b:first-child{color:var(--red)}
+.viz{max-width:320px;margin-top:8px;border-radius:10px;background:#08101c;overflow:hidden}
+.viz svg{display:block;width:100%;height:auto}
+#kv_vysl{font-size:21px;font-weight:700;color:var(--gold2);margin:10px 0 0;min-height:1.5em}
+@media (max-width:600px){
+  .wrap{padding:10px}
+  .card{padding:12px}
+  h2{font-size:21px}
+  .rovnica{font-size:27px}
+  table.postup{font-size:18px}
+  .tlac button{flex:1 1 auto}
+  .pocitadlo{margin-left:0;width:100%}
+}
+</style>
+</head>
+<body>
+<!-- Orezávacie tvary pre čiastočne zaplnené predmety (zlomky) – v súradniciach predmetu -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <clipPath id="klipVrece"><path d="M-25,0 C-35,-8 -33,-36 -13,-46 L-9,-52 L9,-52 L13,-46 C33,-36 35,-8 25,0 Z"/></clipPath>
+    <clipPath id="klipB1"><ellipse cx="0" cy="-31" rx="21" ry="25"/></clipPath>
+    <clipPath id="klipBX"><ellipse cx="0" cy="-37" rx="27" ry="31"/></clipPath>
+  </defs>
+</svg>
+
+<div class="wrap">
+<header class="top"><h1 data-t="titul"></h1><p class="sub" data-t="podtitul"></p></header>
+<nav class="karty" id="karty" role="tablist"></nav>
+
+<!-- ============ KARTA: VÁHY – SKÚS TO ============ -->
+<section id="vahy" class="sek" data-karta hidden>
+  <div class="stlpec">
+    <div class="card stageCard">
+      <div class="stage"><svg id="v_svg" viewBox="0 0 560 540" role="img" aria-label=""></svg></div>
+      <div class="rovnica" id="v_rov" aria-live="polite"></div>
+      <div class="hlaska" id="v_hl" aria-live="polite"></div>
+      <div class="hist">
+        <h3 data-t="vahy.historia"></h3>
+        <div class="histBox" id="v_histBox"><table class="postup"><tbody id="v_hist"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+  <div class="stlpec"><div class="card">
+    <h2 data-t="vahy.nadpis"></h2>
+    <p data-t="vahy.uvod"></p>
+    <div class="mini" data-t="vahy.priklady"></div>
+    <div class="prikl" id="v_prikl"></div>
+
+    <div class="riadok"><span class="lbl0" data-t="vahy.kde"></span><div class="seg" id="v_kde"></div></div>
+    <div class="riadok"><span class="lbl0" data-t="vahy.co"></span><div class="seg" id="v_co"></div></div>
+
+    <div class="mini" data-t="vahy.cislo"></div>
+    <div class="nBox">
+      <button id="v_nMinus" aria-label="Zmenšiť n">−</button>
+      <output id="v_nVal" aria-live="polite"></output>
+      <button id="v_nPlus" aria-label="Zväčšiť n">+</button>
+      <input type="range" id="v_n" min="0" max="12" step="1" aria-label="Číslo n">
+    </div>
+
+    <div class="mini" data-t="vahy.operacie"></div>
+    <div class="ops" id="v_ops">
+      <button data-op="+" class="primary"></button>
+      <button data-op="-" class="primary"></button>
+      <button data-op="*" class="primary"></button>
+      <button data-op="/" class="primary"></button>
+    </div>
+    <p class="mini" id="v_opPozn"></p>
+
+    <div class="tlac">
+      <button id="v_spat"></button>
+      <button id="v_reset"></button>
+      <button id="v_pauza"></button>
+      <span class="pocitadlo" id="v_pocet"></span>
+    </div>
+    <label class="sl"><span class="lbl"><span data-t="ui.rychlost"></span><b id="v_rychVal"></b></span>
+      <input type="range" id="v_rych" min="0.25" max="2" step="0.25" value="1" aria-label="Rýchlosť animácie"></label>
+    <p class="mini" data-t="vahy.legenda"></p>
+  </div></div>
+</section>
+
+<!-- ============ KARTA: VYRIEŠ ROVNICU ============ -->
+<section id="ries" class="sek" data-karta hidden>
+  <div class="stlpec">
+    <div class="card stageCard">
+      <div class="stage"><svg id="r_svg" viewBox="0 0 560 540" role="img" aria-label=""></svg></div>
+      <div class="rovnica" id="r_rov" aria-live="polite"></div>
+      <div class="hlaska" id="r_hl" aria-live="polite"></div>
+      <button class="primary" id="r_skuska" hidden></button>
+      <div class="hist">
+        <h3 data-t="vahy.historia"></h3>
+        <div class="histBox" id="r_histBox"><table class="postup"><thead id="r_histHl"></thead><tbody id="r_hist"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+  <div class="stlpec"><div class="card">
+    <h2 data-t="ries.nadpis"></h2>
+    <p data-t="ries.uvod"></p>
+    <div class="riadok"><span class="lbl0" data-t="ries.uroven"></span><div class="seg" id="r_urov"></div></div>
+    <div class="riadok"><button id="r_nova" data-t="ries.nova"></button></div>
+    <div class="riadok"><span class="lbl0" data-t="vahy.co"></span><div class="seg" id="r_co"></div></div>
+
+    <div class="mini" data-t="vahy.cislo"></div>
+    <div class="nBox">
+      <button id="r_nMinus" aria-label="Zmenšiť n">−</button>
+      <output id="r_nVal" aria-live="polite"></output>
+      <button id="r_nPlus" aria-label="Zväčšiť n">+</button>
+      <input type="range" id="r_n" min="0" max="12" step="1" aria-label="Číslo n">
+    </div>
+
+    <div class="mini" data-t="vahy.operacie"></div>
+    <div class="ops" id="r_ops">
+      <button data-op="+" class="primary"></button>
+      <button data-op="-" class="primary"></button>
+      <button data-op="*" class="primary"></button>
+      <button data-op="/" class="primary"></button>
+    </div>
+    <p class="mini" id="r_opPozn"></p>
+
+    <div class="tlac">
+      <button id="r_spat"></button>
+      <button id="r_reset"></button>
+      <button id="r_pauza"></button>
+      <span class="pocitadlo" id="r_pocet"></span>
+    </div>
+    <label class="sl"><span class="lbl"><span data-t="ui.rychlost"></span><b id="r_rychVal"></b></span>
+      <input type="range" id="r_rych" min="0.25" max="2" step="0.25" value="1" aria-label="Rýchlosť animácie"></label>
+
+    <div class="napov">
+      <div class="tlac" style="margin-top:0"><button id="r_napBtn"></button><span class="pocitadlo" id="r_napPocet"></span></div>
+      <ol id="r_napList" aria-live="polite"></ol>
+    </div>
+    <p class="mini" data-t="vahy.legenda"></p>
+  </div></div>
+</section>
+
+<!-- ============ KARTA: PREČO TO FUNGUJE ============ -->
+<section id="preco" data-karta hidden>
+  <div class="card precoHore">
+    <div><h2 data-t="preco.nadpis"></h2><p data-t="preco.uvod"></p></div>
+    <button id="p_pauza"></button>
+  </div>
+  <div class="mriezka" id="p_mini"></div>
+  <div class="mriezka" style="margin-top:16px">
+    <div class="card">
+      <h3 data-t="preco.pravNadpis"></h3>
+      <p data-t="preco.prav"></p>
+      <div class="stage"><svg id="p_pravSvg" viewBox="0 120 560 420" role="img" aria-label=""></svg></div>
+      <div class="rovnica" id="p_pravRov"></div>
+      <div class="tlac">
+        <button class="primary" id="p_spravne" data-t="preco.btnSpravne"></button>
+        <button id="p_chyba" data-t="preco.btnChyba"></button>
+        <button id="p_spat" data-t="preco.btnSpat"></button>
+      </div>
+      <div class="hlaska" id="p_pravHl" aria-live="polite"></div>
+    </div>
+    <div class="box info"><b class="h" data-t="preco.ekvNadpis"></b><span data-t="preco.ekv"></span></div>
+  </div>
+</section>
+
+<!-- ============ KARTA: POZOR, VÝNIMKY ============ -->
+<section id="vyn" class="sek" data-karta hidden>
+  <div class="stlpec">
+    <div class="card stageCard">
+      <div class="stage"><svg id="y_svg" viewBox="0 0 560 540" role="img" aria-label=""></svg></div>
+      <div class="rovnica" id="y_rov" aria-live="polite"></div>
+      <p class="riesenia" id="y_ries"></p>
+      <div class="hlaska" id="y_hl" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="stlpec"><div class="card">
+    <h2 data-t="vyn.nadpis"></h2>
+    <p data-t="vyn.uvod"></p>
+    <div class="tlac">
+      <button class="primary" id="y_nula" data-t="vyn.btnNula"></button>
+      <button class="primary" id="y_delNula" data-t="vyn.btnDelNula"></button>
+      <button id="y_spat" data-t="vyn.btnSpat"></button>
+    </div>
+    <label class="sl"><span class="lbl"><span data-t="vyn.slX"></span><b id="y_xVal"></b></span>
+      <input type="range" id="y_x" min="1" max="10" step="1" value="4" aria-label="Hmotnosť vrecka x"></label>
+    <p class="mini" data-t="vyn.tipX"></p>
+    <div class="box zlty" style="margin-top:14px"><b class="h" data-t="vyn.zvedNadpis"></b><div data-t="vyn.zved"></div></div>
+  </div></div>
+</section>
+
+<!-- ============ KARTA: ČASTÉ OMYLY ============ -->
+<section id="omyly" data-karta hidden>
+  <div class="card" style="margin-bottom:16px"><h2 data-t="omyly.nadpis"></h2><p data-t="omyly.uvod" style="margin:0"></p></div>
+  <div class="mriezka" id="o_zoznam"></div>
+</section>
+
+<!-- ============ KARTA: KVÍZ ============ -->
+<section id="kviz" data-karta hidden>
+  <div class="card" style="max-width:900px">
+    <h2 data-t="kviz.nadpis"></h2>
+    <p data-t="kviz.uvod"></p>
+    <div class="riadok"><span class="lbl0" data-t="kviz.uroven"></span><div class="seg" id="kv_uroven"></div><button id="kv_novy" data-t="kviz.novy"></button></div>
+    <div id="kv_otazky"></div>
+    <div id="kv_vysl" aria-live="polite"></div>
+  </div>
+</section>
+
+<footer data-t="pata"></footer>
+</div>
+
+<script>
+'use strict';
+/* ===== Pomocné funkcie ===== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const U = TEXTY.ui, T = TEXTY.vahy;
+const r1 = x => Math.round(x * 10) / 10;          // zaokrúhlenie súradníc pre SVG (len grafika)
+const lerp = (a, b, t) => a + (b - a) * t;
+function cesta(o, p) { return p.split('.').reduce((x, k) => x == null ? x : x[k], o); }
+function vypln(t, o) { return String(t).replace(/\{(\w+)\}/g, (x, k) => (o && o[k] !== undefined) ? o[k] : x); }
+function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+
+/* =====================================================================
+   LOGIKA (bez DOM – dá sa vytiahnuť a otestovať v node)
+   - Koeficienty aj konštanty sú zlomky {n, d} z celých čísel v základnom tvare, d > 0.
+   - Rovnováhu porovnávam presne zo zlomkov, nikdy nie z desatinných čísel.
+   - Rovnica: L.k · x + L.q = P.k · x + P.q
+   ===================================================================== */
+/* LOGIKA START */
+const MAX_CISLO = 1e6;   // väčší čitateľ/menovateľ nepovolím (súčiny ostanú presné celé čísla)
+function nsd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { const t = a % b; a = b; b = t; } return a || 1; }
+// zlomok v základnom tvare; menovateľ je vždy kladný
+function Z(n, d = 1) {
+  if (!Number.isInteger(n) || !Number.isInteger(d)) throw new Error('ZLOMOK_NIE_Z_CELYCH');
+  if (d === 0) throw new Error('DELENIE_NULOU');
+  if (d < 0) { n = -n; d = -d; }
+  const g = nsd(n, d); n /= g; d /= g;
+  if (Math.abs(n) > MAX_CISLO || d > MAX_CISLO) throw new RangeError('PRILIS_VELKE');
+  return { n: n === 0 ? 0 : n, d };
+}
+const Z0 = Z(0), Z1 = Z(1);
+const zPlus = (a, b) => Z(a.n * b.d + b.n * a.d, a.d * b.d);
+const zMinus = (a, b) => Z(a.n * b.d - b.n * a.d, a.d * b.d);
+const zKrat = (a, b) => Z(a.n * b.n, a.d * b.d);
+const zDel = (a, b) => { if (b.n === 0) throw new Error('DELENIE_NULOU'); return Z(a.n * b.d, a.d * b.n); };
+const zRovne = (a, b) => a.n === b.n && a.d === b.d;
+const zNula = a => a.n === 0;
+const zAbs = a => Z(Math.abs(a.n), a.d);
+const zText = a => (a.n < 0 ? '−' : '') + Math.abs(a.n) + (a.d === 1 ? '' : '/' + a.d);
+const zFloat = a => a.n / a.d;             // len pre kreslenie (uhol, veľkosť výplne), nie na rozhodovanie
+
+const strana = (k, q) => ({ k: typeof k === 'number' ? Z(k) : k, q: typeof q === 'number' ? Z(q) : q });
+const rovnica = (a, b, c, d) => ({ L: strana(a, b), P: strana(c, d) });
+
+// zápis strany: 2x + 3, x − 1/2, −x, 3/2 x, 0
+function stranaText(s) {
+  const cl = [];
+  if (!zNula(s.k)) { const a = zAbs(s.k); cl.push({ zap: s.k.n < 0, t: (zRovne(a, Z1) ? '' : zText(a) + (a.d === 1 ? '' : ' ')) + 'x' }); }
+  if (!zNula(s.q)) cl.push({ zap: s.q.n < 0, t: zText(zAbs(s.q)) });
+  if (!cl.length) return '0';
+  return cl.map((c, i) => i === 0 ? (c.zap ? '−' : '') + c.t : (c.zap ? ' − ' : ' + ') + c.t).join('');
+}
+const rovnicaText = r => stranaText(r.L) + ' = ' + stranaText(r.P);
+
+// op = { typ: '+', '-', '*', '/', n: celé číslo, x: true → pracujem s n·x (len pri + a −) }
+function operand(op) { return op.x ? { k: Z(op.n), q: Z0 } : { k: Z0, q: Z(op.n) }; }
+// operácia sa vždy aplikuje na VŠETKY členy strany (vrecká aj kocky)
+function upravStranu(s, op) {
+  switch (op.typ) {
+    case '+': { const o = operand(op); return { k: zPlus(s.k, o.k), q: zPlus(s.q, o.q) }; }
+    case '-': { const o = operand(op); return { k: zMinus(s.k, o.k), q: zMinus(s.q, o.q) }; }
+    case '*': if (op.x) throw new Error('NASOBENIE_X'); return { k: zKrat(s.k, Z(op.n)), q: zKrat(s.q, Z(op.n)) };
+    case '/': if (op.x) throw new Error('DELENIE_X'); return { k: zDel(s.k, Z(op.n)), q: zDel(s.q, Z(op.n)) };
+  }
+  throw new Error('NEZNAMA_OPERACIA');
+}
+// kde: 'obe' | 'L' | 'P'
+function aplikuj(r, op, kde) {
+  return { L: kde === 'P' ? r.L : upravStranu(r.L, op), P: kde === 'L' ? r.P : upravStranu(r.P, op) };
+}
+const zx = x => typeof x === 'number' ? Z(x) : x;                       // x ako číslo alebo zlomok
+const hmotnost = (s, x) => zPlus(zKrat(s.k, zx(x)), s.q);
+const rozdiel = (r, x) => zMinus(hmotnost(r.L, x), hmotnost(r.P, x));    // kladný → ľavá je ťažšia
+const vRovnovahe = (r, x) => zNula(rozdiel(r, x));
+// vyriešená = váha v rovnováhe a na jednej strane je samotné x, na druhej len číslo
+function vyriesene(r, x) {
+  if (!vRovnovahe(r, x)) return null;
+  const jeX = s => zRovne(s.k, Z1) && zNula(s.q), jeC = s => zNula(s.k);
+  if (jeX(r.L) && jeC(r.P)) return r.P.q;
+  if (jeX(r.P) && jeC(r.L)) return r.L.q;
+  return null;
+}
+// náhodná rovnica a·x + b = c·x + d s riešením x z 1 až 10 (celé číslo)
+function nahodnaRovnica(rnd = Math.random) {
+  const cel = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  for (let i = 0; i < 1000; i++) {
+    const x = cel(1, 10), a = cel(1, 4), c = rnd() < .45 ? 0 : cel(0, a - 1), b = cel(0, 9);
+    const d = (a - c) * x + b;
+    let r = rovnica(a, b, c, d);
+    if (rnd() < .3) r = { L: r.P, P: r.L };           // niekedy je x vpravo
+    if (vyriesene(r, x) === null && d <= 40) return { r, x };
+  }
+  return { r: rovnica(2, 3, 0, 11), x: 4 };
+}
+const PRIKLADY = [
+  { r: rovnica(2, 3, 0, 11), x: 4 },
+  { r: rovnica(1, 5, 0, 9), x: 4 },
+  { r: rovnica(3, 0, 0, 12), x: 4 },
+  { r: rovnica(3, 1, 1, 9), x: 4 }
+];
+
+/* ----- Časť 2: riešenie rovníc ----- */
+const MAX_N = 12;          // najväčšie číslo n na ovládaní
+const DALEKO = 40;         // nad toto číslo sa rovnica „vzďaľuje od cieľa“
+const nsn = (a, b) => a / nsd(a, b) * b;
+const jeSamotneX = s => zRovne(s.k, Z1) && zNula(s.q);
+// tvar x = číslo alebo číslo = x
+const tvarVyriesena = r => (jeSamotneX(r.L) && zNula(r.P.k)) || (jeSamotneX(r.P) && zNula(r.L.k));
+// riešenie vypočítané priamo zo zlomkov: x = (P.q − L.q) / (L.k − P.k); null, ak nie je práve jedno
+function riesenie(r) {
+  const dk = zMinus(r.L.k, r.P.k);
+  return zNula(dk) ? null : zDel(zMinus(r.P.q, r.L.q), dk);
+}
+const prilisDaleko = r => [r.L.k, r.L.q, r.P.k, r.P.q].some(z => Math.abs(z.n) > DALEKO || z.d > DALEKO);
+/* Ďalší krok štandardného postupu (null = hotovo). Každý krok len vtedy, keď nie je zbytočný:
+   0) zlomky preč (× spoločný menovateľ)
+   1) na strane s väčším počtom x odober konštantu
+   2) z druhej strany odober x
+   3) vydeľ koeficientom
+   Vráti { ciel, strana, op }; ciel: 'zlomok' | 'konst' | 'x' | 'koef' | 'nema' */
+function dalsiKrok(r) {
+  if (tvarVyriesena(r)) return null;
+  const m = [r.L.k, r.L.q, r.P.k, r.P.q].reduce((a, z) => nsn(a, z.d), 1);
+  if (m > 1) return { ciel: 'zlomok', strana: 'obe', op: { typ: '*', n: m, x: false } };
+  const dk = zMinus(r.L.k, r.P.k);
+  if (zNula(dk)) return { ciel: 'nema', strana: 'obe', op: null };
+  const T = dk.n > 0 ? 'L' : 'P', O = T === 'L' ? 'P' : 'L', st = r[T], ot = r[O];
+  if (!zNula(st.q)) return { ciel: 'konst', strana: T, op: { typ: st.q.n > 0 ? '-' : '+', n: Math.abs(st.q.n), x: false } };
+  if (!zNula(ot.k)) return { ciel: 'x', strana: O, op: { typ: ot.k.n > 0 ? '-' : '+', n: Math.abs(ot.k.n), x: true } };
+  return { ciel: 'koef', strana: T, op: { typ: '/', n: st.k.n, x: false } };
+}
+// celý štandardný postup od rovnice r; ok = dá sa urobiť číslami 1 až MAX_N
+function postup(r) {
+  const kroky = []; let a = r;
+  for (let i = 0; i < 20; i++) {
+    const k = dalsiKrok(a);
+    if (!k) return { kroky, koniec: a, ok: true };
+    if (!k.op || k.op.n > MAX_N) return { kroky, koniec: a, ok: false };
+    a = aplikuj(a, k.op, 'obe');
+    kroky.push({ op: k.op, ciel: k.ciel, po: a });
+  }
+  return { kroky, koniec: a, ok: false };
+}
+const minimumKrokov = r => postup(r).kroky.length;
+// kontrola vygenerovanej rovnice
+function overGenerovanu(r, x) {
+  const c = [r.L.k, r.L.q, r.P.k, r.P.q];
+  if (c.some(z => z.d !== 1 || Math.abs(z.n) > 20)) return false;     // celé čísla do 20
+  if (zRovne(r.L.k, r.P.k)) return false;                              // a ≠ c
+  if (!vRovnovahe(r, x) || tvarVyriesena(r)) return false;             // x naozaj vyhovuje, ešte nie je vyriešená
+  const p = postup(r), s = vyriesene(p.koniec, x);
+  return p.ok && p.kroky.length > 0 && !!s && zRovne(s, Z(x));
+}
+/* Generovanie odzadu: najprv riešenie x (1 až 10), potom koeficienty, konštanty sa dopočítajú.
+   1) x + a = b, x − a = b   2) a·x = b   3) a·x + b = c   4) a·x + b = c·x + d */
+function generujRovnicu(uroven, rnd = Math.random) {
+  const cel = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  const nenul = (a, b) => { let v; do v = cel(a, b); while (v === 0); return v; };
+  for (let pokus = 0; pokus < 5000; pokus++) {
+    const x = cel(1, 10); let r;
+    if (uroven === 1) { const a = cel(1, 12); r = rnd() < .5 ? rovnica(1, a, 0, x + a) : rovnica(1, -a, 0, x - a); }
+    else if (uroven === 2) { const a = cel(2, 12); r = rovnica(a, 0, 0, a * x); }
+    else if (uroven === 3) { const a = cel(2, 9), b = nenul(-12, 12); r = rovnica(a, b, 0, a * x + b); }
+    else { const a = cel(1, 9); let c; do c = cel(1, 9); while (c === a); const b = nenul(-12, 12); r = rovnica(a, b, c, (a - c) * x + b); }
+    if (uroven >= 3 && rnd() < .3) r = { L: r.P, P: r.L };      // niekedy je x vpravo
+    if (overGenerovanu(r, x) && (uroven < 4 || minimumKrokov(r) >= 2)) return { r, x, uroven };   // úroveň 4 aspoň na 2 kroky
+  }
+  throw new Error('GENEROVANIE_ZLYHALO');
+}
+
+/* ----- Časť 3: výnimky, omyly, kvíz ----- */
+// koľko riešení má rovnica: 'jedno' | 'kazde' (napr. 0 = 0) | 'ziadne' (napr. 3 = 5)
+function typRieseni(r) {
+  if (!zNula(zMinus(r.L.k, r.P.k))) return 'jedno';
+  return zNula(zMinus(r.P.q, r.L.q)) ? 'kazde' : 'ziadne';
+}
+// ekvivalentné = rovnaké riešenia (porovnávam zlomkami, nie podľa textu)
+function ekvivalentne(a, b) {
+  const t = typRieseni(a);
+  if (t !== typRieseni(b)) return false;
+  return t !== 'jedno' || zRovne(riesenie(a), riesenie(b));
+}
+const DRUHA = { L: 'P', P: 'L' };
+const OPACNA = { '+': '-', '-': '+', '*': '/', '/': '*' };
+/* Krok môže byť aj chybný:
+   { op, kde }                    – bežná úprava ('obe' | 'L' | 'P')
+   { op, lenClen: 'k'|'q', strana } – na strane „strana“ sa upraví len jeden člen (vrecká k alebo kocky q), druhá strana celá
+   { op, presunZle: true, strana } – „presun“ bez zmeny znamienka: na strane op, na druhej strane opačná operácia */
+function aplikujKrok(r, kr) {
+  if (kr.presunZle) {
+    const S = kr.strana, O = DRUHA[S];
+    return { [S]: upravStranu(r[S], kr.op), [O]: upravStranu(r[O], { ...kr.op, typ: OPACNA[kr.op.typ] }) };
+  }
+  if (kr.lenClen) {
+    const S = kr.strana, O = DRUHA[S], s = r[S], u = upravStranu(s, kr.op);
+    return { [S]: kr.lenClen === 'k' ? { k: u.k, q: s.q } : { k: s.k, q: u.q }, [O]: upravStranu(r[O], kr.op) };
+  }
+  return aplikuj(r, kr.op, kr.kde || 'obe');
+}
+// chybné varianty správnej úpravy op; vráti len tie, ktoré naozaj zmenia riešenie
+function chybneVarianty(r, op) {
+  const v = [{ druh: 'jednaStrana', kr: { op, kde: 'L' } }, { druh: 'jednaStrana', kr: { op, kde: 'P' } }];
+  ['L', 'P'].forEach(S => {
+    const s = r[S];
+    if (op.typ === '*' || op.typ === '/') {
+      // „len jeden člen“ má zmysel, len keď sú na strane vrecká aj kocky
+      if (!zNula(s.k) && !zNula(s.q)) ['k', 'q'].forEach(c => v.push({ druh: 'jedenClen', kr: { op, lenClen: c, strana: S } }));
+    } else {
+      // presúva sa člen, ktorý na strane naozaj je (napr. +3 sa „presúva“ operáciou −3)
+      const clen = op.x ? s.k : s.q, ocak = Z(op.typ === '-' ? op.n : -op.n);
+      if (zRovne(clen, ocak)) v.push({ druh: 'znamienko', kr: { op, presunZle: true, strana: S } });
+    }
+  });
+  return v.filter(x => { try { return !ekvivalentne(r, aplikujKrok(r, x.kr)); } catch (e) { return false; } });
+}
+function zamiesaj(p, rnd = Math.random) { const a = p.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const klucOp = o => o.typ + o.n + (o.x ? 'x' : '');
+// kandidáti na nesprávnu odpoveď pri otázke „ďalší krok“
+function kandidatiOperacii(op) {
+  const c = [
+    { ...op, typ: OPACNA[op.typ] }, { ...op, n: op.n + 1 }, { ...op, n: op.n - 1 },
+    { typ: '*', n: 2, x: false }, { typ: '/', n: 2, x: false }, { typ: '/', n: op.n, x: false },
+    { typ: '-', n: op.n, x: !op.x }, { typ: '+', n: op.n, x: !op.x }
+  ];
+  return c.filter(o => o.n >= 1 && o.n <= MAX_N && !(o.x && (o.typ === '*' || o.typ === '/')));
+}
+/* Kvízová otázka. Správna odpoveď sa vždy vypočíta tu, nikde nie je zapísaná.
+   typ 1 – vyber ďalší krok, 2 – vyrieš, 3 – je úprava správna?, 4 – nájdi chybný krok
+   úroveň 1 – rovnice úrovne 1–2, úroveň 2 – úrovne 3, úroveň 3 – úrovne 4 (a zlomkové riešenia) */
+function generujOtazku(typ, uroven, rnd = Math.random) {
+  const cel = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  const vyber = a => a[Math.floor(rnd() * a.length)];
+  const urovRov = () => uroven === 1 ? cel(1, 2) : uroven === 2 ? 3 : 4;
+  for (let pokus = 0; pokus < 300; pokus++) {
+    if (typ === 1) {
+      const { r, x } = generujRovnicu(urovRov(), rnd), k = dalsiKrok(r), m0 = minimumKrokov(r), zle = [];
+      for (const o of zamiesaj(kandidatiOperacii(k.op), rnd)) {
+        if (klucOp(o) === klucOp(k.op) || zle.some(z => klucOp(z) === klucOp(o))) continue;
+        let p; try { p = postup(aplikuj(r, o, 'obe')); } catch (e) { continue; }
+        if (!p.ok || p.kroky.length >= m0) zle.push(o);          // nesprávna = nepribližuje k x = číslo
+        if (zle.length === 3) break;
+      }
+      if (zle.length < 3) continue;
+      return { typ, uroven, r, x: Z(x), spravna: k.op, ciel: k.ciel, moznosti: zamiesaj([k.op, ...zle], rnd) };
+    }
+    if (typ === 2) {
+      if (uroven === 3 && rnd() < .5) {                          // riešenie je zlomok
+        const a = cel(2, 6), b = cel(-9, 9), c = cel(-20, 20), r = rovnica(a, b, 0, c), s = riesenie(r);
+        if (s.d === 1 || b === 0 || !postup(r).ok) continue;
+        return { typ, uroven, r, x: s, spravna: s };
+      }
+      const { r } = generujRovnicu(urovRov(), rnd);
+      return { typ, uroven, r, x: riesenie(r), spravna: riesenie(r) };
+    }
+    if (typ === 3) {
+      const { r, x } = generujRovnicu(urovRov(), rnd), op = vyber(postup(r).kroky).op;
+      if (rnd() < .5) { const po = aplikuj(r, op, 'obe'); return { typ, uroven, r, x: Z(x), op, po, variant: 'spravna', kr: { op, kde: 'obe' }, spravna: ekvivalentne(r, po) }; }
+      const v = chybneVarianty(r, op); if (!v.length) continue;
+      const ch = vyber(v), po = aplikujKrok(r, ch.kr);
+      return { typ, uroven, r, x: Z(x), op, po, variant: ch.druh, kr: ch.kr, spravna: ekvivalentne(r, po) };
+    }
+    // typ 4: v jednom kroku štandardného postupu je chyba, ostatné kroky sú správne
+    const { r, x } = generujRovnicu(uroven === 3 ? 4 : 3, rnd), ops = postup(r).kroky.map(k => k.op);
+    if (ops.length < 2) continue;
+    const j = Math.floor(rnd() * ops.length), riadky = [r], kroky = [];
+    let a = r, ok = true, druh = null;
+    for (let i = 0; i < ops.length && ok; i++) {
+      let kr = { op: ops[i], kde: 'obe' };
+      if (i === j) { const v = chybneVarianty(a, ops[i]); if (!v.length) { ok = false; break; } const ch = vyber(v); kr = ch.kr; druh = ch.druh; }
+      try { a = aplikujKrok(a, kr); } catch (e) { ok = false; }
+      riadky.push(a); kroky.push(kr);
+    }
+    if (!ok || riadky.some(rr => typRieseni(rr) !== 'jedno')) continue;   // každý riadok má mať práve jedno riešenie
+    const spravna = riadky.findIndex((rr, i) => i > 0 && !ekvivalentne(riadky[i - 1], rr));   // prvý krok, ktorý zmení riešenie
+    if (spravna < 1) continue;
+    return { typ: 4, uroven, r, x: Z(x), riadky, kroky, chybny: j + 1, druh, spravna };
+  }
+  throw new Error('OTAZKA_ZLYHALA');
+}
+// prečíta odpoveď: celé číslo, desatinné číslo (čiarka aj bodka) alebo zlomok a/b; null = nečitateľné
+function citajCislo(s) {
+  s = String(s).trim().replace(/\s+/g, '').replace(/[−–]/g, '-');
+  try {
+    let m = s.match(/^(-?)(\d{1,6})\/(\d{1,6})$/);
+    if (m) return +m[3] === 0 ? null : { z: Z((m[1] ? -1 : 1) * +m[2], +m[3]), des: 0 };
+    m = s.match(/^(-?)(\d{1,4})(?:[.,](\d{1,4}))?$/);
+    if (!m) return null;
+    const des = m[3] || '';
+    return { z: Z((m[1] ? -1 : 1) * +(m[2] + des), Math.pow(10, des.length)), des: des.length };
+  } catch (e) { return null; }
+}
+// true / false / null (nečitateľné). Presná zhoda zlomkov; desatinné číslo stačí správne zaokrúhlené na aspoň 2 miesta.
+function odpovedSedi(spravna, text) {
+  const c = citajCislo(text);
+  if (!c) return null;
+  if (zRovne(c.z, spravna)) return true;
+  return c.des >= 2 && Math.abs(zFloat(c.z) - zFloat(spravna)) <= 0.5 * Math.pow(10, -c.des) + 1e-12;
+}
+/* LOGIKA KONIEC */
+
+/* =====================================================================
+   ZÁPIS V HTML (zlomky pod sebou)
+   ===================================================================== */
+function zHTML(a) { const z = Math.abs(a.n); return a.d === 1 ? String(z) : `<span class="zl"><span>${z}</span><span>${a.d}</span></span>`; }
+function stranaHTML(s) {
+  const cl = [];
+  if (!zNula(s.k)) { const a = zAbs(s.k); cl.push({ zap: s.k.n < 0, t: (zRovne(a, Z1) ? '' : zHTML(a)) + '<i class="x">x</i>' }); }
+  if (!zNula(s.q)) cl.push({ zap: s.q.n < 0, t: zHTML(zAbs(s.q)) });
+  if (!cl.length) return '0';
+  return cl.map((c, i) => i === 0 ? (c.zap ? '−' : '') + c.t : (c.zap ? ' − ' : ' + ') + c.t).join('');
+}
+function rovnicaHTML(r, x) {
+  const ok = vRovnovahe(r, x);
+  return `${stranaHTML(r.L)}<span class="rel${ok ? '' : ' zle'}">${ok ? '=' : '≠'}</span>${stranaHTML(r.P)}`;
+}
+const OP_ZNAK = { '+': '+', '-': '−', '*': '·', '/': ':' };      // v zápise postupu: · a : ako v škole
+const OP_TLAC = { '+': '+', '-': '−', '*': '×', '/': '÷' };      // na tlačidlách
+function opText(op, znaky = OP_ZNAK) { return `${znaky[op.typ]} ${op.x ? (op.n === 1 ? '' : op.n) + 'x' : op.n}`; }
+// skúška: 2 · 4 + 3 = 11
+function skuskaText(s, x) {
+  const xt = typeof x === 'number' ? x : zText(x);   // x môže byť aj zlomok
+  const cl = [];
+  if (!zNula(s.k)) cl.push((zRovne(s.k, Z1) ? '' : zRovne(s.k, Z(-1)) ? '−' : zText(s.k) + ' · ') + (typeof x !== 'number' && x.n < 0 ? `(${xt})` : xt));
+  if (!zNula(s.q)) cl.push((cl.length ? (s.q.n < 0 ? '− ' : '+ ') : (s.q.n < 0 ? '−' : '')) + zText(zAbs(s.q)));
+  const v = zText(hmotnost(s, x));
+  return cl.length > 1 || !zNula(s.k) ? cl.join(' ') + ' = ' + v : v;
+}
+
+/* =====================================================================
+   KRESLENIE PREDMETOV
+   Súradnice predmetu: (0, 0) = spodok predmetu v strede.
+   Tvar odlišuje druh: vrecko (x), štvorcová kocka (1), okrúhly balónik so znamienkom − (záporné).
+   ===================================================================== */
+const FARBA = { vrece: '#c8914a', vreceO: '#6e4515', kocka: '#6fb4ff', kockaO: '#2f6fbf', balon: '#ff7a6b', balonO: '#b8483b', text: '#e2e8f5', zlato: '#ffd88a' };
+const VRECE = 'M-25,0 C-35,-8 -33,-36 -13,-46 L-9,-52 L9,-52 L13,-46 C33,-36 35,-8 25,0 Z';
+const ROZM = { vrece: { w: 70, h: 72 }, kocka: { w: 50, h: 50 }, balon1: { w: 48, h: 64 }, balonX: { w: 60, h: 76 } };
+const MAX_ZOBR = { vrece: 5, kocka: 11, balon1: 4, balonX: 3 };   // viac kusov sa zobrazí skrátene „12 ×“
+const SIRKA_MISKY = 232;
+
+function popis(x, y, t, fs, fill, extra) {
+  const zarov = /text-anchor/.test(extra || '') ? '' : 'text-anchor="middle" ';   // zarovnanie sa dá zmeniť cez extra
+  return `<text x="${r1(x)}" y="${r1(y)}" font-size="${fs}" ${zarov}dominant-baseline="central" font-weight="800" fill="${fill || FARBA.text}" stroke="#04060c" stroke-width="${fs > 22 ? 5 : 4}" stroke-linejoin="round" paint-order="stroke" ${extra || ''}>${t}</text>`;
+}
+function popisTmavy(x, y, t, fs, fill) {
+  return `<text x="${r1(x)}" y="${r1(y)}" font-size="${fs}" text-anchor="middle" dominant-baseline="central" font-weight="800" fill="${fill}">${t}</text>`;
+}
+// jeden predmet; p = { typ, x, y, f (časť 0..1), zl (text zlomku), poc (skrátený počet) }
+function kresliPredmet(p, odhalene) {
+  const ciast = p.f < 1 - 1e-9;
+  let s = '';
+  if (p.typ === 'vrece') {
+    if (ciast) {
+      s += `<path d="${VRECE}" fill="rgba(200,145,74,.12)" stroke="${FARBA.vrece}" stroke-width="2.5" stroke-dasharray="6 4"/>`;
+      s += `<rect x="-36" y="${r1(-52 * p.f)}" width="72" height="${r1(52 * p.f + 1)}" fill="${FARBA.vrece}" clip-path="url(#klipVrece)"/>`;
+    } else s += `<path d="${VRECE}" fill="${FARBA.vrece}" stroke="${FARBA.vreceO}" stroke-width="2.5"/>`;
+    s += `<path d="M-9,-52 L-17,-64 L0,-57 L17,-64 L9,-52 Z" fill="${ciast ? 'none' : FARBA.vrece}" stroke="${FARBA.vreceO}" stroke-width="2"/>`;
+    s += `<rect x="-12" y="-55" width="24" height="5" rx="2" fill="${FARBA.vreceO}"/>`;
+    s += ciast ? popis(0, -24, p.zl + 'x', 22) : popisTmavy(0, -22, 'x', 32, '#2a1704');
+    if (!ciast) {   // visačka: „?“ kým x nepoznáme, potom hodnota
+      s += `<circle cx="24" cy="-54" r="15" fill="${odhalene != null ? FARBA.zlato : '#3a2a12'}" stroke="${FARBA.vreceO}" stroke-width="2"/>`;
+      s += popisTmavy(24, -54, odhalene != null ? odhalene : '?', 20, odhalene != null ? '#2a1704' : FARBA.zlato);
+    }
+  } else if (p.typ === 'kocka') {
+    if (ciast) {
+      s += `<rect x="-22" y="-44" width="44" height="44" rx="5" fill="rgba(111,180,255,.1)" stroke="${FARBA.kocka}" stroke-width="2.5" stroke-dasharray="6 4"/>`;
+      s += `<rect x="-22" y="${r1(-44 * p.f)}" width="44" height="${r1(44 * p.f)}" rx="3" fill="${FARBA.kocka}"/>`;
+      s += popis(0, -22, p.zl, 20);
+    } else {
+      s += `<rect x="-22" y="-44" width="44" height="44" rx="5" fill="${FARBA.kocka}" stroke="${FARBA.kockaO}" stroke-width="2.5"/>`;
+      s += popisTmavy(0, -22, '1', 26, '#06223f');
+    }
+  } else {   // balónik (záporné množstvo)
+    const X = p.typ === 'balonX', rx = X ? 27 : 21, ry = X ? 31 : 25, cy = -6 - ry;
+    s += `<path d="M0,-6 L-5,0 L5,0 Z" fill="${FARBA.balonO}"/>`;
+    if (ciast) {
+      s += `<ellipse cx="0" cy="${cy}" rx="${rx}" ry="${ry}" fill="rgba(255,122,107,.1)" stroke="${FARBA.balon}" stroke-width="2.5" stroke-dasharray="6 4"/>`;
+      s += `<rect x="${-rx}" y="${r1(-6 - 2 * ry * p.f)}" width="${2 * rx}" height="${r1(2 * ry * p.f)}" fill="${FARBA.balon}" clip-path="url(#${X ? 'klipBX' : 'klipB1'})"/>`;
+      s += popis(0, cy, '−' + p.zl + (X ? 'x' : ''), 20);
+    } else {
+      s += `<ellipse cx="0" cy="${cy}" rx="${rx}" ry="${ry}" fill="${FARBA.balon}" stroke="${FARBA.balonO}" stroke-width="2.5"/>`;
+      s += `<ellipse cx="${-rx * .4}" cy="${cy - ry * .45}" rx="${rx * .22}" ry="${ry * .16}" fill="#fff" opacity=".45"/>`;
+      s += popisTmavy(0, cy, X ? '−x' : '−1', X ? 26 : 22, '#3a0d07');
+    }
+  }
+  let g = `<g transform="translate(${r1(p.x)},${r1(p.y)})">${s}</g>`;
+  if (p.poc) g += popis(p.x - ROZM[p.typ].w / 2 - 4, p.y - ROZM[p.typ].h / 2, p.poc + ' ×', 26, FARBA.zlato, 'text-anchor="end"');
+  return g;
+}
+// zo zlomku urobí zoznam predmetov (celé kusy + jeden čiastočne zaplnený)
+function polozkyDruhu(z, typKlad, typZap) {
+  if (zNula(z)) return [];
+  const a = zAbs(z), cel = Math.floor(a.n / a.d), zv = Z(a.n % a.d, a.d);
+  const typ = z.n < 0 ? typZap : typKlad, out = [];
+  if (cel > MAX_ZOBR[typ]) out.push({ typ, f: 1, poc: cel });
+  else for (let i = 0; i < cel; i++) out.push({ typ, f: 1 });
+  if (!zNula(zv)) out.push({ typ, f: zFloat(zv), zl: zText(zv) });
+  return out;
+}
+function doRiadkov(zoz) {
+  const R = []; let r = null;
+  for (const p of zoz) {
+    const w = ROZM[p.typ].w + (p.poc ? 72 : 0);
+    if (!r || r.typ !== p.typ || r.w + w > SIRKA_MISKY || p.poc || r.poc) { r = { typ: p.typ, w: 0, h: ROZM[p.typ].h, pol: [], poc: !!p.poc }; R.push(r); }
+    p.w = w; r.pol.push(p); r.w += w;
+  }
+  return R;
+}
+// rozloženie strany na miske: vrecká dole, kocky nad nimi, balóniky navrchu (priviazané k miske)
+function rozloz(s) {
+  const vsetko = [...polozkyDruhu(s.k, 'vrece', 'balonX'), ...polozkyDruhu(s.q, 'kocka', 'balon1')];
+  const naMiske = vsetko.filter(p => p.typ === 'vrece' || p.typ === 'kocka');
+  const balony = vsetko.filter(p => p.typ === 'balon1' || p.typ === 'balonX');
+  let y = 0, sirka = 0;
+  const umiestni = R => R.forEach(r => {
+    let x = -r.w / 2;
+    r.pol.forEach(p => { p.x = x + (p.poc ? 72 : 0) + ROZM[p.typ].w / 2; p.y = y; x += p.w; });
+    y -= r.h; sirka = Math.max(sirka, r.w);
+  });
+  umiestni(doRiadkov(naMiske));
+  if (balony.length) y -= naMiske.length ? 26 : 70;
+  umiestni(doRiadkov(balony));
+  return { pol: [...naMiske, ...balony], balony, vyska: -y, sirka };
+}
+function kresliObsah(s, odhalene) {
+  const R = rozloz(s);
+  let sp = '';
+  R.balony.forEach(p => {   // šnúrky balónikov k miske
+    const kx = Math.max(-100, Math.min(100, p.x * .7));
+    sp += `<line x1="${r1(p.x)}" y1="${r1(p.y)}" x2="${r1(kx)}" y2="0" stroke="#c9d2ea" stroke-width="1.6" opacity=".75"/>`;
+  });
+  return sp + R.pol.map(p => kresliPredmet(p, odhalene)).join('');
+}
+function skup(obsah, x, y, s, alfa) {
+  if (alfa <= 0.001) return '';
+  return `<g transform="translate(${r1(x)},${r1(y)}) scale(${s.toFixed(3)})" opacity="${Math.min(1, alfa).toFixed(3)}">${obsah}</g>`;
+}
+// mriežka n buniek nad miskou (na rozkopírovanie a delenie na skupiny)
+function bunky(n, roz) {
+  const st = Math.ceil(Math.sqrt(n)), ri = Math.ceil(n / st), cw = SIRKA_MISKY / st, chMax = 300 / ri;
+  const s = Math.min(1, (cw - 12) / Math.max(roz.sirka, 40), (chMax - 14) / Math.max(roz.vyska, 40));
+  const ch = Math.min(chMax, Math.max(roz.vyska, 40) * s + 22);   // rámček len taký vysoký ako obsah
+  return Array.from({ length: n }, (_, i) => ({ x: -SIRKA_MISKY / 2 + cw * (i % st + .5), y: -ch * Math.floor(i / st) - 6, s, cw, ch }));
+}
+function ramcek(c, alfa, zvyr) {
+  if (alfa <= 0.001) return '';
+  return `<rect x="${r1(c.x - c.cw / 2 + 3)}" y="${r1(c.y - c.ch + 8)}" width="${r1(c.cw - 6)}" height="${r1(c.ch - 6)}" rx="8" fill="${zvyr ? 'rgba(243,180,83,.1)' : 'none'}" stroke="${zvyr ? FARBA.zlato : '#a3adc6'}" stroke-width="${zvyr ? 3 : 2}" stroke-dasharray="7 5" opacity="${alfa.toFixed(3)}"/>`;
+}
+
+/* =====================================================================
+   ANIMÁCIA OPERÁCIE – fázy pre jednu stranu (každá fáza: trvanie v s a kreslenie pre t ∈ [0, 1])
+   ===================================================================== */
+function fazyStrany(A, B, op, odh) {
+  const oA = kresliObsah(A, odh), oB = kresliObsah(B, odh), rA = rozloz(A), rB = rozloz(B);
+  if (op.typ === '+' || op.typ === '-') {
+    const duch = kresliObsah(operand(op), odh);       // pridávané / odoberané predmety
+    if (op.typ === '+') return [
+      { dur: .8, f: t => oA + skup(duch, 0, -(rA.vyska + 10) - (1 - ease(t)) * 300, 1, t * 3) },
+      { dur: .5, f: t => skup(oA, 0, 0, 1, 1 - t) + skup(oB, 0, 0, 1, t) + skup(duch, 0, -(rA.vyska + 10), 1, 1 - t) }
+    ];
+    return [
+      { dur: .5, f: t => skup(oA, 0, 0, 1, 1 - t) + skup(oB, 0, 0, 1, t) + skup(duch, 0, -(rB.vyska + 10), 1, t) },
+      { dur: .8, f: t => oB + skup(duch, 0, -(rB.vyska + 10) - ease(t) * 300, 1, 1 - ease(t)) }
+    ];
+  }
+  if (op.typ === '*' && op.n === 0) return [   // × 0: všetky predmety sa zmenšia a zmiznú
+    { dur: 1.2, f: t => { const e = ease(t); return skup(oA, 0, -e * 30, 1 - .7 * e, 1 - e); } }
+  ];
+  if (op.typ === '*') {   // predmety sa rozkopírujú na n rovnakých skupín
+    const C = bunky(op.n, rA);
+    return [
+      { dur: 1, f: t => { const e = ease(t); return C.map((c, i) => skup(oA, lerp(0, c.x, e), lerp(0, c.y, e), lerp(1, c.s, e), i === 0 ? 1 : t * 2)).join(''); } },
+      { dur: .5, f: t => C.map(c => skup(oA, c.x, c.y, c.s, 1 - t)).join('') + skup(oB, 0, 0, 1, t) }
+    ];
+  }
+  // delenie: rozdelí sa na n rovnakých skupín, ostane jedna
+  const C = bunky(op.n, rB), c0 = C[0];
+  return [
+    { dur: .6, f: t => skup(oA, 0, 0, 1, 1 - t) + C.map(c => ramcek(c, t) + skup(oB, c.x, c.y, c.s, t)).join('') },
+    { dur: .7, f: t => { const e = ease(t); return ramcek(c0, 1, true) + skup(oB, c0.x, c0.y, c0.s, 1) + C.slice(1).map(c => `<g transform="translate(0,${r1(-e * 140)})">${ramcek(c, 1 - e) + skup(oB, c.x, c.y, c.s, 1 - e)}</g>`).join(''); } },
+    { dur: .6, f: t => { const e = ease(t); return ramcek(c0, 1 - t, true) + skup(oB, lerp(c0.x, 0, e), lerp(c0.y, 0, e), lerp(c0.s, 1, e), 1); } }
+  ];
+}
+function vytvorAnim(pred, po, op, kde, odh) {
+  const zm = { L: kde !== 'P', P: kde !== 'L' };
+  const fL = zm.L ? fazyStrany(pred.L, po.L, op, odh) : null, fP = zm.P ? fazyStrany(pred.P, po.P, op, odh) : null;
+  const vzor = fL || fP, statL = kresliObsah(pred.L, odh), statP = kresliObsah(pred.P, odh);
+  return { po, i: 0, t: 0, fazy: vzor.map((f, i) => ({ dur: f.dur, L: fL ? fL[i].f : () => statL, P: fP ? fP[i].f : () => statP })) };
+}
+
+/* =====================================================================
+   STAV KARTY „VÁHY“
+   ===================================================================== */
+const S = {
+  priklad: 0, start: PRIKLADY[0].r, x: PRIKLADY[0].x,
+  kroky: [],             // { pred, op, kde, po, h (hláška) }
+  zobr: PRIKLADY[0].r,   // čo je práve nakreslené
+  uhol: 0, rychlost: 1, pauza: false, kde: 'obe', operandX: false, n: 3,
+  odhalene: null,        // hodnota x po vyriešení (inak null)
+  chyba: '', prekreslit: true,
+  svg: null, anim: null  // S je zároveň „váha“ V pre vykresli(V) a posunVahu(V)
+};
+const aktualna = () => S.kroky.length ? S.kroky[S.kroky.length - 1].po : S.start;
+const zobrazenychKrokov = () => S.kroky.length - (S.anim ? 1 : 0);
+
+function vyhodnot(pred, po) {
+  const x = S.x, d0 = rozdiel(pred, x), d1 = rozdiel(po, x);
+  let typ, html;
+  if (zNula(d1)) { typ = 'ok'; html = zNula(d0) ? T.zostala : T.vyrovnala; }
+  else {
+    typ = 'zle';
+    html = vypln(zNula(d0) ? T.porusila : T.stale, {
+      s: d1.n > 0 ? 'Ľavá' : 'Pravá', o: zText(zAbs(d1)),
+      l: zText(hmotnost(po.L, x)), p: zText(hmotnost(po.P, x))
+    });
+  }
+  const sol = vyriesene(po, x);
+  if (sol) html += vypln(T.vyriesene, { x: zText(sol), sl: skuskaText(S.start.L, x), sp: skuskaText(S.start.P, x) });
+  return { typ, html, sol };
+}
+
+/* =====================================================================
+   VÁHA V – spoločné pre všetky karty.
+   V = { svg, zobr (nakreslená rovnica), x, uhol, anim, odhalene, prekreslit }
+   ===================================================================== */
+function cielovyUhol(V) {
+  // počas animácie sa váha nakloní až v poslednej fáze (keď sa predmety ustália)
+  const r = V.anim && V.anim.i === V.anim.fazy.length - 1 ? V.anim.po : V.zobr;
+  const d = zFloat(rozdiel(r, V.x));          // len na veľkosť uhla; rovnováhu rozhoduje rozdiel zlomkov
+  return zNula(rozdiel(r, V.x)) ? 0 : -13 * Math.tanh(d / 6);
+}
+// okamžite dokončí animáciu váhy; vráti true, ak nejaká bežala
+function dokonciAnimVahy(V) {
+  if (!V.anim) return false;
+  V.zobr = V.anim.po; V.anim = null; V.prekreslit = true;
+  return true;
+}
+// posunie animáciu a naklonenie o k sekúnd (už vynásobených rýchlosťou); na konci animácie zavolá poKonci
+function posunVahu(V, k, poKonci) {
+  let zmena = false;
+  if (V.anim) {
+    V.anim.t += k / V.anim.fazy[V.anim.i].dur; zmena = true;
+    if (V.anim.t >= 1) {
+      V.anim.i++; V.anim.t = 0;
+      if (V.anim.i >= V.anim.fazy.length) { V.anim.i--; V.anim.t = 1; if (poKonci) poKonci(); else dokonciAnimVahy(V); }
+    }
+  }
+  const ciel = cielovyUhol(V);
+  let u = ciel + (V.uhol - ciel) * Math.exp(-k * 5);   // plynulé nakláňanie
+  if (Math.abs(u - ciel) < .02) u = ciel;
+  if (u !== V.uhol) { V.uhol = u; zmena = true; }
+  return zmena;
+}
+
+/* ===== Hlavné kreslenie váhy ===== */
+const CX = 280, PY = 468, RAMENO = 156;
+function vykresli(V) {
+  const th = V.uhol * Math.PI / 180, co = Math.cos(th), si = Math.sin(th);
+  const konce = { L: [CX - RAMENO * co, PY - RAMENO * si], P: [CX + RAMENO * co, PY + RAMENO * si] };
+  let s = '';
+  // stojan
+  s += `<path d="M${CX - 74},528 L${CX + 74},528 L${CX + 13},${PY} L${CX - 13},${PY} Z" fill="#1f2a45" stroke="#4a5a85" stroke-width="2"/>`;
+  // stupnica a ručička (ukazuje rovnováhu aj bez farby)
+  s += `<path d="M${CX - 34},${PY - 96} A100,100 0 0 1 ${CX + 34},${PY - 96}" fill="none" stroke="#4a5a85" stroke-width="3"/>`;
+  s += `<path d="M${CX},${PY - 112} L${CX - 8},${PY - 124} L${CX + 8},${PY - 124} Z" fill="${FARBA.zlato}"/>`;
+  s += `<line x1="${CX}" y1="${PY}" x2="${r1(CX + 92 * si)}" y2="${r1(PY - 92 * co)}" stroke="${FARBA.zlato}" stroke-width="4" stroke-linecap="round"/>`;
+  // rameno
+  s += `<line x1="${r1(konce.L[0])}" y1="${r1(konce.L[1])}" x2="${r1(konce.P[0])}" y2="${r1(konce.P[1])}" stroke="#d9a548" stroke-width="10" stroke-linecap="round"/>`;
+  s += `<circle cx="${CX}" cy="${PY}" r="11" fill="#2a3556" stroke="${FARBA.zlato}" stroke-width="3"/>`;
+  for (const k of ['L', 'P']) {
+    const [ex, ey] = konce[k], yT = ey - 28;
+    let obsah;
+    if (V.anim) { const f = V.anim.fazy[V.anim.i]; obsah = f[k](Math.min(1, V.anim.t)); }
+    else obsah = kresliObsah(V.zobr[k], V.odhalene);
+    s += `<line x1="${r1(ex)}" y1="${r1(ey)}" x2="${r1(ex)}" y2="${r1(yT + 8)}" stroke="#d9a548" stroke-width="5"/>`;
+    s += `<rect x="${r1(ex - 120)}" y="${r1(yT)}" width="240" height="10" rx="5" fill="#d9a548" stroke="#7a5a1e" stroke-width="1.5"/>`;
+    s += `<g transform="translate(${r1(ex)},${r1(yT)})">${obsah}</g>`;
+    s += popis(ex, ey + 34, k === 'L' ? T.stranaL : T.stranaP, 24, '#a3adc6');
+  }
+  V.svg.innerHTML = s;
+}
+// popis váhy pre čítačku obrazovky
+function ariaVahy(V, rov) {
+  const popisStr = st => rozloz(st).pol.map(p => p.poc ? vypln(T.skratene, { n: p.poc, co: T.nazvy[p.typ] }) : (p.zl ? p.zl + ' ' : '') + T.nazvy[p.typ]).join(', ') || '0';
+  V.svg.setAttribute('aria-label', vypln(T.aria, { l: popisStr(rov.L), p: popisStr(rov.P), s: vRovnovahe(rov, V.x) ? T.ariaRov : T.ariaNakl }));
+}
+
+/* ===== Texty pod váhou ===== */
+function aktualizujTexty() {
+  const n = zobrazenychKrokov();
+  const rov = n ? S.kroky[n - 1].po : S.start;
+  $('#v_rov').innerHTML = rovnicaHTML(rov, S.x);
+  // hláška
+  const hl = $('#v_hl');
+  if (S.chyba) { hl.className = 'hlaska zle'; hl.innerHTML = S.chyba; }
+  else if (S.anim) { hl.className = 'hlaska'; hl.innerHTML = '&nbsp;'; }
+  else if (n) { const h = S.kroky[n - 1].h; hl.className = 'hlaska ' + h.typ; hl.innerHTML = h.html; }
+  else { hl.className = 'hlaska ok'; hl.innerHTML = '<b>' + T.uvodHlaska + '</b>'; }
+  // postup: rovnica | operácia
+  let h = '';
+  for (let i = 0; i <= n; i++) {
+    const r = i === 0 ? S.start : S.kroky[i - 1].po, k = i < n ? S.kroky[i] : null;
+    const ok = vRovnovahe(r, S.x);
+    const op = k ? `| ${opText(k.op)}${k.kde !== 'obe' ? ` <small>${k.kde === 'L' ? T.lenL : T.lenP}</small>` : ''}` : '';
+    h += `<tr class="${i === n ? 'akt' : ''}${ok ? '' : ' zle'}"><td class="r">${rovnicaHTML(r, S.x)}</td><td class="o">${op}</td></tr>`;
+  }
+  $('#v_hist').innerHTML = h;
+  const box = $('#v_histBox'); box.scrollTop = box.scrollHeight;
+  $('#v_pocet').innerHTML = vypln(U.kroky, { n });
+  $('#v_spat').disabled = !S.kroky.length;
+  ariaVahy(S, rov);
+}
+function aktualizujOvladanie() {
+  $('#v_nVal').textContent = S.n; $('#v_n').value = S.n;
+  $('#v_nMinus').disabled = S.n <= 0; $('#v_nPlus').disabled = S.n >= 12;
+  const opr = S.n + (S.operandX ? 'x' : '');
+  $$('#v_ops button').forEach(b => {
+    const t = b.dataset.op;
+    b.innerHTML = `<span class="sym">${OP_TLAC[t]}</span>${S.operandX && S.n === 1 ? 'x' : opr}`;
+    // × a ÷ len číslom; pri n = 0 vypnuté (× 0 a ÷ 0 ukazuje karta „Pozor, výnimky“)
+    b.disabled = (t === '*' || t === '/') && (S.operandX || S.n === 0);
+    b.setAttribute('aria-label', `${OP_TLAC[t]} ${opr}`);
+  });
+  $('#v_opPozn').textContent = S.operandX ? T.xNasobenie : S.n === 0 ? T.nulaZatial : '';
+  $('#v_pauza').textContent = S.pauza ? U.spustit : U.pauza;
+  $('#v_pauza').classList.toggle('on', S.pauza);
+  $('#v_rychVal').textContent = String(S.rychlost).replace('.', ',') + '×';
+}
+
+/* ===== Akcie ===== */
+function dokonciAnim() {
+  if (!dokonciAnimVahy(S)) return;
+  const n = S.kroky.length;
+  if (n && S.kroky[n - 1].h.sol) S.odhalene = zText(S.kroky[n - 1].h.sol);
+  aktualizujTexty();
+}
+function urob(typ) {
+  dokonciAnim();
+  const op = { typ, n: S.n, x: S.operandX }, pred = aktualna();
+  let po;
+  S.chyba = '';
+  try { po = aplikuj(pred, op, S.kde); }
+  catch (e) { S.chyba = T.velke; aktualizujTexty(); return; }
+  S.kroky.push({ pred, op, kde: S.kde, po, h: vyhodnot(pred, po) });
+  S.anim = vytvorAnim(pred, po, op, S.kde, S.odhalene);
+  aktualizujTexty();
+}
+function krokSpat() {
+  dokonciAnim();
+  if (!S.kroky.length) return;
+  S.kroky.pop(); S.chyba = '';
+  S.zobr = aktualna(); S.prekreslit = true; aktualizujTexty();
+}
+function nastavRovnicu(r, x) {
+  S.anim = null;
+  S.start = r; S.x = x; S.kroky = []; S.zobr = r; S.odhalene = null; S.chyba = ''; S.prekreslit = true;
+  aktualizujTexty();
+}
+function zvyrazniPriklad() { $$('#v_prikl button').forEach(b => b.classList.toggle('on', +b.dataset.i === S.priklad)); }
+
+function segment(el, volby, akt, fn) {
+  el.innerHTML = volby.map(([k, t]) => `<button data-k="${k}" class="${String(k) === String(akt) ? 'on' : ''}" aria-pressed="${String(k) === String(akt)}">${t}</button>`).join('');
+  $$('button', el).forEach(b => { b.onclick = () => { $$('button', el).forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); fn(b.dataset.k); }; });
+}
+
+function initVahy() {
+  S.svg = $('#v_svg');
+  // príklady
+  $('#v_prikl').innerHTML = PRIKLADY.map((p, i) => `<button data-i="${i}">${rovnicaText(p.r)}</button>`).join('') + `<button data-i="-1">${T.nahodna}</button>`;
+  $$('#v_prikl button').forEach(b => {
+    b.onclick = () => {
+      const i = +b.dataset.i;
+      if (i < 0) { const q = nahodnaRovnica(); S.priklad = -1; nastavRovnicu(q.r, q.x); }
+      else { S.priklad = i; nastavRovnicu(PRIKLADY[i].r, PRIKLADY[i].x); }
+      zvyrazniPriklad();
+    };
+  });
+  zvyrazniPriklad();
+  segment($('#v_kde'), Object.entries(T.kdeVolby), S.kde, k => { S.kde = k; });
+  segment($('#v_co'), Object.entries(T.coVolby), 'cislo', k => { S.operandX = k === 'x'; aktualizujOvladanie(); });
+  const nastavN = v => { S.n = Math.max(0, Math.min(12, v)); aktualizujOvladanie(); };
+  $('#v_n').oninput = e => nastavN(+e.target.value);
+  $('#v_nMinus').onclick = () => nastavN(S.n - 1);
+  $('#v_nPlus').onclick = () => nastavN(S.n + 1);
+  $$('#v_ops button').forEach(b => { b.onclick = () => urob(b.dataset.op); });
+  $('#v_spat').textContent = U.spat; $('#v_spat').onclick = krokSpat;
+  $('#v_reset').textContent = U.reset; $('#v_reset').onclick = () => nastavRovnicu(S.start, S.x);
+  $('#v_pauza').onclick = () => { S.pauza = !S.pauza; aktualizujOvladanie(); };
+  $('#v_rych').oninput = e => { S.rychlost = +e.target.value; aktualizujOvladanie(); };
+  aktualizujOvladanie(); aktualizujTexty();
+}
+// jeden krok animácie; dt = skutočný čas v sekundách
+function tikVahy(dt) {
+  let zmena = S.prekreslit;
+  if (!S.pauza && posunVahu(S, dt * S.rychlost, dokonciAnim)) zmena = true;
+  if (zmena) { vykresli(S); S.prekreslit = false; }
+}
+
+/* =====================================================================
+   KARTA „VYRIEŠ ROVNICU“
+   ===================================================================== */
+const TR = TEXTY.ries, TN = TR.napoveda, TP = TEXTY.preco;
+const R = {
+  uroven: 1, start: null, x: 1,
+  kroky: [],             // { pred, op, po, nap (počet nápovedí použitých pred krokom) }
+  zobr: null, svg: null, uhol: 0, anim: null, odhalene: null, prekreslit: true,
+  rychlost: 1, pauza: false, operandX: false, n: 1,
+  min: 0,                // minimum krokov – vypočítané štandardným postupom
+  nap: [], napCelkom: 0, skuska: false, chyba: ''
+};
+const rAktualna = () => R.kroky.length ? R.kroky[R.kroky.length - 1].po : R.start;
+const rZobrazenych = () => R.kroky.length - (R.anim ? 1 : 0);
+
+// ovládanie n, „číslo / n · x“, štyri operácie, pauza a rýchlosť pre kartu s predponou p
+function pripojOvladanie(p, St, urobFn) {
+  const el = id => $(`#${p}_${id}`);
+  const akt = () => {
+    el('nVal').textContent = St.n; el('n').value = St.n;
+    el('nMinus').disabled = St.n <= 0; el('nPlus').disabled = St.n >= MAX_N;
+    const opr = St.operandX && St.n === 1 ? 'x' : St.n + (St.operandX ? 'x' : '');
+    $$(`#${p}_ops button`).forEach(b => {
+      const t = b.dataset.op;
+      b.innerHTML = `<span class="sym">${OP_TLAC[t]}</span>${opr}`;
+      b.disabled = (t === '*' || t === '/') && (St.operandX || St.n === 0);   // × 0 a ÷ 0 ukazuje karta „Pozor, výnimky“
+      b.setAttribute('aria-label', `${OP_TLAC[t]} ${opr}`);
+    });
+    el('opPozn').textContent = St.operandX ? T.xNasobenie : St.n === 0 ? T.nulaZatial : '';
+    el('pauza').textContent = St.pauza ? U.spustit : U.pauza; el('pauza').classList.toggle('on', St.pauza);
+    el('rychVal').textContent = String(St.rychlost).replace('.', ',') + '×';
+  };
+  segment(el('co'), Object.entries(T.coVolby), 'cislo', k => { St.operandX = k === 'x'; akt(); });
+  const nastavN = v => { St.n = Math.max(0, Math.min(MAX_N, v)); akt(); };
+  el('n').oninput = e => nastavN(+e.target.value);
+  el('nMinus').onclick = () => nastavN(St.n - 1);
+  el('nPlus').onclick = () => nastavN(St.n + 1);
+  $$(`#${p}_ops button`).forEach(b => { b.onclick = () => urobFn(b.dataset.op); });
+  el('pauza').onclick = () => { St.pauza = !St.pauza; akt(); };
+  el('rych').oninput = e => { St.rychlost = +e.target.value; akt(); };
+  akt();
+  return akt;
+}
+
+// tri stupne nápovedy pre rovnicu r: [čo chceme, typ operácie, presná operácia]; null = hotovo
+function napovedaTexty(r) {
+  const k = dalsiKrok(r);
+  if (!k) return null;
+  if (k.ciel === 'nema') return [TN.ciel.nema, TN.ciel.nema, TN.ciel.nema];
+  const s = r[k.strana === 'obe' ? 'L' : k.strana];
+  const ciel = vypln(TN.ciel[k.ciel], { s: TN.strana[k.strana], co: s.q.n > 0 ? TN.co.kladne : TN.co.zaporne, k: zText(s.k) });
+  const typ = k.ciel === 'zlomok' || k.ciel === 'koef' ? TN.typ[k.ciel] : TN.typ[k.ciel + (k.op.typ === '-' ? 'Minus' : 'Plus')];
+  const presna = k.op.n > MAX_N ? TN.dlhe : vypln(TN.presna, { op: opText(k.op, OP_TLAC) });
+  return [ciel, typ, presna];
+}
+
+function rTexty() {
+  const n = rZobrazenych(), rov = n ? R.kroky[n - 1].po : R.start, posl = rAktualna();
+  const hotovo = !R.anim && tvarVyriesena(posl);
+  $('#r_rov').innerHTML = rovnicaHTML(rov, R.x);
+  // hláška
+  let typ = 'ok', html;
+  if (R.chyba) { typ = 'zle'; html = R.chyba; }
+  else if (R.anim) { typ = ''; html = '&nbsp;'; }
+  else if (R.skuska) html = vypln(TR.skuska, { x: R.x, l: skuskaText(R.start.L, R.x), p: skuskaText(R.start.P, R.x) });
+  else if (hotovo) html = vypln(TR.hotovo, { x: zText(riesenie(posl)), n, m: R.min, pozn: n <= R.min ? TR.hotovoMin : TR.hotovoViac });
+  else if (n && prilisDaleko(posl)) { typ = 'info'; html = TR.daleko + `<br><button id="r_spatIn">${TR.spatInline}</button>`; }
+  else if (n) html = TR.ok;
+  else html = '<b>' + TR.uvodHlaska + '</b>';
+  const hl = $('#r_hl'); hl.className = 'hlaska ' + typ; hl.innerHTML = html;
+  if ($('#r_spatIn')) $('#r_spatIn').onclick = rSpat;
+  $('#r_skuska').hidden = !hotovo || R.skuska;
+  // postup; po skúške aj stĺpec s dosadením x do každého riadku
+  const sk = R.skuska && hotovo;
+  $('#r_histHl').innerHTML = sk ? `<tr><th>${TR.hlRov}</th><th>${TR.hlOp}</th><th>${vypln(TR.hlSk, { x: R.x })}</th></tr>` : '';
+  let h = '';
+  for (let i = 0; i <= n; i++) {
+    const r = i === 0 ? R.start : R.kroky[i - 1].po, k = i < n ? R.kroky[i] : null;
+    const op = k ? `| ${opText(k.op)}${k.nap ? ` <span class="nap" title="použité nápovedy">💡${k.nap}</span>` : ''}` : '';
+    const s = sk ? `<td class="s">${zText(hmotnost(r.L, R.x))} = ${zText(hmotnost(r.P, R.x))} ✔</td>` : '';
+    h += `<tr class="${i === n ? 'akt' : ''}"><td class="r">${rovnicaHTML(r, R.x)}</td><td class="o">${op}</td>${s}</tr>`;
+  }
+  $('#r_hist').innerHTML = h;
+  const box = $('#r_histBox'); box.scrollTop = box.scrollHeight;
+  $('#r_pocet').innerHTML = vypln(TR.pocet, { n, m: R.min });
+  $('#r_spat').disabled = !R.kroky.length;
+  // nápoveda
+  const t = hotovo ? null : napovedaTexty(posl), b = $('#r_napBtn');
+  b.textContent = R.nap.length >= 3 ? TN.vsetky : vypln(TN.btn, { i: R.nap.length + 1 });
+  b.disabled = !t || R.nap.length >= 3;
+  $('#r_napList').innerHTML = hotovo ? `<li>${TN.hotovo}</li>` : R.nap.map((x, i) => `<li><b class="st">${TN.stupen[i]}</b> ${x}</li>`).join('');
+  $('#r_napPocet').innerHTML = vypln(TN.pouzite, { n: R.napCelkom });
+  ariaVahy(R, rov);
+}
+function rDokonciAnim() { if (dokonciAnimVahy(R)) rTexty(); }
+function rUrob(typ) {
+  rDokonciAnim();
+  const op = { typ, n: R.n, x: R.operandX }, pred = rAktualna();
+  let po;
+  R.chyba = '';
+  try { po = aplikuj(pred, op, 'obe'); }              // v tejto karte vždy na oboch stranách
+  catch (e) { R.chyba = T.velke; rTexty(); return; }
+  R.kroky.push({ pred, op, po, nap: R.nap.length });
+  R.nap = []; R.skuska = false; R.odhalene = null;
+  R.anim = vytvorAnim(pred, po, op, 'obe', null);
+  rTexty();
+}
+function rSpat() {
+  rDokonciAnim();
+  if (!R.kroky.length) return;
+  R.kroky.pop(); R.chyba = ''; R.nap = []; R.skuska = false; R.odhalene = null;
+  R.zobr = rAktualna(); R.prekreslit = true; rTexty();
+}
+function rNastav(q) {
+  R.anim = null; R.start = q.r; R.x = q.x; R.kroky = []; R.zobr = q.r;
+  R.odhalene = null; R.skuska = false; R.nap = []; R.napCelkom = 0; R.chyba = '';
+  R.min = minimumKrokov(q.r); R.prekreslit = true; rTexty();
+}
+function rNapoveda() {
+  rDokonciAnim();
+  const t = napovedaTexty(rAktualna());
+  if (!t || R.nap.length >= 3) return;
+  R.nap.push(t[R.nap.length]); R.napCelkom++; rTexty();
+}
+function initRies() {
+  R.svg = $('#r_svg');
+  segment($('#r_urov'), Object.entries(TR.urovne), R.uroven, k => { R.uroven = +k; rNastav(generujRovnicu(R.uroven)); });
+  $('#r_nova').onclick = () => rNastav(generujRovnicu(R.uroven));
+  pripojOvladanie('r', R, rUrob);
+  $('#r_spat').textContent = U.spat; $('#r_spat').onclick = rSpat;
+  $('#r_reset').textContent = U.reset; $('#r_reset').onclick = () => rNastav({ r: R.start, x: R.x });
+  $('#r_skuska').textContent = TR.skuskaBtn;
+  $('#r_skuska').onclick = () => { if (R.anim || !tvarVyriesena(rAktualna())) return; R.skuska = true; R.odhalene = String(R.x); R.prekreslit = true; rTexty(); };   // vrecko sa odkryje
+  $('#r_napBtn').onclick = rNapoveda;
+  rNastav(generujRovnicu(R.uroven));
+}
+function tikRies(dt) {
+  let zmena = R.prekreslit;
+  if (!R.pauza && posunVahu(R, dt * R.rychlost, rDokonciAnim)) zmena = true;
+  if (zmena) { vykresli(R); R.prekreslit = false; }
+}
+
+/* =====================================================================
+   KARTA „PREČO TO FUNGUJE“ – štyri mini animácie dookola + pravidlo „s každým členom“
+   ===================================================================== */
+const PM = [
+  { r: rovnica(2, 3, 0, 11), x: 4, op: { typ: '+', n: 2, x: false } },
+  { r: rovnica(2, 3, 0, 11), x: 4, op: { typ: '-', n: 3, x: false } },
+  { r: rovnica(1, 2, 0, 5), x: 3, op: { typ: '*', n: 3, x: false } },
+  { r: rovnica(4, 6, 0, 22), x: 4, op: { typ: '/', n: 2, x: false } }
+];
+const P = { pauza: false, mini: [], prav: null };
+const novaVaha = (svg, r, x) => ({ svg, zobr: r, x, uhol: 0, anim: null, odhalene: null, prekreslit: true });
+const PRAV0 = rovnica(2, 3, 0, 11), PRAV_OK = rovnica(4, 6, 0, 22), PRAV_ZLE = rovnica(4, 3, 0, 22);
+
+function pravNastav(stav) {   // 'start' | 'spravne' | 'chyba'
+  const V = P.prav, op = { typ: '*', n: 2, x: false };
+  dokonciAnimVahy(V); V.zobr = PRAV0;
+  let ciel = PRAV0, typ = '', html = TP.start;
+  if (stav === 'spravne') {
+    V.anim = vytvorAnim(PRAV0, PRAV_OK, op, 'obe', null);
+    ciel = PRAV_OK; typ = 'ok'; html = TP.spravne;
+  } else if (stav === 'chyba') {
+    // pravá strana sa znásobí celá, vľavo len vrecká – kocky ostanú
+    const fP = fazyStrany(PRAV0.P, PRAV_ZLE.P, op, null), oA = kresliObsah(PRAV0.L, null), oB = kresliObsah(PRAV_ZLE.L, null);
+    V.anim = { po: PRAV_ZLE, i: 0, t: 0, fazy: fP.map((f, i) => ({ dur: f.dur, P: f.f, L: i === 0 ? (t => skup(oA, 0, 0, 1, 1 - t) + skup(oB, 0, 0, 1, t)) : () => oB })) };
+    ciel = PRAV_ZLE; typ = 'zle';
+    html = vypln(TP.chyba, { l: zText(hmotnost(PRAV_ZLE.L, 4)), p: zText(hmotnost(PRAV_ZLE.P, 4)) });
+  }
+  V.prekreslit = true;
+  $('#p_pravRov').innerHTML = rovnicaHTML(ciel, 4);
+  const hl = $('#p_pravHl'); hl.className = 'hlaska ' + typ; hl.innerHTML = html;
+  ariaVahy(V, ciel);
+}
+function initPreco() {
+  $('#p_mini').innerHTML = PM.map((m, i) => {
+    m.po = aplikuj(m.r, m.op, 'obe');
+    return `<div class="card"><h3>${TP.mini[i].nazov}</h3>
+      <div class="stage"><svg id="p_svg${i}" viewBox="0 120 560 420" role="img" aria-label=""></svg></div>
+      <div class="rovnica"><span class="nz">${rovnicaHTML(m.r, m.x)} <span class="cX">| ${opText(m.op)}</span></span> → <span class="nz">${rovnicaHTML(m.po, m.x)}</span></div>
+      <p>${TP.mini[i].veta}</p></div>`;
+  }).join('');
+  P.mini = PM.map((m, i) => {
+    const V = novaVaha($('#p_svg' + i), m.r, m.x); ariaVahy(V, m.r);
+    return { ...m, V, faza: 'cakaj', cas: -0.35 * i };   // mierne posunuté, aby nebežali naraz
+  });
+  P.prav = novaVaha($('#p_pravSvg'), PRAV0, 4);
+  const pz = () => { $('#p_pauza').textContent = P.pauza ? TP.play : TP.pauza; $('#p_pauza').classList.toggle('on', P.pauza); };
+  $('#p_pauza').onclick = () => { P.pauza = !P.pauza; pz(); }; pz();
+  $('#p_spravne').onclick = () => pravNastav('spravne');
+  $('#p_chyba').onclick = () => pravNastav('chyba');
+  $('#p_spat').onclick = () => pravNastav('start');
+  pravNastav('start');
+}
+function tikPreco(dt) {
+  const k = P.pauza ? 0 : dt;
+  P.mini.forEach(m => {
+    if (k) {
+      m.cas += k;
+      if (m.faza === 'cakaj' && m.cas > 1.3) { m.faza = 'anim'; m.V.anim = vytvorAnim(m.r, m.po, m.op, 'obe', null); }
+      else if (m.faza === 'hotovo' && m.cas > 2.6) { m.faza = 'cakaj'; m.cas = 0; m.V.zobr = m.r; m.V.prekreslit = true; }
+    }
+    let zmena = m.V.prekreslit;
+    if (k && posunVahu(m.V, k, () => { dokonciAnimVahy(m.V); m.faza = 'hotovo'; m.cas = 0; })) zmena = true;
+    if (zmena) { vykresli(m.V); m.V.prekreslit = false; }
+  });
+  const V = P.prav;   // pravidlo ovláda žiak tlačidlami, pauza naň nepôsobí
+  let zmena = V.prekreslit;
+  if (posunVahu(V, dt)) zmena = true;
+  if (zmena) { vykresli(V); V.prekreslit = false; }
+}
+/* =====================================================================
+   SPOLOČNÉ PRE VÝNIMKY, OMYLY A KVÍZ
+   ===================================================================== */
+const TC = TEXTY.chyby;
+// „x = 4“, „každé číslo“, „žiadne číslo“
+const riesText = r => { const t = typRieseni(r); return vypln(TEXTY.riesenieTyp[t], { x: t === 'jedno' ? zText(riesenie(r)) : '' }); };
+const ekvText = (a, b) => vypln(ekvivalentne(a, b) ? TEXTY.ekvAno : TEXTY.ekvNie, { a: riesText(a), b: riesText(b) });
+// rovnica vždy so znakom „=“ (v kvíze nesmie prezradiť, či platí)
+const rovRovnaSa = r => `${stranaHTML(r.L)}<span class="rel">=</span>${stranaHTML(r.P)}`;
+function popisChyby(kr) {
+  const op = opText(kr.op);
+  if (kr.presunZle) return vypln(TC.znamienko, { op });
+  if (kr.lenClen) return vypln(TC.jedenClen, { op, s: TC.strana[kr.strana], c: TC.clen[kr.lenClen] });
+  return vypln(TC.jednaStrana, { op, s: TC.strana[kr.kde] });
+}
+// animácia z fáz ľavej a pravej strany (null = strana sa nemení); kratší zoznam fáz sa doplní statickým koncom
+function animZoStran(pred, po, fL, fP) {
+  const n = Math.max(fL ? fL.length : 0, fP ? fP.length : 0) || 1;
+  const st = { L: [kresliObsah(pred.L, null), kresliObsah(po.L, null)], P: [kresliObsah(pred.P, null), kresliObsah(po.P, null)] };
+  const fn = (f, i, k) => f ? (f[i] ? f[i].f : () => st[k][1]) : () => st[k][0];
+  const fazy = [];
+  for (let i = 0; i < n; i++) fazy.push({ dur: Math.max(fL && fL[i] ? fL[i].dur : 0, fP && fP[i] ? fP[i].dur : 0, .3), L: fn(fL, i, 'L'), P: fn(fP, i, 'P') });
+  return { po, i: 0, t: 0, fazy };
+}
+const prelinanie = (A, B) => { const oA = kresliObsah(A, null), oB = kresliObsah(B, null); return [{ dur: .8, f: t => skup(oA, 0, 0, 1, 1 - t) + skup(oB, 0, 0, 1, t) }]; };
+// animácia jedného (aj chybného) kroku
+function animKroku(pred, kr) {
+  const po = aplikujKrok(pred, kr);
+  if (kr.presunZle) { const S = kr.strana, O = DRUHA[S], f = {}; f[S] = fazyStrany(pred[S], po[S], kr.op, null); f[O] = fazyStrany(pred[O], po[O], { ...kr.op, typ: OPACNA[kr.op.typ] }, null); return animZoStran(pred, po, f.L, f.P); }
+  if (kr.lenClen) { const S = kr.strana, O = DRUHA[S], f = {}; f[S] = prelinanie(pred[S], po[S]); f[O] = fazyStrany(pred[O], po[O], kr.op, null); return animZoStran(pred, po, f.L, f.P); }
+  return vytvorAnim(pred, po, kr.op, kr.kde || 'obe', null);
+}
+function tikVaha(V, dt, poKonci) { let z = V.prekreslit; if (posunVahu(V, dt, poKonci)) z = true; if (z) { vykresli(V); V.prekreslit = false; } }
+
+/* =====================================================================
+   KARTA „POZOR, VÝNIMKY“ – × 0 a ÷ 0
+   ===================================================================== */
+const TY = TEXTY.vyn, Y0 = rovnica(2, 3, 0, 11);
+const Y = { V: null, stav: 'start', delNula: false };
+function yTexty() {
+  const V = Y.V, x = V.x, r = V.zobr;
+  $('#y_xVal').textContent = x;
+  $('#y_rov').innerHTML = rovnicaHTML(r, x);
+  $('#y_ries').innerHTML = vypln(TY.riesenia, { a: riesText(Y0), b: riesText(r) });
+  let typ, html;
+  if (V.anim) { typ = ''; html = '&nbsp;'; }
+  else if (Y.delNula) { typ = 'zle'; html = TY.delNula; }
+  else if (Y.stav === 'nula') { typ = 'info'; html = vypln(TY.nula, { x }); }
+  else {
+    const ok = vRovnovahe(r, x); typ = ok ? 'ok' : 'zle';
+    html = vypln(TY.start, { x, l: zText(hmotnost(r.L, x)), p: zText(hmotnost(r.P, x)), s: ok ? TY.startOk : TY.startZle });
+  }
+  const hl = $('#y_hl'); hl.className = 'hlaska ' + typ; hl.innerHTML = html;
+  ariaVahy(V, r);
+}
+function yKoniec() { dokonciAnimVahy(Y.V); Y.stav = 'nula'; yTexty(); }
+function initVyn() {
+  Y.V = novaVaha($('#y_svg'), Y0, 4); Y.V.odhalene = '4';   // visačka ukazuje skúšané x
+  $('#y_nula').onclick = () => {
+    Y.delNula = false;
+    if (Y.V.anim || Y.stav === 'nula') { yTexty(); return; }
+    Y.V.anim = vytvorAnim(Y0, aplikuj(Y0, { typ: '*', n: 0, x: false }, 'obe'), { typ: '*', n: 0, x: false }, 'obe', Y.V.odhalene);
+    yTexty();
+  };
+  $('#y_delNula').onclick = () => {
+    // ÷ 0 sa nevykoná – logika by hodila chybu DELENIE_NULOU; váha ostane, ako je
+    try { aplikuj(Y.V.zobr, { typ: '/', n: 0, x: false }, 'obe'); } catch (e) { Y.delNula = true; }
+    yTexty();
+  };
+  $('#y_spat').onclick = () => { Y.V.anim = null; Y.V.zobr = Y0; Y.stav = 'start'; Y.delNula = false; Y.V.prekreslit = true; yTexty(); };
+  $('#y_x').oninput = e => { Y.V.x = +e.target.value; Y.V.odhalene = String(Y.V.x); Y.V.prekreslit = true; Y.delNula = false; yTexty(); };
+  yTexty();
+}
+function tikVyn(dt) { tikVaha(Y.V, dt, yKoniec); }
+
+/* =====================================================================
+   KARTA „ČASTÉ OMYLY“ – každý omyl: chyba a oprava na vlastnej váhe
+   ===================================================================== */
+const TO = TEXTY.omyly;
+const op_ = (typ, n) => ({ typ, n, x: false });
+const OM = [
+  { r: rovnica(2, 3, 0, 11), x: 4, zle: [{ op: op_('-', 3), kde: 'L' }], dobre: [{ op: op_('-', 3), kde: 'obe' }] },
+  { r: rovnica(2, 3, 0, 11), x: 4, zle: [{ op: op_('*', 2), lenClen: 'k', strana: 'L' }], dobre: [{ op: op_('*', 2), kde: 'obe' }] },
+  { r: rovnica(2, 4, 0, 10), x: 3, zle: [{ op: op_('/', 2), lenClen: 'k', strana: 'L' }], dobre: [{ op: op_('/', 2), kde: 'obe' }] },
+  { r: rovnica(2, 3, 0, 11), x: 4, zle: [{ op: op_('-', 3), presunZle: true, strana: 'L' }], dobre: [{ op: op_('-', 3), kde: 'obe' }] },
+  { r: rovnica(3, 2, 0, 11), x: 3, zle: [{ op: op_('/', 2), kde: 'obe' }], dobre: [{ op: op_('-', 2), kde: 'obe' }, { op: op_('/', 3), kde: 'obe' }] }
+];
+const O = { pol: [] };
+function oTexty(m) {
+  const t = TO.polozky[m.i];
+  $('.rovnica', m.el).innerHTML = m.riadky.map((r, j) => `<span class="nz">${j ? `<span class="cX">| ${opText(m.kroky[j - 1].op)}</span> → ` : ''}${rovnicaHTML(r, m.x)}</span>`).join(' ');
+  const hl = $('.hlaska', m.el);
+  if (m.hotovo) {
+    hl.className = 'hlaska ' + (m.druh === 'dobre' ? 'ok' : t.zleInfo ? 'info' : 'zle');
+    hl.innerHTML = (m.druh === 'dobre' ? t.dobre : t.zle) + '<br>' + ekvText(m.r, m.riadky[m.riadky.length - 1]);
+  } else { hl.className = 'hlaska'; hl.innerHTML = '&nbsp;'; }
+  ariaVahy(m.V, m.riadky[m.riadky.length - 1]);
+}
+function oNaZaciatok(m) { m.V.anim = null; m.V.zobr = m.r; m.riadky = [m.r]; m.kroky = []; m.fronta = []; m.hotovo = false; m.medzi = 0; m.V.prekreslit = true; }
+function oSpusti(m, druh) { oNaZaciatok(m); m.druh = druh; m.fronta = m[druh].slice(); oDalsi(m); oTexty(m); }
+function oDalsi(m) {
+  if (!m.fronta.length) { m.hotovo = true; oTexty(m); return; }
+  m.akt = m.fronta.shift();
+  m.V.anim = animKroku(m.V.zobr, m.akt);
+}
+function oKoniecKroku(m) {
+  dokonciAnimVahy(m.V);
+  m.riadky.push(m.V.zobr); m.kroky.push(m.akt);
+  oTexty(m);
+  m.medzi = .5;                      // krátka pauza pred ďalším krokom
+}
+function initOmyly() {
+  $('#o_zoznam').innerHTML = TO.polozky.map((t, i) => `<div class="card omyl" id="o_${i}"><h3>${t.nadpis}</h3><p>${t.popis}</p>
+    <div class="stage"><svg viewBox="0 120 560 420" role="img" aria-label=""></svg></div>
+    <div class="rovnica"></div>
+    <div class="tlac"><button class="bZle">${t.btnZle}</button><button class="bDobre primary">${t.btnDobre}</button><button class="bReset" aria-label="Späť na začiatok">${TO.reset}</button></div>
+    <div class="hlaska" aria-live="polite"></div></div>`).join('');
+  O.pol = OM.map((d, i) => {
+    const el = $('#o_' + i), m = { ...d, i, el, V: novaVaha($('svg', el), d.r, d.x) };
+    oNaZaciatok(m);
+    $('.bZle', el).onclick = () => oSpusti(m, 'zle');
+    $('.bDobre', el).onclick = () => oSpusti(m, 'dobre');
+    $('.bReset', el).onclick = () => { oNaZaciatok(m); oTexty(m); };
+    oTexty(m);
+    return m;
+  });
+}
+function tikOmyly(dt) {
+  O.pol.forEach(m => {
+    if (m.medzi > 0) { m.medzi -= dt; if (m.medzi <= 0) oDalsi(m); }
+    tikVaha(m.V, dt, () => oKoniecKroku(m));
+  });
+}
+
+/* =====================================================================
+   KARTA „KVÍZ“ – otázky z generujOtazku(), odpovede počíta program
+   ===================================================================== */
+const TK = TEXTY.kviz;
+const KV = { u: 1, otazky: [] };
+function kresliViz(el, r, x, odh) {   // malá statická váha v spätnej väzbe
+  el.innerHTML = '<div class="viz"><svg viewBox="0 120 560 420" role="img" aria-label=""></svg></div>';
+  const V = novaVaha($('svg', el), r, x); V.odhalene = odh || null; V.uhol = cielovyUhol(V);
+  vykresli(V); ariaVahy(V, r);
+}
+function vysvetlenie(q, tvoj) {
+  if (q.typ === 1) {
+    const po = aplikuj(q.r, q.spravna, 'obe');
+    let h = vypln(TK.v1, { op: opText(q.spravna, OP_TLAC), ciel: napovedaTexty(q.r)[0], po: rovnicaHTML(po, q.x) });
+    if (tvoj && klucOp(tvoj) !== klucOp(q.spravna)) h += vypln(TK.v1zle, { tvoj: opText(tvoj, OP_TLAC) });
+    return { h, viz: [po, q.x, null] };
+  }
+  if (q.typ === 2) {
+    const p = postup(q.r);
+    const post = rovnicaText(q.r) + p.kroky.map(k => ` | ${opText(k.op)} → ${rovnicaText(k.po)}`).join('');
+    return { h: vypln(TK.v2, { postup: post, l: skuskaText(q.r.L, q.x), p: skuskaText(q.r.P, q.x) }), viz: [q.r, q.x, q.x.d === 1 ? zText(q.x) : null] };
+  }
+  if (q.typ === 3) {
+    const h = q.spravna ? vypln(TK.v3ok, { a: riesText(q.r) }) : vypln(TK.v3zle, { chyba: popisChyby(q.kr), a: riesText(q.r), b: riesText(q.po) });
+    return { h, viz: [q.po, q.x, null] };
+  }
+  const k = q.spravna;
+  return { h: vypln(TK.v4, { k, chyba: popisChyby(q.kroky[k - 1]), a: riesText(q.riadky[k - 1]), b: riesText(q.riadky[k]) }), viz: [q.riadky[k], q.x, null] };
+}
+function vykresliOtazku(q, el, i) {
+  let telo = '', odp = '';
+  if (q.typ === 1) {
+    telo = `<div class="rovnica">${rovRovnaSa(q.r)}</div>`;
+    odp = `<div class="moznosti">${q.moznosti.map((o, j) => `<button data-j="${j}">${opText(o, OP_TLAC)}</button>`).join('')}</div>`;
+  } else if (q.typ === 2) {
+    telo = `<div class="rovnica">${rovRovnaSa(q.r)}</div>`;
+    odp = `<div class="vstup"><span>x =</span><input class="num" type="text" autocomplete="off" aria-label="x ="><button class="primary bOver">${TK.over}</button></div><p class="mini chyba"></p>`;
+  } else if (q.typ === 3) {
+    telo = `<div class="rovnica"><span class="nz">${rovRovnaSa(q.r)} <span class="cX">| ${opText(q.op)}</span></span> → <span class="nz">${rovRovnaSa(q.po)}</span></div>`;
+    odp = `<div class="moznosti"><button data-j="1">${TK.ano}</button><button data-j="0">${TK.nie}</button></div>`;
+  } else {
+    telo = `<table class="postup"><tbody>${q.riadky.map((r, j) => `<tr><td class="r">${rovRovnaSa(r)}</td><td class="o">${j < q.kroky.length ? `| ${opText(q.kroky[j].op)} <span class="nap">(${vypln(TK.krok, { i: j + 1 })})</span>` : ''}</td></tr>`).join('')}</tbody></table>`;
+    odp = `<div class="moznosti">${q.kroky.map((_, j) => `<button data-j="${j + 1}">${vypln(TK.krok, { i: j + 1 })}</button>`).join('')}</div>`;
+  }
+  el.innerHTML = `<div class="q"><span class="por">${i}.</span> ${TK['t' + q.typ]} <span class="typ">${TK.typy[q.typ]}</span></div>${telo}<div class="odp">${odp}</div><div class="fb" aria-live="polite"></div><div class="vizBox"></div>`;
+  q.el = el;
+  if (q.typ === 2) {
+    const inp = $('input', el), over = () => {
+      const v = odpovedSedi(q.spravna, inp.value);
+      if (v === null) { $('.chyba', el).textContent = TK.vyplnCislo; return; }
+      $('.chyba', el).textContent = ''; odpovedz(q, v, null, null);
+    };
+    $('.bOver', el).onclick = over; inp.onkeydown = e => { if (e.key === 'Enter') over(); };
+  } else {
+    $$('.moznosti button', el).forEach(b => {
+      b.onclick = () => {
+        const j = +b.dataset.j;
+        if (q.typ === 1) odpovedz(q, klucOp(q.moznosti[j]) === klucOp(q.spravna), b, q.moznosti[j]);
+        else if (q.typ === 3) odpovedz(q, (j === 1) === q.spravna, b, null);
+        else odpovedz(q, j === q.spravna, b, null);
+      };
+    });
+  }
+}
+function odpovedz(q, ok, btn, tvoj) {
+  if (q.hotovo) return;
+  q.hotovo = true; q.ok = ok;
+  $$('.odp button, .odp input', q.el).forEach(z => { z.disabled = true; });
+  if (btn) {
+    btn.classList.add(ok ? 'ok' : 'zle');
+    $$('.moznosti button', q.el).forEach(b => {   // vyznač správnu možnosť
+      const j = +b.dataset.j;
+      const je = q.typ === 1 ? klucOp(q.moznosti[j]) === klucOp(q.spravna) : q.typ === 3 ? (j === 1) === q.spravna : j === q.spravna;
+      if (je) b.classList.add('ok');
+    });
+  }
+  const v = vysvetlenie(q, tvoj), fb = $('.fb', q.el);
+  fb.className = 'fb ' + (ok ? 'ok' : 'zle');
+  const spr = q.typ === 2 ? ` ${TK.spravne} <b>x = ${q.spravna.n < 0 ? '−' : ''}${zHTML(q.spravna)}</b>.` : '';
+  fb.innerHTML = `<b>${ok ? TK.dobre : TK.zle}</b>${ok ? '' : spr} ${v.h}`;
+  kresliViz($('.vizBox', q.el), ...v.viz);
+  if (KV.otazky.every(z => z.hotovo)) {
+    const b = KV.otazky.filter(z => z.ok).length, n = KV.otazky.length;
+    $('#kv_vysl').textContent = vypln(TK.vysl, { b, n }) + (b >= n - 1 ? TK.vyslDobre : TK.vyslSkus);
+  }
+}
+function novyKviz() {
+  KV.otazky = zamiesaj([1, 2, 3, 4, 1, 2, 3, 4, 2, 3]).map(t => generujOtazku(t, KV.u));
+  $('#kv_vysl').textContent = '';
+  const box = $('#kv_otazky'); box.innerHTML = '';
+  KV.otazky.forEach((q, i) => { const d = document.createElement('div'); d.className = 'otazka'; box.appendChild(d); vykresliOtazku(q, d, i + 1); });
+}
+function initKviz() {
+  segment($('#kv_uroven'), Object.entries(TK.urovne), KV.u, k => { KV.u = +k; novyKviz(); });
+  $('#kv_novy').onclick = novyKviz;
+  novyKviz();
+}
+
+/* =====================================================================
+   ŠTART
+   ===================================================================== */
+const TIKY = { vahy: tikVahy, ries: tikRies, preco: tikPreco, vyn: tikVyn, omyly: tikOmyly };   // kvíz má len statické váhy
+let AKT = 'vahy';
+function ukazKartu(k) {
+  AKT = k;
+  $$('[data-karta]').forEach(s => { s.hidden = s.id !== k; });
+  $$('#karty button').forEach(b => { const on = b.dataset.k === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  if (k === 'vahy') S.prekreslit = true;
+  if (k === 'ries') R.prekreslit = true;
+  if (k === 'preco') { P.mini.forEach(m => { m.V.prekreslit = true; }); P.prav.prekreslit = true; }
+  if (k === 'vyn') Y.V.prekreslit = true;
+  if (k === 'omyly') O.pol.forEach(m => { m.V.prekreslit = true; });
+  try { history.replaceState(null, '', '#' + k); } catch (e) { /* nič */ }
+}
+function init() {
+  $$('[data-t]').forEach(el => { const v = cesta(TEXTY, el.dataset.t); if (typeof v === 'string') el.innerHTML = v; });
+  const nav = $('#karty');
+  for (const k in TEXTY.karty) {
+    const b = document.createElement('button'); b.dataset.k = k; b.setAttribute('role', 'tab');
+    b.textContent = TEXTY.karty[k]; b.onclick = () => ukazKartu(k); nav.appendChild(b);
+  }
+  initVahy(); initRies(); initPreco(); initVyn(); initOmyly(); initKviz();
+  const h = (location.hash || '').slice(1);
+  ukazKartu(TEXTY.karty[h] ? h : 'vahy');
+  let posl = performance.now();
+  const snimka = now => {   // jedna slučka pre všetky animácie, časovanie podľa skutočného času
+    const dt = Math.min(.1, Math.max(0, (now - posl) / 1000)); posl = now;
+    const f = TIKY[AKT]; if (f) f(dt);
+    requestAnimationFrame(snimka);
+  };
+  requestAnimationFrame(snimka);
+}
+init();
+</script>
+<script data-goatcounter="https://jasvarc.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
