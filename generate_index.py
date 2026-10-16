@@ -8,6 +8,7 @@ Pravidlá:
 - priečinok má tvar <predmet>-<nazov>; skupina = text pred prvou pomlčkou
 - názov odkazu = <title> z index.html animácie, inak názov priečinka
 - priečinok bez pomlčky patrí do skupiny "Ostatné"
+- vzhľad (farby, panely, typografia) zodpovedá samotným animáciám
 """
 import html
 import re
@@ -17,35 +18,47 @@ from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parent
 PAGE_TITLE = "Pachove animácie"
+PAGE_SUB = "Interaktívne učebné animácie – vyber si predmet a téma sa otvorí na celú obrazovku."
 OTHER_LABEL = "Ostatné"
+DEFAULT_ACCENT = "#f3b453"
 
-# Voliteľné: pekné zobrazované názvy predmetov (kľúč = prefix priečinka, malými písmenami).
-# Čo tu nie je, zobrazí sa ako prefix s veľkým prvým písmenom.
-SUBJECT_LABELS = {
-    "biologia": "Biológia",
-    "matematika": "Matematika",
-    "fyzika": "Fyzika",
-    "chemia": "Chémia",
-    "geografia": "Geografia",
-    "informatika": "Informatika",
-    "vlastiveda": "Vlastiveda",
-    "prirodoveda": "Prírodoveda",
-    "dejepis": "Dejepis",
+# kľúč = prefix priečinka (malými písmenami) -> (zobrazovaný názov, akcentová farba)
+# Farby sú z palety animácií. Čo tu nie je, dostane prefix s veľkým prvým písmenom a zlatý akcent.
+SUBJECTS = {
+    "biologia":    ("Biológia",    "#7fdc8f"),
+    "geografia":   ("Geografia",   "#6fb4ff"),
+    "matematika":  ("Matematika",  "#f3b453"),
+    "informatika": ("Informatika", "#b9a3ff"),
+    "fyzika":      ("Fyzika",      "#ff7a6b"),
+    "chemia":      ("Chémia",      "#5fd6c8"),
+    "dejepis":     ("Dejepis",     "#e0a36a"),
+    "vlastiveda":  ("Vlastiveda",  "#9ad66a"),
+    "prirodoveda": ("Prírodoveda", "#7fdc8f"),
 }
 
 
 def subject_of(dirname: str):
-    """Vráti (kľúč skupiny, zobrazovaný názov)."""
+    """Vráti (kľúč skupiny, zobrazovaný názov, akcentová farba)."""
     if "-" not in dirname:
-        return "", OTHER_LABEL
+        return "", OTHER_LABEL, "#8d98b3"
     key = dirname.split("-", 1)[0].strip().lower()
     if not key:
-        return "", OTHER_LABEL
-    return key, SUBJECT_LABELS.get(key, key[:1].upper() + key[1:])
+        return "", OTHER_LABEL, "#8d98b3"
+    if key in SUBJECTS:
+        return (key, *SUBJECTS[key])
+    return key, key[:1].upper() + key[1:], DEFAULT_ACCENT
+
+
+def plural(n: int, one: str, few: str, many: str) -> str:
+    if n == 1:
+        return f"{n} {one}"
+    if 2 <= n <= 4:
+        return f"{n} {few}"
+    return f"{n} {many}"
 
 
 groups = defaultdict(list)  # kľúč -> [(dirname, title)]
-labels = {}
+meta = {}                   # kľúč -> (label, accent)
 
 for d in sorted(ROOT.iterdir(), key=lambda p: p.name.lower()):
     if not d.is_dir() or d.name.startswith((".", "_")):
@@ -56,56 +69,99 @@ for d in sorted(ROOT.iterdir(), key=lambda p: p.name.lower()):
     text = page.read_text(encoding="utf-8", errors="ignore")
     m = re.search(r"<title>(.*?)</title>", text, re.I | re.S)
     title = " ".join(m.group(1).split()) if m else ""
-    key, label = subject_of(d.name)
-    labels[key] = label
+    key, label, accent = subject_of(d.name)
+    meta[key] = (label, accent)
     groups[key].append((d.name, title or d.name))
 
 total = sum(len(v) for v in groups.values())
 
-# Skupiny abecedne podľa zobrazovaného názvu, "Ostatné" vždy na konci.
-ordered_keys = sorted(groups, key=lambda k: (k == "", labels[k].lower()))
+# Skupiny abecedne podľa zobrazovaného názvu, "Ostatné" vždy na konci;
+# animácie v skupine abecedne podľa zobrazeného názvu.
+ordered_keys = sorted(groups, key=lambda k: (k == "", meta[k][0].lower()))
 
 sections = []
 for key in ordered_keys:
+    label, accent = meta[key]
+    items = sorted(groups[key], key=lambda it: it[1].lower())
     cards = "\n".join(
-        f'        <li><a href="{quote(name)}/">{html.escape(title)}'
-        f'<span>{html.escape(name)}/</span></a></li>'
-        for name, title in groups[key]
+        f'        <li><a class="card" href="{quote(name)}/">'
+        f'<span class="t">{html.escape(title)}</span><span class="go" aria-hidden="true">→</span></a></li>'
+        for name, title in items
     )
     sections.append(
-        f'    <section>\n'
-        f'      <h2>{html.escape(labels[key])} <small>({len(groups[key])})</small></h2>\n'
+        f'    <section style="--acc:{accent}">\n'
+        f'      <h2><i></i>{html.escape(label)}<small>{len(items)}</small></h2>\n'
         f'      <ul>\n{cards}\n      </ul>\n'
         f'    </section>'
     )
 
-body = "\n".join(sections) if sections else '    <p class="empty">Zatiaľ tu nie sú žiadne animácie.</p>'
+if sections:
+    body = "\n".join(sections)
+else:
+    body = '    <p class="empty">Zatiaľ tu nie sú žiadne animácie.</p>'
+
+summary = (
+    f"{plural(total, 'animácia', 'animácie', 'animácií')} · "
+    f"{plural(len(groups), 'predmet', 'predmety', 'predmetov')}"
+)
+
+CSS = """
+:root{
+  --bg:#04060c;--panel:rgba(12,16,28,.86);--line:rgba(140,160,215,.22);
+  --text:#e2e8f5;--muted:#a3adc6;--gold:#f3b453;--gold2:#ffd88a;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;color:var(--text);background:var(--bg);
+  background-image:radial-gradient(ellipse at 50% -10%,#14204a 0%,#070b18 50%,#04060c 100%);background-attachment:fixed;
+  font:17px/1.5 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:16px 16px 40px}
+.card{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 12px 40px rgba(0,0,0,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+header.top{padding:18px 20px;margin:8px 0 28px;display:block}
+h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+.sub{color:var(--muted);margin:6px 0 0}
+.sum{color:var(--muted);font-size:14px;margin:10px 0 0;font-variant-numeric:tabular-nums}
+section{margin-bottom:30px}
+h2{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:16px;font-weight:650;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h2 i{width:10px;height:10px;border-radius:50%;background:var(--acc);box-shadow:0 0 12px var(--acc)}
+h2 small{font-size:13px;letter-spacing:0;color:var(--muted);border:1px solid var(--line);
+  border-radius:999px;padding:0 9px;font-weight:500}
+ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+li a{padding:16px 18px;min-height:64px;text-decoration:none;color:var(--text);font-weight:600;
+  transition:background .15s,border-color .15s,transform .15s}
+li a:hover,li a:focus-visible{background:rgba(255,255,255,.07);border-color:var(--acc);transform:translateY(-2px)}
+li a:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
+.go{color:var(--acc);font-size:20px;line-height:1;transition:transform .15s}
+li a:hover .go{transform:translateX(4px)}
+.empty{color:var(--muted)}
+@media (max-width:520px){ul{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){li a,.go{transition:none}li a:hover{transform:none}}
+"""
 
 doc = f"""<!DOCTYPE html>
 <html lang="sk">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#04060c">
   <title>{html.escape(PAGE_TITLE)}</title>
-  <style>
-    :root {{ color-scheme: light dark; }}
-    body {{ font-family: system-ui, sans-serif; max-width: 720px; margin: 0 auto; padding: 2rem 1rem; line-height: 1.5; }}
-    h1 {{ margin-bottom: .25rem; }}
-    h2 {{ margin: 2rem 0 .75rem; padding-bottom: .25rem; border-bottom: 2px solid #8884; font-size: 1.25rem; }}
-    h2 small {{ font-weight: 400; opacity: .6; }}
-    p.sub {{ margin-top: 0; opacity: .7; }}
-    ul {{ list-style: none; padding: 0; margin: 0; display: grid; gap: .75rem; }}
-    li a {{ display: block; padding: 1rem 1.25rem; border: 1px solid #8884; border-radius: 10px;
-            text-decoration: none; color: inherit; font-weight: 600; }}
-    li a:hover {{ border-color: #4a90d9; background: #4a90d91a; }}
-    li a span {{ display: block; font-weight: 400; font-size: .85rem; opacity: .6; }}
-    .empty {{ opacity: .6; }}
-  </style>
+  <link rel="icon" href="data:,">
+  <style>{CSS}</style>
 </head>
 <body>
-  <h1>{html.escape(PAGE_TITLE)}</h1>
-  <p class="sub">Počet animácií: {total}</p>
+  <div class="wrap">
+    <header class="top card">
+      <div>
+        <h1>{html.escape(PAGE_TITLE)}</h1>
+        <p class="sub">{html.escape(PAGE_SUB)}</p>
+        <p class="sum">{summary}</p>
+      </div>
+    </header>
 {body}
+  </div>
 </body>
 </html>
 """
