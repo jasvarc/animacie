@@ -1670,7 +1670,8 @@ function ukazKartu(k) {
   const pridaj = (j, txt) => { const b = document.createElement('button'); b.textContent = sub(txt, { k: PORADIE_KARIET[j].nazov }); b.onclick = () => { ukazKartu(PORADIE_KARIET[j].k); window.scrollTo(0, 0); }; nav.appendChild(b); };
   if (i > 0) pridaj(i - 1, T.menu.predosla); else nav.appendChild(document.createElement('span'));
   if (i < PORADIE_KARIET.length - 1) pridaj(i + 1, T.menu.dalsia);
-  try { history.replaceState(null, '', '#' + k); } catch (e) { /* napr. otvorené zo súboru */ }
+  // adresa #/karta – bez lomky by prehliadač skočil na sekciu s rovnakým id a hlavička by zmizla z obrazovky
+  try { history.replaceState(null, '', '#/' + k); } catch (e) { /* napr. otvorené zo súboru */ }
   PRI_ZOBRAZENI.forEach(f => f());
 }
 
@@ -3409,7 +3410,10 @@ function init() {
   initKalkulacka(); initOmyly(); initKviz();   // časť 4
   let caka = 0;
   window.addEventListener('resize', () => { cancelAnimationFrame(caka); caka = requestAnimationFrame(() => PRI_ZOBRAZENI.forEach(f => f())); });
-  const h = (location.hash || '').slice(1);
+  const h = (location.hash || '').slice(1).replace(/^\//, '');   // aj staršie adresy #karta
+  // stránka sa vždy otvorí hore (prehliadač inak obnoví posun alebo skočí na kotvu)
+  try { history.scrollRestoration = 'manual'; } catch (e) { /* staršie prehliadače */ }
+  window.addEventListener('load', () => window.scrollTo(0, 0));
   ukazKartu(PORADIE_KARIET.some(x => x.k === h) ? h : PORADIE_KARIET[0].k);
   if (/[?&]test\b/.test(location.search)) spustiTesty();
 }
