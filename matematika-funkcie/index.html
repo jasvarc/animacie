@@ -1,0 +1,3149 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Funkcie jednej premennej</title>
+<link rel="icon" href="data:,">
+<script>
+/* =====================================================================
+   TEXTY – všetko, čo žiak číta, je na jednom mieste. Upravuj len texty v úvodzovkách.
+   HTML značky (<b>, <br>) sú povolené.
+   {x} – sem program doplní číslo alebo výraz.
+   ===================================================================== */
+const TEXTY = {
+  titul: 'Funkcie jednej premennej',
+  podtitul: 'Funkcia je <b>pravidlo</b>, ktoré každému číslu x priradí <b>práve jedno</b> číslo y. Pozri sa na ňu tromi spôsobmi: <b>vzorec</b>, <b>graf</b> a <b>tabuľka</b>.',
+  pata: 'Funkcie jednej premennej · interaktívna animácia pre 9. ročník ZŠ a 1. ročník SŠ · funguje aj offline',
+  karty: {
+    konst: 'Konštantná',
+    lin: 'Lineárna',
+    kvad: 'Kvadratická',       // 4 podkarty
+    kub: 'Kubická',            // podkarty: Kubická funkcia, Delenie intervalu
+    vyssie: 'Vyššie stupne',
+    porov: 'Porovnanie a kvíz' // podkarty: Porovnanie funkcií, Časté omyly, Kvíz
+  },
+
+  ui: {
+    desatinne: 'Desatinné miesta:',
+    plus: '+', minus: '−', plusAria: 'Priblížiť', minusAria: 'Oddialiť',
+    povodny: '⟲ Pôvodný pohľad', prisposob: '⤢ Prispôsob graf funkcii',
+    sonda: 'Sonda', sondaStred: 'Sonda do stredu', prichytit: '🧲 Prichytiť ku koreňu',
+    grafAria: 'Graf funkcie. Ťahaním posúvaš graf, kolieskom myši alebo dvoma prstami ho približuješ. Šípkami vľavo a vpravo posúvaš sondu, klávesmi + a − približuješ.',
+    ovladanie: 'Graf posúvaš ťahaním, približuješ kolieskom alebo dvoma prstami. <b>Sondu</b> (žltý jazdec na osi x) ťahaj doľava a doprava.'
+  },
+
+  /* ---------- SPOLOČNÝ GRAF ---------- */
+  graf: {
+    osX: 'x', osY: 'y',
+    sondaInfo: 'Sonda: x = <b>{x}</b> → f(x) {rov} <b>{y}</b>',
+    blizko: '📍 <b>Tu je f(x) ≈ 0</b> – sonda je blízko koreňa.',
+    naKoreni: '✔ <b>Sonda je na koreni:</b> f({x}) = 0. Graf tu pretína os x.',
+    vsade: '✔ <b>f(x) = 0 pre každé x</b> – každé x je koreň (graf je celá os x).',
+    mimo: 'Sonda je mimo zobrazenej časti grafu.',
+    vypnuta: 'Sonda je vypnutá.',
+    priblizne: '⚠ Odčítanie koreňa z grafu je vždy len <b>približné</b>. Presnú hodnotu dá <b>výpočet</b>.',
+    legenda: 'Legenda:'
+  },
+  znacky: {
+    koren: 'koreň', prY: 'priesečník s osou y', vrchol: 'vrchol', zvyr: 'bod z tabuľky', poc: 'počiatok',
+    extrem: 'lokálny extrém', inflex: 'inflexný bod', stred: 'stred intervalu s'
+  },
+  styly: { plna: 'plná čiara', ciarkovana: 'čiarkovaná', bodkovana: 'bodkovaná' },
+
+  /* ---------- TABUĽKA HODNÔT ---------- */
+  tab: {
+    nadpis: 'Tabuľka hodnôt',
+    zaciatok: 'Začiatok x', krok: 'Krok x',
+    hlX: 'x', hlY: 'y = f(x)', hlD: 'prírastok y',
+    chyba: 'Zadaj číslo (napríklad −2 alebo 0,5). Krok nesmie byť 0.',
+    klik: 'Klikni na riadok – bod sa zvýrazní na grafe. Druhým klikom ho zrušíš.'
+  },
+
+  /* ---------- KARTA: KONŠTANTNÁ FUNKCIA ---------- */
+  konst: {
+    nadpis: 'Konštantná funkcia y = q',
+    uvod: 'Najjednoduchšie pravidlo: <b>pre každé x rovnaké y</b>. Nech je x akékoľvek, výsledok je vždy to isté číslo q.',
+    slQ: 'q (výška priamky)',
+    anim: '▶ Ukáž priradenie x → y', animSkry: '✕ Skry šípky',
+    animPopis: 'každé x → y = {q}',
+    vlastnosti: 'Vlastnosti',
+    defObor: '<b>Definičný obor:</b> D(f) = ℝ (dosadiť môžeš každé reálne číslo).',
+    oborH: '<b>Obor hodnôt:</b> H(f) = {{q}} (funkcia nadobúda len jednu hodnotu).',
+    korenNie: '<b>Koreň:</b> q = {q} ≠ 0, preto rovnica {q} = 0 neplatí pre žiadne x. Funkcia <b>nemá koreň</b> – graf nepretína os x (je s ňou rovnobežný).',
+    korenVsetky: '<b>Koreň:</b> q = 0, rovnica 0 = 0 platí vždy. <b>Každé x je koreň</b> – graf je celá os x.',
+    stupen: '<b>Polynóm stupňa 0:</b> f(x) = {q} = {q} · x⁰ (x⁰ = 1). Má jediný koeficient – číslo q.',
+    nulova: '<b>Nulová funkcia</b> f(x) = 0 je zvláštny prípad: nemá žiadny nenulový koeficient, preto jej stupeň neurčujeme.',
+    funkcia: 'Čo je funkcia',
+    funkciaText: 'Funkcia f je pravidlo: dostane číslo <b>x</b> a vráti <b>jedno</b> číslo <b>y = f(x)</b>. Pravidlo môžeme zapísať <b>vzorcom</b>, nakresliť <b>grafom</b> (body [x; f(x)]) alebo vypísať <b>tabuľkou</b>. Všetky tri pohľady opisujú to isté.',
+    zhrnutie: 'Prírastok je vždy <b>0</b> – nech sa x zmení o čokoľvek, y sa nemení.'
+  },
+
+  /* ---------- KARTA: LINEÁRNA FUNKCIA ---------- */
+  lin: {
+    nadpis: 'Lineárna funkcia y = kx + q',
+    uvod: '<b>k určuje sklon</b> (o koľko graf stúpne alebo klesne, keď sa posunieš o 1 doprava), <b>q určuje, kde graf pretne os y</b>.',
+    slK: 'k (sklon)', slQ: 'q (posun po osi y)',
+    rastuca: '<b>k = {k} &gt; 0 → funkcia je rastúca.</b> Zľava doprava graf stúpa: posun o 1 doprava = o {k} nahor.',
+    klesajuca: '<b>k = {k} &lt; 0 → funkcia je klesajúca.</b> Zľava doprava graf klesá: posun o 1 doprava = o {ka} nadol.',
+    konstantna: '<b>k = 0 → funkcia je konštantná.</b> Graf je vodorovná priamka.',
+    k0: '⚠ Pri <b>k = 0</b> sa lineárna funkcia mení na <b>konštantnú</b> y = {q} (pozri kartu „Konštantná“). Polynóm má potom stupeň {st}.',
+    prY: '<b>Priesečník s osou y:</b> dosadíme x = 0 → y = k · 0 + q = <b>{q}</b>, bod <b>(0; {q})</b>.',
+    q0: '<b>Priama úmernosť y = {k}x</b> (q = 0): graf prechádza <b>počiatkom</b> (0; 0). Keď x zväčšíš 2-krát, aj y sa zväčší 2-krát.',
+    defObor: '<b>D(f) = ℝ</b>, <b>H(f) = {h}</b>.',
+    stupen: '<b>Polynóm stupňa {st}.</b>',
+    sklonAnim: '▶ Krokuj po priamke', sklonSkry: '✕ Skry kroky',
+    korenNadpis: 'Koreň funkcie – výpočet',
+    korenUvod: 'Koreň je také x, pre ktoré <b>f(x) = 0</b>. Na grafe je to priesečník s osou x.',
+    korenVys: '<b>Koreň:</b> x {rov} {x}. Bod na osi x: ({xd}; 0).',
+    korenZiadny: '<b>{q} = 0 neplatí</b> pre žiadne x → funkcia <b>nemá koreň</b>. Graf je vodorovná priamka mimo osi x.',
+    korenVsetky: '<b>0 = 0 platí vždy</b> → <b>každé x je koreň</b>. Graf je celá os x.',
+    vseob: 'Všeobecne: kx + q = 0 → kx = −q → x = −q : k (len ak k ≠ 0).',
+    zhrnutie: 'x sa zväčšuje vždy o <b>{krok}</b> → y sa mení vždy o to isté číslo: <b>k · krok = {k} · {krokZ} = {d}</b>.',
+    zhrnutieNie: 'Prírastky nie sú rovnaké.',
+
+    hra: {
+      nadpis: '🎯 Hra: Nastav priamku',
+      start: '🎯 Hrať: Nastav priamku', koniec: '✕ Ukončiť hru',
+      uvod: 'Na grafe je <b>čiarkovaná cieľová priamka</b>. Nastav posuvníky k a q tak, aby ju tvoja priamka presne prekryla.',
+      nova: '🎲 Nová priamka', napoveda: '💡 Nápoveda',
+      skore: 'Zásahy: <b>{n}</b>',
+      stav: 'Tvoja priamka zatiaľ cieľ neprekrýva.',
+      qOk: '✔ <b>q sedí</b> – priesečník s osou y je správny.',
+      kOk: '✔ <b>k sedí</b> – sklon je správny.',
+      uspech: '🎉 <b>Výborne!</b> Tvoja priamka y = {f} presne prekryla cieľ.',
+      napovedy: [
+        'Najprv nájdi, kde čiarkovaná priamka <b>pretína os y</b>. Táto hodnota je <b>q</b>.',
+        'Cieľ pretína os y v bode <b>(0; {q})</b>. Nastav <b>q = {q}</b>.',
+        'Teraz sklon: z bodu na osi y sa posuň o <b>1 doprava</b> a pozri, o koľko cieľ stúpne alebo klesne. To je <b>k</b>.',
+        'Cieľ sa pri posune o 1 doprava zmení o <b>{k}</b>. Nastav <b>k = {k}</b>.'
+      ]
+    }
+  },
+
+  /* ---------- KARTA: KVADRATICKÁ FUNKCIA (4 podkarty) ---------- */
+  kvad: {
+    podkarty: { zaklad: 'Kvadratická funkcia', koef: 'Čo robia koeficienty', vrch: 'Vrcholový tvar', korene: 'Korene' },
+    povodna: 'pôvodná', zakladna: 'y = x²',
+
+    /* podkarta: Kvadratická funkcia */
+    nadpis: 'Kvadratická funkcia y = ax² + bx + c',
+    uvod: 'Graf kvadratickej funkcie je <b>parabola</b>. Je súmerná podľa zvislej <b>osi súmernosti</b>, ktorá prechádza <b>vrcholom V</b>.',
+    slA: 'a (tvar a smer)', slB: 'b', slC: 'c (priesečník s osou y)',
+    porovnaj: 'Ukáž aj y = x² na porovnanie',
+    nahor: '<b>a = {a} &gt; 0 → parabola je otvorená nahor</b> (∪). Vo vrchole má <b>minimum</b> y = {yv}.',
+    nadol: '<b>a = {a} &lt; 0 → parabola je otvorená nadol</b> (∩). Vo vrchole má <b>maximum</b> y = {yv}.',
+    uzsia: '|a| = {aa} &gt; 1 → parabola je <b>užšia</b> ako y = x². Čím väčšie |a|, tým užšia parabola.',
+    sirsia: '|a| = {aa} &lt; 1 → parabola je <b>širšia</b> ako y = x². Čím menšie |a|, tým širšia parabola.',
+    rovnaka: '|a| = 1 → parabola je rovnako široká ako y = x².',
+    os: '<b>Os súmernosti:</b> zvislá priamka x = {xv} (na grafe čiarkovaná).',
+    osPopis: 'os: x = {xv}',
+    prY: '<b>Priesečník s osou y:</b> f(0) = a · 0² + b · 0 + c = c, bod <b>(0; {c})</b>.',
+    prX: '<b>Priesečníky s osou x:</b> {t} (výpočet je v podkarte „Korene“).',
+    prX2: 'dva, x₁ {r1} a x₂ {r2}', prX1: 'jeden, vrchol leží na osi x, x {r1}', prX0: 'žiadny, parabola os x nepretína',
+    a0: '⚠ <b>a = 0 → toto už nie je kvadratická funkcia.</b> Člen ax² = 0 · x² zmizne a zostane <b>lineárna funkcia y = {f}</b>. Graf je priamka, nie parabola, a nemá vrchol ani os súmernosti. Kvadratická funkcia musí mať <b>a ≠ 0</b>.',
+    vrcholNadpis: 'Vrchol V – výpočet',
+    vrcholA0: 'Pri a = 0 vrchol neexistuje – vo vzorci by sme delili nulou (2a = 0).',
+    vrcholVys: '<b>Vrchol V({xv}; {yv})</b>. Kontrola dosadením: f({xv}) {rov} {fx} ✔',
+    zhrnutie: 'Prírastky y <b>nie sú rovnaké</b> – graf nie je priamka. Každý ďalší prírastok sa však zmení o to isté číslo: <b>2a · krok² = {d2}</b>.',
+
+    /* hra „Uhádni parabolu“ */
+    hra: {
+      nadpis: '🎯 Hra: Uhádni parabolu',
+      uvod: 'Na grafe je <b>čiarkovaná cieľová parabola</b>. Nastav a, b, c tak, aby ju tvoja parabola presne prekryla.',
+      start: '🎯 Hrať: Uhádni parabolu', koniec: '✕ Ukončiť hru', nova: '🎲 Nová parabola', napoveda: '💡 Nápoveda',
+      skore: 'Zásahy: <b>{n}</b>', stav: 'Tvoja parabola zatiaľ cieľ neprekrýva.',
+      ok: '✔ <b>{k} sedí.</b>',
+      uspech: '🎉 <b>Výborne!</b> y = {f} = {v} presne prekryla cieľ.',
+      napovedy: [
+        '<b>Nájdi vrchol</b> cieľa: V({m}; {n}). Vrchol tvojej paraboly je {tv}. Pre vrchol platí x<sub>v</sub> = −b / (2a), preto <b>b = −2a · {mz}</b>.',
+        '<b>Nájdi c:</b> cieľ pretína os y v bode (0; {c}), preto <b>c = {c}</b>.',
+        '<b>Smer a šírka:</b> cieľ je otvorený <b>{smer}</b> a je <b>{sirka}</b> ako y = x², preto <b>a = {a}</b>.'
+      ],
+      smer: { hore: 'nahor', dole: 'nadol' }, sirka: { uzsi: 'užší', sirsi: 'širší', rovnaky: 'rovnako široký' }
+    },
+
+    /* podkarta: Čo robia koeficienty */
+    koef: {
+      nadpis: 'Čo robia koeficienty a, b, c',
+      uvod: 'Každá scéna mení <b>len jeden</b> koeficient, zvyšné dva sú pevné. <b>Sivá bodkovaná</b> parabola je pôvodný graf. Skús posuvník alebo tlačidlo „Prehraj“.',
+      prehraj: '▶ Prehraj', zastav: '❚❚ Zastav', spat: '⟲ Pôvodná hodnota',
+      drahaV: 'dráha vrcholu', dotycnica: 'dotyčnica', vrchol: 'V({x}; {y})',
+      priamka: 'a = 0 → y = {f} je priamka, nie parabola',
+      a: { nadpis: '1. Mení sa a', pevne: 'Pevné: b = {b}, c = {c}', prepni: 'Nastav b = 0 a c = 0',
+        zaver: '<b>Záver:</b> a mení <b>otvorenosť a smer</b>. Čím väčšie |a|, tým užšia parabola, a &lt; 0 ju preklopí nadol. Vrchol sa pritom hýbe (po čiarkovanej dráhe) – na mieste ostane len pri b = 0 a c = 0 (presnejšie stačí b = 0, vtedy je vrchol vždy (0; c)).' },
+      b: { nadpis: '2. Mení sa b', pevne: 'Pevné: a = {a}, c = {c}',
+        zaver: '<b>Záver:</b> b posúva vrchol <b>vodorovne aj zvisle naraz</b> (po čiarkovanej dráhe), tvar sa nemení. Parabola stále prechádza bodom (0; c) a dotyčnica v ňom má <b>sklon b</b>.' },
+      c: { nadpis: '3. Mení sa c', pevne: 'Pevné: a = {a}, b = {b}',
+        zaver: '<b>Záver:</b> c posunie celý graf <b>presne zvisle</b> o toľko, o koľko sa zmenilo c. Tvar ani os súmernosti sa nemenia.' },
+      posun: 'Δc = {d}'
+    },
+
+    /* podkarta: Vrcholový tvar */
+    vrch: {
+      nadpis: 'Vrcholový tvar y = a(x − m)² + n',
+      uvod: 'Vo vrcholovom tvare hneď vidno <b>vrchol V(m; n)</b>. Parabolu dostaneme zo základnej <b>y = x²</b> v troch krokoch.',
+      slA: 'a (roztiahnutie, preklopenie)', slM: 'm (posun vodorovne)', slN: 'n (posun zvisle)',
+      dalsi: 'Ďalší krok ▶', znova: '⟲ Od začiatku', vsetky: '⏭ Všetky kroky',
+      predch: 'predchádzajúci krok',
+      k0: 'základná parabola, vrchol v počiatku (0; 0)',
+      k1roz: 'a = {a}: <b>roztiahnutie</b> v smere osi y {aa}-krát → parabola je užšia',
+      k1stl: 'a = {a}: <b>stlačenie</b> k osi x na {aa}-násobok → parabola je širšia',
+      k1rov: 'a = {a}: šírka sa nemení',
+      k1prek: '; a &lt; 0, preto aj <b>preklopenie podľa osi x</b> (otvorená nadol)',
+      k1nula: 'a = 0: parabola sa sploští na priamku y = 0 – už to nie je parabola',
+      k2prava: 'posun o {m} <b>doprava</b> (m = {m} &gt; 0)', k2lava: 'posun o {mm} <b>doľava</b> (m = {m} &lt; 0)', k2nic: 'm = 0: bez vodorovného posunu',
+      k3hore: 'posun o {n} <b>nahor</b> (n = {n} &gt; 0)', k3dole: 'posun o {nn} <b>nadol</b> (n = {n} &lt; 0)', k3nic: 'n = 0: bez zvislého posunu',
+      posunM: 'posun o m = {m}', posunN: 'posun o n = {n}',
+      omylNadpis: 'Častý omyl',
+      omyl: 'V zápise <b>(x − m)</b> znamená <b>kladné m posun doprava</b>. Napríklad y = (x − 3)² má vrchol v x = 3 (tam je zátvorka nulová) – je posunutá o 3 <b>doprava</b>, hoci je tam „mínus“. A y = (x + 3)² = (x − (−3))² je posunutá o 3 <b>doľava</b>.',
+      prepNadpis: 'Všeobecný ↔ vrcholový tvar',
+      prepni: '⇄ Všeobecný ↔ vrcholový tvar',
+      roznasob: 'a(x − m)² + n = a(x² − 2mx + m²) + n = ax² + (−2am)x + (am² + n)',
+      ista: 'Krivka sa nemení – sú to <b>dva zápisy tej istej funkcie</b>.',
+      a0: 'Pri a = 0 je y = {n} konštantná funkcia – nie je to parabola a vrcholový tvar nemá zmysel.'
+    },
+
+    /* podkarta: Korene */
+    kor: {
+      nadpis: 'Korene kvadratickej funkcie',
+      uvod: 'Korene sú také x, pre ktoré <b>ax² + bx + c = 0</b>. Na grafe sú to priesečníky paraboly s osou x – môžu byť <b>2, 1 alebo 0</b>.',
+      graficky: '<b>Graficky:</b> {t}.',
+      g2: 'parabola má s osou x <b>2 spoločné body</b> (pretína ju)', g1: 'parabola má s osou x <b>1 spoločný bod</b> (dotýka sa jej vo vrchole)', g0: 'parabola <b>nemá</b> s osou x <b>žiadny spoločný bod</b>',
+      dNadpis: 'Výpočet: diskriminant',
+      stav: {
+        plus: '<b class="h">✔✔ D &gt; 0 · dva rôzne korene</b>Parabola pretína os x v dvoch bodoch: x<sub>1,2</sub> = (−b ± √D) / (2a).',
+        nula: '<b class="h">✔ D = 0 · jeden dvojnásobný koreň</b>Parabola sa <b>dotýka</b> osi x vo vrchole: x = −b / (2a).',
+        minus: '<b class="h">✖ D &lt; 0 · žiadny reálny koreň</b>V obore reálnych čísel koreň neexistuje (odmocnina zo záporného čísla) – parabola os x <b>nepretína</b>.'
+      },
+      neexistuje: '√D = √({D}) – v ℝ neexistuje',
+      vztah: '<b>Vrchol a D:</b> y<sub>v</sub> = c − b²/(4a) = <b>−D / (4a)</b>. Teraz je parabola otvorená <b>{smer}</b> a vrchol leží <b>{poloha}</b> (y<sub>v</sub> = {yv}) → <b>D {zn} 0</b>.<br>Pri otvorení nahor: vrchol pod osou x ⇔ D &gt; 0, na osi ⇔ D = 0, nad osou ⇔ D &lt; 0. Pri otvorení nadol je to naopak.',
+      poloha: { pod: 'pod osou x', na: 'na osi x', nad: 'nad osou x' },
+      sucinNadpis: 'Súčinový tvar',
+      sucin: 'Ak D ≥ 0, dá sa funkcia zapísať ako <b>y = a(x − x₁)(x − x₂)</b>.',
+      sucinNie: 'Pri D &lt; 0 nemá funkcia reálne korene, preto ju v reálnych číslach nevieme zapísať v súčinovom tvare.',
+      overenie: 'Overenie rozvinutím:',
+      zaokr: 'Korene nie sú presné desatinné čísla, preto sú zápisy so znakom ≈ zaokrúhlené.',
+      viete: 'Pre zvedavých: Vietove vzťahy',
+      vieteUvod: 'Pre korene x₁, x₂ platí <b>x₁ + x₂ = −b/a</b> a <b>x₁ · x₂ = c/a</b>.',
+      vieteNie: 'Pri D &lt; 0 nemáme reálne korene, ktoré by sme mohli overiť.',
+      sucinA0: 'Pri a = 0 nejde o kvadratickú funkciu, súčinový tvar a(x − x₁)(x − x₂) sa preto nepoužíva.',
+      a0: '⚠ <b>a = 0 → nie je to kvadratická funkcia</b>, ale lineárna y = {f}. Diskriminant sa nepoužíva – koreň počítame ako pri lineárnej funkcii:'
+    }
+  },
+
+  /* ---------- SPOLOČNÉ PRE STUPNE 3 AŽ 5 ---------- */
+  okraje: {
+    'hore,hore': 'oba konce idú nahor', 'dole,dole': 'oba konce idú nadol',
+    'dole,hore': 'ľavý koniec ide nadol, pravý nahor', 'hore,dole': 'ľavý koniec ide nahor, pravý nadol',
+    vodorovne: 'graf je vodorovná priamka',
+    lavy: 'ľavý koniec', pravy: 'pravý koniec', ukaz: 'Ukáž šípkami, kam idú konce grafu'
+  },
+  poly: {
+    k0: 'žiadny reálny koreň', k1: '1 reálny koreň', k24: '{n} rôzne reálne korene', k5: '{n} rôznych reálnych koreňov',
+    snas: '(s násobnosťou spolu {m})',
+    b0: 'žiadny spoločný bod', b1: '1 spoločný bod', b24: '{n} spoločné body', b5: '{n} spoločných bodov',
+    sucin: 'Polynóm stupňa {st} s {st} reálnymi koreňmi (počítanými s násobnosťou) sa dá zapísať ako súčin <b>a(x − x₁)(x − x₂)…</b>',
+    sucinNie: 'Funkcia nemá {st} reálnych koreňov ani s násobnosťou, preto ju v reálnych číslach nerozložíme na súčin činiteľov (x − xᵢ).',
+    overenie: 'Overenie rozvinutím (postupné roznásobenie zátvoriek):',
+    zaokr: 'Korene nie sú presné desatinné čísla, preto je zápis so znakom ≈ zaokrúhlený.',
+    nulovy: 'nulová funkcia – koreňom je každé x'
+  },
+
+  /* ---------- KARTA: KUBICKÁ FUNKCIA (+ Delenie intervalu) ---------- */
+  kub: {
+    podkarty: { funkcia: 'Kubická funkcia', delenie: 'Delenie intervalu' },
+    nadpis: 'Kubická funkcia y = ax³ + bx² + cx + d',
+    uvod: 'Polynóm 3. stupňa. Graf môže mať <b>dva obraty</b> (lokálne maximum a minimum) a má jeden <b>inflexný bod</b>.',
+    slA: 'a (vedúci koeficient)', slB: 'b', slC: 'c', slD: 'd (priesečník s osou y)',
+    a0: '⚠ <b>a = 0 → toto už nie je kubická funkcia.</b> Člen ax³ zmizne a zostane polynóm nižšieho stupňa <b>y = {f}</b> (stupeň {st}). Graf, korene a extrémy sa počítajú ďalej rovnako, diskriminant Δ však platí len pre kubickú funkciu.',
+    extremy: '<b>Lokálne extrémy</b> sú v koreňoch derivácie f′(x) = {d}: {t}.',
+    extremyZiadne: 'žiadne – derivácia nemá dva rôzne reálne korene, graf len stúpa alebo len klesá',
+    inflex: '<b>Inflexný bod</b> I({x}; {y}), x = −b / (3a).',
+    inflexZved: 'Pre zvedavých: inflexný bod',
+    inflexText: 'V inflexnom bode sa graf mení z <b>dutého</b> (zakriveného ako ∩) na <b>vypuklý</b> (zakrivený ako ∪) alebo naopak. Je to koreň druhej derivácie f″(x) = 6ax + 2b, teda x = −b / (3a). Graf kubickej funkcie je podľa tohto bodu stredovo súmerný.',
+    pocetNadpis: 'Koľko koreňov',
+    pocet: 'Kubická funkcia má vždy <b>aspoň 1</b> a <b>najviac 3</b> reálne korene. Teraz: <b>{t}</b>{m}.',
+    preco: '<b>Prečo aspoň jeden?</b> Pri a {zn} 0 {okraje}. Konce idú <b>opačnými smermi</b> – jeden je pod osou x, druhý nad ňou. Spojitá krivka (bez skokov) preto musí os x niekde pretnúť. (Šípky na grafe ukazujú konce.)',
+    deltaNadpis: 'Diskriminant Δ',
+    deltaNie: 'Diskriminant Δ = 18abcd − 4b³d + b²c² − 4ac³ − 27a²d² sa používa len pre kubickú funkciu (a ≠ 0).',
+    stav: {
+      plus: '<b class="h">✔✔✔ Δ &gt; 0 · tri rôzne reálne korene</b>Graf pretína os x v troch bodoch.',
+      nula: '<b class="h">✔ Δ = 0 · viacnásobný koreň</b>{typ}',
+      minus: '<b class="h">✖ Δ &lt; 0 · jeden reálny koreň</b>Ďalšie dva korene nie sú reálne. Graf pretína os x len raz.'
+    },
+    nulaDva: 'Dvojnásobný + jednoduchý koreň: v dvojnásobnom sa graf osi x len <b>dotkne</b>.',
+    nulaTri: 'Trojnásobný koreň: graf prejde cez os x <b>s vyrovnaním</b> (v koreni má vodorovnú dotyčnicu).',
+    typyNadpis: 'Typy podľa koreňov',
+    typyUvod: 'Typický graf pre každý prípad. Klikni na obrázok – nastaví sa na hlavnom grafe.',
+    typy: { tri: 'tri rôzne korene', dva: 'dvojnásobný + jednoduchý', troj: 'trojnásobný koreň', jeden: 'jeden jednoduchý koreň' },
+    typyPopis: { tri: 'pretne os x trikrát', dva: 'v dvojnásobnom koreni sa osi len dotkne', troj: 'prechod cez os s vyrovnaním', jeden: 'jediný prechod cez os x' },
+    sucinNadpis: 'Súčinový tvar'
+  },
+
+  /* ---------- PODKARTA: DELENIE INTERVALU ---------- */
+  del: {
+    nadpis: 'Delenie intervalu – koreň krok za krokom',
+    uvod: 'Vyber funkciu a kraje intervalu [l; r]. V každom kroku interval rozpolíme stredom s a ponecháme polovicu, na ktorej krajoch má funkcia <b>opačné znamienka</b>.',
+    funkcia: 'Funkcia:',
+    slL: 'l (ľavý kraj)', slR: 'r (pravý kraj)',
+    krok: 'Krok ▶', dokonci: '⏭ Dokonči', znova: '⟲ Znova', pribliz: '🔍 Priblíž na interval',
+    stav: 'Krok: <b>{k}</b> · interval [{l}; {r}] · šírka <b>{w}</b>',
+    zleKraje: '<b class="h">Zlé kraje</b>Ľavý kraj musí byť menší ako pravý.',
+    rovnake: '<b class="h">Medzi týmito bodmi nemusí byť koreň</b>f(l) = {fl} a f(r) = {fr} majú <b>rovnaké znamienko</b>. Koreň tam môže byť (dva korene alebo dotyk osi x), ale aj nemusí – metóda nevie, ktorú polovicu ponechať. Vyber iné kraje.',
+    vKraji: '<b class="h">Koreň je priamo v kraji</b>f({x}) = 0, netreba nič deliť.',
+    zaciatok: 'f(l) = {fl} a f(r) = {fr} majú <b>opačné znamienka</b> – spojitá funkcia medzi nimi musí mať koreň. Stlač „Krok“.',
+    posledny: '<b>Krok {k}:</b> s = {s}, f(s) = {fs} je {z}. Rovnaké znamienko má f({kraj}), preto koreň je v druhej polovici → ponechám <b>{pol}</b>.',
+    hotovo: '<b class="h">Hotovo po {k} krokoch</b>Šírka intervalu {w} &lt; 0,001. Koreň <b>x ≈ {x}</b>, v ňom |f(x)| ≈ {fx}.',
+    presny: '<b class="h">Presný koreň</b>V strede s = {x} je f(s) = 0.',
+    hl: { k: 'krok', l: 'l', r: 'r', s: 's = (l + r) / 2', f: 'f(s)', w: 'šírka', pon: 'ponechám' },
+    zn: { plus: 'kladné (+)', minus: 'záporné (−)', nula: '0' },
+    ponechaj: { l: '[l; s]', r: '[s; r]', presne: 'koreň = s' },
+    tabNadpis: 'Kroky',
+    vysvetlenie: '<b>Kedy to funguje:</b> funkcia musí byť <b>spojitá</b> (polynómy sú) a na krajoch musí mať <b>opačné znamienka</b>. Každý krok interval rozpolí, po 10 krokoch je 1024-krát užší. <b>Dvojnásobný koreň</b> (dotyk osi x bez prechodu) touto metódou nenájdeme, lebo funkcia pri ňom nemení znamienko.',
+    zvedNadpis: 'Pre zvedavých: prečo číselné metódy',
+    zved: 'Pre kvadratickú funkciu máme vzorec s odmocninou. Pre stupne 3 a 4 vzorce tiež existujú, no sú veľmi zložité. Pre <b>stupeň 5 a vyšší</b> všeobecný vzorec pomocou odmocnín <b>neexistuje</b> (Abelova–Ruffiniho veta). Preto sa korene hľadajú <b>číselnými metódami</b>, ako je delenie intervalu.',
+    lPopis: 'l ({z})', rPopis: 'r ({z})', sPopis: 's ({z})'
+  },
+
+  /* ---------- KARTA: VYŠŠIE STUPNE ---------- */
+  vys: {
+    nadpis: 'Polynómy vyšších stupňov',
+    uvod: 'Vyber stupeň n a nastav koeficienty. Graf má rovnaké značky ako pri kubickej funkcii: korene, lokálne extrémy a inflexné body.',
+    stupen: 'Stupeň n:', priklady: 'Príklady:',
+    abs: 'absolútny člen', pri: 'pri x{m}',
+    vedNula: '⚠ Vedúci koeficient a{i} = 0 → funkcia má v skutočnosti nižší stupeň ({st}).',
+    pravidlaNadpis: 'Pravidlá',
+    korene: '<b>Najviac n reálnych koreňov:</b> stupeň {st} → najviac {st}. Teraz: {t}.',
+    obraty: '<b>Najviac n − 1 obratov</b> (lokálnych extrémov): najviac {m}. Teraz: {e}.',
+    neparny: '<b>Nepárny stupeň</b> → konce idú opačnými smermi, preto má funkcia <b>aspoň jeden</b> reálny koreň.',
+    parny: '<b>Párny stupeň</b> → oba konce idú rovnakým smerom, funkcia <b>nemusí mať žiadny</b> reálny koreň (napríklad x⁴ + 1).',
+    okraje: '<b>Na okrajoch:</b> {t}.',
+    nizky: 'Stupeň {st}: pravidlá platia aj tu (najviac {st} koreňov, najviac {m} obratov).',
+    tabNadpis: 'Správanie na okrajoch',
+    tabUvod: 'O koncoch grafu rozhoduje len <b>stupeň</b> (párny alebo nepárny) a <b>znamienko vedúceho koeficientu</b> aₙ. Rámik ukazuje aktuálnu funkciu.',
+    parnyH: 'párny stupeň', neparnyH: 'nepárny stupeň', kladny: 'aₙ &gt; 0', zaporny: 'aₙ &lt; 0',
+    sucinNadpis: 'Súčinový tvar'
+  },
+
+  /* ---------- KARTA: POROVNANIE A KVÍZ ---------- */
+  por: {
+    podkarty: { porovnanie: 'Porovnanie funkcií', omyly: 'Časté omyly', kviz: 'Kvíz' },
+    nadpis: 'Porovnanie funkcií stupňa 0 až 5',
+    uvod: 'Klikni na riadok tabuľky – príklad sa zobrazí v grafe. V móde „Nakresli a porovnaj“ pridávaš ďalšie funkcie do jedného grafu (opätovný klik funkciu odoberie).',
+    mod: '✎ Nakresli a porovnaj', vymaz: '✕ Vymaž graf',
+    tabNadpis: 'Prehľad',
+    hl: { st: 'n', nazov: 'názov', tvar: 'všeobecný tvar', kor: 'najviac koreňov', obr: 'najviac obratov', okr: 'okraje', pr: 'príklad (jeho reálne korene)' },
+    nazvy: ['konštantná', 'lineárna', 'kvadratická', 'kubická', '4. stupňa', '5. stupňa'],
+    tvary: ['y = a₀', 'y = a₁x + a₀', 'y = ax² + bx + c', 'y = ax³ + bx² + cx + d', 'y = a₄x⁴ + … + a₀', 'y = a₅x⁵ + … + a₀'],
+    nulova: '0 (pri a₀ = 0 každé x)',
+    vGrafe: 'V grafe:',
+    poznamka: 'Každá ďalšia mocnina pridá najviac jeden koreň a najviac jeden obrat. Párny stupeň: konce rovnakým smerom, nepárny: opačným.',
+    styl: 'st. {n}'
+  },
+
+  /* ---------- PODKARTA: ČASTÉ OMYLY ---------- */
+  omy: {
+    nadpis: 'Časté omyly',
+    uvod: 'Každý omyl má krátku animáciu (tlačidlo „▶ Ukáž“) a opravu.',
+    ukaz: '▶ Ukáž', omyl: 'Omyl', oprava: 'Oprava',
+    zoznam: [
+      { nadpis: '1. Zámena k a q', omyl: 'V y = kx + q je q sklon a k priesečník s osou y.', oprava: '<b>k je sklon</b> (o koľko graf stúpne pri posune o 1 doprava), <b>q je priesečník s osou y</b>, bod (0; q). V animácii sa mení k a bod (0; q) ostáva na mieste.' },
+      { nadpis: '2. Šírka paraboly', omyl: 'Väčšie a znamená širšiu parabolu.', oprava: '<b>Väčšie |a| znamená užšiu</b> parabolu. y = 4x² rastie štyrikrát rýchlejšie ako y = x², preto je užšia.' },
+      { nadpis: '3. Posun vo vrcholovom tvare', omyl: 'V y = a(x − m)² + n kladné m posúva parabolu doľava.', oprava: 'Kladné m posúva <b>doprava</b>: vrchol je v x = m, lebo tam je zátvorka (x − m) nulová.' },
+      { nadpis: '4. Počet koreňov', omyl: 'Funkcia stupňa n má vždy n koreňov.', oprava: 'Má <b>najviac n</b> reálnych koreňov. Napríklad x² + 1 nemá žiadny reálny koreň.' },
+      { nadpis: '5. Kubická funkcia bez koreňa', omyl: 'Kubická funkcia nemusí mať koreň.', oprava: 'Kubická funkcia má <b>vždy aspoň jeden</b> reálny koreň – jej konce idú opačnými smermi. V animácii posúvame graf hore a dole a koreň nikdy nezmizne.' },
+      { nadpis: '6. Dotyk osi x', omyl: 'Ak sa graf osi x len dotkne, nie je to koreň.', oprava: 'Aj dotyk je koreň – <b>dvojnásobný koreň</b>. V animácii sa dva korene zlejú do jedného.' },
+      { nadpis: '7. Koreň z grafu', omyl: 'Koreň odčítaný z grafu je presný.', oprava: 'Z grafu ho odčítame len <b>približne</b>. Aj pri veľkom priblížení vidíme len ďalšie desatinné miesta. Presne ho dá <b>výpočet</b>: pre x² − 2 je x = √2.' },
+      { nadpis: '8. Delenie intervalu', omyl: 'Delením intervalu nájdem každý koreň.', oprava: 'Len ak sa na krajoch <b>mení znamienko</b>. Pri y = (x − 1)² sú f(0) a f(2) kladné, hoci koreň x = 1 medzi nimi je.' }
+    ],
+    k: 'k = {k}', a: 'a = {a}', m: 'm = {m}', pocet: 'reálne korene: {n}', zGrafu: 'z grafu: x ≈ {x}', interval: 'f(0) > 0 aj f(2) > 0', q: '(0; q) = (0; 1)'
+  },
+
+  /* ---------- PODKARTA: KVÍZ ---------- */
+  kviz: {
+    nadpis: 'Kvíz',
+    uvod: 'Otázky sa vyberajú náhodne a správna odpoveď sa vždy vypočíta. Číslo môžeš písať s desatinnou čiarkou aj bodkou (tolerancia 0,01). Nič sa neukladá ani neodosiela.',
+    uroven: 'Úroveň:', urovne: { 1: '1 · základy', 2: '2 · parabola', 3: '3 · vyššie stupne' },
+    novy: '🎲 Nový kvíz', over: 'Skontroluj',
+    vysledok: 'Zodpovedané: {z} z {m} · správne: {n}', hotovo: '🎉 Hotovo! Správne: {n} z {m}.',
+    spravne: '✔ Správne.', nespravne: '✘ Nesprávne.', spravnaOdp: 'Správna odpoveď: <b>{o}</b>.', zleCislo: 'Zadaj číslo, napríklad −1,5.',
+    q: {
+      korenLin: 'Urči koreň funkcie <b>y = {f}</b>.',
+      korenLinVys: 'kx + q = 0 → x = −q : k = {q} : {k} {rov} <b>{x}</b>.',
+      vrchol: 'Urči <b>{os}-ovú súradnicu</b> vrcholu paraboly <b>y = {f}</b>.',
+      vrcholVys: 'x<sub>v</sub> = −b / (2a) = {xv}, y<sub>v</sub> = f(x<sub>v</sub>) = {yv}. Vrchol V({xv}; {yv}).',
+      pocetD: 'Koľko reálnych koreňov má funkcia <b>y = {f}</b>?',
+      pocetDVys: 'D = b² − 4ac = {D}, teda {t}.',
+      pocetDT: ['D &lt; 0: žiadny reálny koreň', 'D = 0: jeden dvojnásobný koreň', 'D &gt; 0: dva rôzne korene'],
+      pocetGraf: 'Koľko <b>rôznych</b> reálnych koreňov má funkcia na obrázku?',
+      pocetGrafVys: 'Graf má s osou x {b}: {z}. Aj dotyk osi x je koreň (viacnásobný).',
+      prirad: 'Ktorý vzorec patrí ku grafu?',
+      priradVys: 'Ku grafu patrí <b>y = {f}</b>. Over si priesečník s osou y (0; {c}) a smer koncov grafu.',
+      zmena: 'Funkciu <b>y = {f0}</b> zmeníme na <b>y = {f1}</b>. Čo sa stane s grafom?',
+      konce: 'Ako sa správajú konce grafu funkcie <b>y = {f}</b>?',
+      konceVys: 'Stupeň {st} je {par} a vedúci koeficient {a} je {zn}, preto {t}.',
+      par: ['párny', 'nepárny'], zn: { kl: 'kladný', za: 'záporný' },
+      chyba: 'Žiak počítal {co}. V ktorom kroku urobil <b>prvú chybu</b>?',
+      chybaCo: { lin: 'koreň funkcie y = {f}', D: 'diskriminant funkcie y = {f}' },
+      chybaVys: 'Chyba je v kroku {i}. Správne má byť: <b>{spr}</b>.',
+      krok: 'krok {i}'
+    },
+    zmeny: { hore: 'posunie sa o {d} nahor', dole: 'posunie sa o {d} nadol', doprava: 'posunie sa o {d} doprava', dolava: 'posunie sa o {d} doľava', uzsia: 'zúži sa', sirsia: 'rozšíri sa', preklopi: 'preklopí sa (otvorí sa opačným smerom)', sklon: 'zmení sa sklon priamky' },
+    zmenyVys: {
+      hore: 'f₁(x) − f₀(x) = {d} pre každé x, celý graf je o {d} vyššie.', dole: 'f₁(x) − f₀(x) = −{d} pre každé x, celý graf je o {d} nižšie.',
+      doprava: 'Vrchol sa presunul z x = {x0} na x = {x1}, tvar ostal rovnaký.', dolava: 'Vrchol sa presunul z x = {x0} na x = {x1}, tvar ostal rovnaký.',
+      uzsia: '|a| sa zväčšilo z {a0} na {a1}, parabola je užšia (vrchol ostal).', sirsia: '|a| sa zmenšilo z {a0} na {a1}, parabola je širšia (vrchol ostal).',
+      preklopi: 'a zmenilo znamienko z {a0} na {a1}, parabola sa otvorí opačným smerom.', sklon: 'k sa zmenilo z {a0} na {a1}, priamka má iný sklon a bod (0; q) ostal.'
+    }
+  }
+};
+</script>
+<style>
+/* ===== Farby a základ – rovnaká paleta ako predošlé animácie ===== */
+:root{
+  --bg:#04060c;--panel:rgba(12,16,28,.86);--line:rgba(140,160,215,.22);
+  --text:#e2e8f5;--muted:#a3adc6;--gold:#f3b453;--gold2:#ffd88a;--blue:#6fb4ff;--red:#ff7a6b;--green:#7fdc8f;--violet:#b9a3ff;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--text);background:var(--bg);
+  background-image:radial-gradient(ellipse at 50% -10%,#14204a 0%,#070b18 50%,#04060c 100%);background-attachment:fixed;
+  font:17px/1.5 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1440px;margin:0 auto;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.45);padding:16px}
+h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+h2{margin:0 0 10px;font-size:23px;line-height:1.25}
+h3{margin:0 0 6px;font-size:16px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:650}
+p{margin:0 0 10px}
+.sub{color:var(--muted);margin:4px 0 0;font-size:17px}
+.sub b{color:var(--text)}
+button,select{font:inherit;font-size:16px;color:var(--text);background:rgba(255,255,255,.07);border:1px solid var(--line);
+  border-radius:10px;padding:8px 14px;min-height:44px;cursor:pointer;transition:background .15s,border-color .15s,color .15s;touch-action:manipulation}
+select{background:#101626}
+button:hover{background:rgba(255,255,255,.13);border-color:rgba(160,180,230,.4)}
+button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
+button.on{background:rgba(243,180,83,.2);border-color:rgba(243,180,83,.65);color:var(--gold2)}
+button.primary{background:linear-gradient(135deg,#f3b453,#d9772f);color:#1a0e02;border:none;font-weight:700}
+button.primary:hover{filter:brightness(1.08)}
+button:disabled{cursor:default;opacity:.45}
+.mini{color:var(--muted);font-size:16px;margin:10px 0 4px}
+.vzorec{font-size:28px;font-weight:800;text-align:center;margin:6px 0 10px;letter-spacing:.02em;color:var(--gold2);font-variant-numeric:tabular-nums}
+
+/* ===== Hlavička a karty ===== */
+header.top{margin-bottom:12px;display:flex;flex-wrap:wrap;gap:10px 20px;justify-content:space-between;align-items:flex-end}
+header.top .tx{flex:1 1 520px}
+.nast{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:16px}
+nav.karty{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+nav.karty button{border-radius:999px;padding:8px 15px}
+nav.karty button .cis{display:inline-block;min-width:1.4em;color:var(--muted)}
+nav.karty button.on .cis{color:var(--gold2)}
+
+/* ===== Rozloženie sekcie: graf + tabuľka vľavo, ovládanie vpravo ===== */
+.sek{display:grid;grid-template-columns:minmax(0,1fr) 430px;grid-template-areas:"graf ovl" "tab ovl";gap:16px;align-items:start}
+.sek>.gA{grid-area:graf;min-width:0}.sek>.tA{grid-area:tab;min-width:0}.sek>.oA{grid-area:ovl;min-width:0}
+.stlpec{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:1000px){.sek{grid-template-columns:minmax(0,1fr);grid-template-areas:"graf" "ovl" "tab"}}
+
+/* ===== Graf ===== */
+.stageCard{padding:10px}
+.grafLista{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+.grafLista .zoom{min-width:48px;font-size:22px;font-weight:700;padding:4px 10px}
+.grafLista .chk{margin:0 0 0 auto}
+.stage{border-radius:10px;background:#08101c;overflow:hidden;position:relative}
+.stage canvas{display:block;width:100%;aspect-ratio:4/3;max-height:68vh;min-height:280px;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.stage canvas.tahanie{cursor:grabbing}
+.stage canvas.nadSondou{cursor:ew-resize}
+.sondaInfo{font-size:17px;margin:8px 4px 2px;min-height:3.2em;font-variant-numeric:tabular-nums}
+.sondaInfo b{color:var(--gold2)}
+.sondaInfo button{margin:6px 6px 0 0;min-height:40px;padding:4px 12px}
+.legenda{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;color:var(--muted);font-size:16px;margin:6px 4px 0}
+.legenda span{display:inline-flex;align-items:center;gap:6px}
+.legenda svg{flex:none}
+.priblizne{font-size:16px;color:var(--muted);margin:8px 4px 0}
+
+/* ===== Posuvníky s tlačidlami − / + ===== */
+.sl{display:block;margin-top:8px}
+.sl .lbl{display:flex;justify-content:space-between;gap:10px;font-size:18px}
+.sl .lbl b{color:var(--gold2);font-variant-numeric:tabular-nums;font-size:20px}
+.slRiadok{display:flex;align-items:center;gap:8px}
+.slRiadok button{min-width:48px;font-size:20px;font-weight:700;padding:4px 0}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:44px;background:transparent;margin:0;cursor:pointer;touch-action:pan-y}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:30px;margin-top:-11px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02;box-shadow:0 0 0 2px var(--gold)}
+input[type=range]::-moz-range-track{height:8px;border-radius:5px;background:rgba(255,255,255,.16)}
+input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid #1a0e02}
+.tlac{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.chk{display:flex;gap:10px;align-items:center;margin:10px 0;cursor:pointer;min-height:44px}
+.chk input{width:24px;height:24px;accent-color:var(--gold)}
+
+/* ===== Farebné boxy ===== */
+.box{margin:12px 0 0;padding:10px 13px;border-radius:10px;border:1px solid}
+.box p:last-child{margin-bottom:0}
+.box b.h{display:block;font-size:16px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.box.omyl{background:rgba(255,122,107,.09);border-color:rgba(255,122,107,.45)}.box.omyl b.h{color:var(--red)}
+.box.pravda{background:rgba(127,220,143,.08);border-color:rgba(127,220,143,.4)}.box.pravda b.h{color:var(--green)}
+.box.info{background:rgba(111,180,255,.08);border-color:rgba(111,180,255,.4)}.box.info b.h{color:var(--blue)}
+.box.zlty{background:rgba(243,180,83,.09);border-color:rgba(243,180,83,.45)}.box.zlty b.h{color:var(--gold2)}
+ul.vl{margin:4px 0 0;padding-left:20px}
+ul.vl li{margin:6px 0}
+
+/* ===== Výpočet koreňa ===== */
+.kroky{margin:8px 0;font-size:19px;font-variant-numeric:tabular-nums}
+.kroky .r{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;padding:5px 10px;border-radius:8px}
+.kroky .r:nth-child(odd){background:rgba(255,255,255,.04)}
+.kroky .op{color:var(--violet);font-size:17px}
+.kroky .r.vys{color:var(--gold2);font-weight:700}
+.zl{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;font-size:.85em;line-height:1.1;margin:0 .1em}
+.zl>span:first-child{border-bottom:2px solid currentColor;padding:0 .2em}
+
+/* ===== Tabuľka hodnôt ===== */
+.vstupy{display:flex;flex-wrap:wrap;gap:12px;margin:8px 0 12px}
+.vstupy label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:16px}
+input.num{width:120px;height:48px;font:inherit;font-size:20px;font-weight:700;text-align:center;color:var(--text);background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:10px}
+input.num.zle{border-color:var(--red)}
+table.hodnoty{border-collapse:collapse;width:100%;max-width:520px;font-size:18px;font-variant-numeric:tabular-nums}
+table.hodnoty th{color:var(--muted);font-weight:600;font-size:16px;text-align:right;padding:6px 12px;border-bottom:1px solid var(--line)}
+table.hodnoty td{text-align:right;padding:0 12px;height:44px;border-bottom:1px solid rgba(140,160,215,.1)}
+table.hodnoty tbody tr{cursor:pointer}
+table.hodnoty tbody tr:hover td{background:rgba(255,255,255,.05)}
+table.hodnoty tbody tr.vyb td{background:rgba(243,180,83,.16);color:var(--gold2)}
+table.hodnoty td.d{color:var(--green);text-align:left;position:relative}
+table.hodnoty td.d span{position:absolute;left:12px;top:0;transform:translateY(-50%);background:#0b1220;border:1px solid rgba(127,220,143,.45);border-radius:8px;padding:0 8px;font-size:16px;white-space:nowrap;line-height:1.6}
+.hlaska{color:var(--red);font-size:16px;margin:6px 0 0;min-height:1.5em}
+
+/* ===== Hra ===== */
+.hraStav{font-size:17px;margin-top:10px;min-height:1.5em}
+.hraStav p{margin:4px 0}
+.skore{color:var(--muted)}
+
+/* ===== Plynulý prechod medzi záložkami ===== */
+@keyframes prechod{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+[data-karta]:not([hidden]),[data-pod]:not([hidden]){animation:prechod .28s ease-out}
+@media (prefers-reduced-motion:reduce){[data-karta],[data-pod]{animation:none!important}}
+
+/* ===== Podkarty ===== */
+.podkarty{display:flex;flex-wrap:wrap;gap:6px;margin:-6px 0 16px;padding:8px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
+.podkarty button{border-radius:10px}
+.koefGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr));gap:16px;align-items:start}
+.stage canvas.miniPl{aspect-ratio:1/1;min-height:220px;max-height:56vh;touch-action:auto;cursor:default}
+.miniVzorec{font-size:18px;text-align:center;margin:8px 0 0;font-variant-numeric:tabular-nums;min-height:3em}
+.miniVzorec b{color:var(--gold2)}
+ol.vkroky{list-style:none;padding:0;margin:12px 0 4px;font-size:17px}
+ol.vkroky li{padding:6px 10px;border-radius:8px;margin:3px 0;border-left:4px solid transparent}
+ol.vkroky li.akt{background:rgba(243,180,83,.14);border-left-color:var(--gold)}
+ol.vkroky li.bud{opacity:.45}
+.vzorec.druhy{font-size:19px;font-weight:600;color:var(--text);margin-top:-4px}
+details.zved{margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:6px 12px}
+details.zved summary{cursor:pointer;font-weight:650;min-height:40px;display:flex;align-items:center;color:var(--violet)}
+.kvStav{margin-top:10px}
+
+/* ===== Kubická, vyššie stupne, porovnanie ===== */
+.stage canvas.miniPl.maly{min-height:130px;max-height:34vh}
+.typyGrid,.okrajeGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+button.typ,.okraj{display:block;width:100%;text-align:left;padding:8px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03)}
+button.typ.akt,.okraj.akt{border-color:var(--gold);background:rgba(243,180,83,.12)}
+button.typ b,.okraj b{display:block;font-size:16px;margin-top:6px;color:var(--text)}
+button.typ span,.okraj span{display:block;font-size:16px;color:var(--muted)}
+button.typ .stage,.okraj .stage{display:block}
+.tabWrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.hodnoty.bez tbody tr{cursor:default}
+table.hodnoty.volne{max-width:none}
+table.hodnoty.volne td,table.hodnoty.volne th{text-align:left;height:auto;padding:8px 10px;font-size:16px}
+table.porTab{min-width:680px}
+
+/* ===== Kvíz ===== */
+.otazka{padding:14px 0;border-bottom:1px solid var(--line)}
+.otazka .q{font-size:19px;margin-bottom:8px}
+.otazka .q .por{color:var(--muted)}
+.otazka .obr{max-width:360px;margin:8px 0}
+ol.chybaKroky{font-size:18px;margin:6px 0 10px;padding-left:28px;font-variant-numeric:tabular-nums}
+ol.chybaKroky li{margin:3px 0}
+.moznosti{display:flex;flex-wrap:wrap;gap:8px}
+.moznosti button{min-height:52px;font-size:18px}
+.otazka button.ok{background:rgba(127,220,143,.2);border-color:var(--green);color:#d7ffdf;opacity:1}
+.otazka button.zle{background:rgba(255,122,107,.2);border-color:var(--red);color:#ffe0dc;opacity:1}
+.vstup{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.fb{margin-top:10px;font-size:17px}
+.fb.ok>b:first-child{color:var(--green)}.fb.zle>b:first-child{color:var(--red)}
+#kvizVysl{font-size:21px;font-weight:700;color:var(--gold2);margin:14px 0 0}
+footer{color:var(--muted);text-align:center;font-size:16px;padding:20px 0 10px}
+@media (max-width:600px){
+  .wrap{padding:10px}
+  .card{padding:12px}
+  h2{font-size:21px}
+  .vzorec{font-size:24px}
+  .grafLista .chk{margin-left:0}
+  .grafLista button{flex:1 1 auto}
+  .stage canvas{aspect-ratio:1/1}
+  .kroky{font-size:18px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="tx"><h1 data-t="titul"></h1><p class="sub" data-t="podtitul"></p></div>
+  <label class="nast"><span data-t="ui.desatinne"></span>
+    <select id="desMiesta" aria-label="Počet desatinných miest pri zaokrúhľovaní">
+      <option value="0">0</option><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option>
+    </select></label>
+</header>
+<nav class="karty" id="karty" role="tablist"></nav>
+
+<!-- ============ 1. KONŠTANTNÁ FUNKCIA ============ -->
+<section id="konst" class="sek" data-karta hidden>
+  <div class="gA" id="konst_graf"></div>
+  <div class="tA card" id="konst_tab"></div>
+  <div class="oA stlpec">
+    <div class="card">
+      <h2 data-t="konst.nadpis"></h2>
+      <p data-t="konst.uvod"></p>
+      <div class="vzorec" id="konst_vzorec"></div>
+      <div id="konst_slQ"></div>
+      <div class="tlac"><button id="konst_anim"></button></div>
+    </div>
+    <div class="card">
+      <h3 data-t="konst.vlastnosti"></h3>
+      <ul class="vl" id="konst_vl"></ul>
+    </div>
+    <div class="card box info" style="margin:0">
+      <b class="h" data-t="konst.funkcia"></b>
+      <p data-t="konst.funkciaText"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. LINEÁRNA FUNKCIA ============ -->
+<section id="lin" class="sek" data-karta hidden>
+  <div class="gA" id="lin_graf"></div>
+  <div class="tA card" id="lin_tab"></div>
+  <div class="oA stlpec">
+    <div class="card">
+      <h2 data-t="lin.nadpis"></h2>
+      <p data-t="lin.uvod"></p>
+      <div class="vzorec" id="lin_vzorec"></div>
+      <div id="lin_slK"></div>
+      <div id="lin_slQ"></div>
+      <div class="tlac"><button id="lin_anim"></button></div>
+      <ul class="vl" id="lin_vl"></ul>
+      <div id="lin_pozn"></div>
+    </div>
+    <div class="card">
+      <h3 data-t="lin.korenNadpis"></h3>
+      <p data-t="lin.korenUvod"></p>
+      <div class="kroky" id="lin_kroky" aria-live="polite"></div>
+      <p class="mini" data-t="lin.vseob"></p>
+      <p class="mini" data-t="graf.priblizne"></p>
+    </div>
+    <div class="card">
+      <h3 data-t="lin.hra.nadpis"></h3>
+      <p data-t="lin.hra.uvod"></p>
+      <div class="tlac" id="lin_hraTl"></div>
+      <div class="hraStav" id="lin_hraStav" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. KVADRATICKÁ ============ -->
+<!-- Časť 2: štyri podkarty, prepínajú sa tlačidlami v #kv_pod -->
+<section id="kvad" data-karta hidden>
+  <div class="podkarty" id="kv_pod" role="tablist"></div>
+
+  <!-- 3a. Kvadratická funkcia y = ax² + bx + c (+ hra „Uhádni parabolu“) -->
+  <div class="sek" data-pod="zaklad">
+    <div class="gA" id="kvz_graf"></div>
+    <div class="tA card" id="kvz_tab"></div>
+    <div class="oA stlpec">
+      <div class="card">
+        <h2 data-t="kvad.nadpis"></h2>
+        <p data-t="kvad.uvod"></p>
+        <div class="vzorec" id="kvz_vzorec"></div>
+        <div id="kvz_slA"></div><div id="kvz_slB"></div><div id="kvz_slC"></div>
+        <label class="chk"><input type="checkbox" id="kvz_porov"> <span data-t="kvad.porovnaj"></span></label>
+        <div id="kvz_pozn"></div>
+        <ul class="vl" id="kvz_vl"></ul>
+      </div>
+      <div class="card">
+        <h3 data-t="kvad.vrcholNadpis"></h3>
+        <div class="kroky" id="kvz_kroky" aria-live="polite"></div>
+      </div>
+      <div class="card">
+        <h3 data-t="kvad.hra.nadpis"></h3>
+        <p data-t="kvad.hra.uvod"></p>
+        <div class="tlac" id="kvz_hraTl"></div>
+        <div class="hraStav" id="kvz_hraStav" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3b. Čo robia koeficienty – tri mini scény -->
+  <div data-pod="koef" hidden>
+    <div class="card" style="margin-bottom:16px"><h2 data-t="kvad.koef.nadpis"></h2><p data-t="kvad.koef.uvod" style="margin:0"></p></div>
+    <div class="koefGrid"><div class="card" id="kvf_a"></div><div class="card" id="kvf_b"></div><div class="card" id="kvf_c"></div></div>
+  </div>
+
+  <!-- 3c. Vrcholový tvar y = a(x − m)² + n -->
+  <div class="sek" data-pod="vrch" hidden>
+    <div class="gA" id="kvv_graf"></div>
+    <div class="tA card">
+      <h3 data-t="kvad.vrch.prepNadpis"></h3>
+      <div class="tlac" style="margin:0 0 8px"><button id="kvv_prepni" data-t="kvad.vrch.prepni"></button></div>
+      <div id="kvv_prep"></div>
+    </div>
+    <div class="oA stlpec">
+      <div class="card">
+        <h2 data-t="kvad.vrch.nadpis"></h2>
+        <p data-t="kvad.vrch.uvod"></p>
+        <div class="vzorec" id="kvv_vzorec"></div>
+        <div id="kvv_slA"></div><div id="kvv_slM"></div><div id="kvv_slN"></div>
+        <div class="tlac" id="kvv_tl"></div>
+        <ol class="vkroky" id="kvv_kroky" aria-live="polite"></ol>
+        <div id="kvv_pozn"></div>
+      </div>
+      <div class="card box omyl" style="margin:0"><b class="h" data-t="kvad.vrch.omylNadpis"></b><p data-t="kvad.vrch.omyl"></p></div>
+    </div>
+  </div>
+
+  <!-- 3d. Korene kvadratickej funkcie -->
+  <div class="sek" data-pod="korene" hidden>
+    <div class="gA" id="kvk_graf"></div>
+    <div class="tA card">
+      <h3 data-t="kvad.kor.sucinNadpis"></h3>
+      <div id="kvk_sucin"></div>
+      <details class="zved"><summary data-t="kvad.kor.viete"></summary><div id="kvk_viete"></div></details>
+    </div>
+    <div class="oA stlpec">
+      <div class="card">
+        <h2 data-t="kvad.kor.nadpis"></h2>
+        <p data-t="kvad.kor.uvod"></p>
+        <div class="vzorec" id="kvk_vzorec"></div>
+        <div id="kvk_slA"></div><div id="kvk_slB"></div><div id="kvk_slC"></div>
+        <p id="kvk_graficky" style="margin-top:12px"></p>
+        <p class="mini" data-t="graf.priblizne"></p>
+      </div>
+      <div class="card">
+        <h3 data-t="kvad.kor.dNadpis"></h3>
+        <div id="kvk_vypocet" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. KUBICKÁ (podkarty: Kubická funkcia, Delenie intervalu) ============ -->
+<section id="kub" data-karta hidden>
+  <div class="podkarty" role="tablist"></div>
+
+  <!-- 4a. Kubická funkcia y = ax³ + bx² + cx + d -->
+  <div class="sek" data-pod="funkcia">
+    <div class="gA" id="kub_graf"></div>
+    <div class="tA card">
+      <h3 data-t="kub.typyNadpis"></h3>
+      <p data-t="kub.typyUvod"></p>
+      <div class="typyGrid" id="kub_typy"></div>
+    </div>
+    <div class="oA stlpec">
+      <div class="card">
+        <h2 data-t="kub.nadpis"></h2>
+        <p data-t="kub.uvod"></p>
+        <div class="vzorec" id="kub_vzorec"></div>
+        <div id="kub_slA"></div><div id="kub_slB"></div><div id="kub_slC"></div><div id="kub_slD"></div>
+        <label class="chk"><input type="checkbox" id="kub_konce" checked> <span data-t="okraje.ukaz"></span></label>
+        <div id="kub_pozn"></div>
+        <ul class="vl" id="kub_vl"></ul>
+        <details class="zved"><summary data-t="kub.inflexZved"></summary><p data-t="kub.inflexText"></p></details>
+      </div>
+      <div class="card"><h3 data-t="kub.pocetNadpis"></h3><div id="kub_pocet" aria-live="polite"></div></div>
+      <div class="card"><h3 data-t="kub.deltaNadpis"></h3><div id="kub_delta"></div></div>
+      <div class="card"><h3 data-t="kub.sucinNadpis"></h3><div id="kub_sucin"></div></div>
+    </div>
+  </div>
+
+  <!-- 4b. Delenie intervalu -->
+  <div class="sek" data-pod="delenie" hidden>
+    <div class="gA" id="del_graf"></div>
+    <div class="tA card">
+      <h3 data-t="del.tabNadpis"></h3>
+      <div class="tabWrap"><table class="hodnoty bez volne" id="del_tab"></table></div>
+    </div>
+    <div class="oA stlpec">
+      <div class="card">
+        <h2 data-t="del.nadpis"></h2>
+        <p data-t="del.uvod"></p>
+        <p class="mini" data-t="del.funkcia"></p>
+        <div class="tlac" id="del_fun" style="margin-top:0"></div>
+        <div id="del_slL"></div><div id="del_slR"></div>
+        <div class="tlac" id="del_tl"></div>
+        <p id="del_stav" style="margin-top:12px"></p>
+        <div id="del_box" aria-live="polite"></div>
+      </div>
+      <div class="card box info" style="margin:0"><p data-t="del.vysvetlenie"></p></div>
+      <div class="card"><details class="zved" style="margin:0"><summary data-t="del.zvedNadpis"></summary><p data-t="del.zved"></p></details></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. VYŠŠIE STUPNE ============ -->
+<section id="vyssie" class="sek" data-karta hidden>
+  <div class="gA" id="vys_graf"></div>
+  <div class="tA card">
+    <h3 data-t="vys.tabNadpis"></h3>
+    <p data-t="vys.tabUvod"></p>
+    <div class="okrajeGrid" id="vys_okraje"></div>
+  </div>
+  <div class="oA stlpec">
+    <div class="card">
+      <h2 data-t="vys.nadpis"></h2>
+      <p data-t="vys.uvod"></p>
+      <p class="mini" data-t="vys.stupen"></p>
+      <div class="tlac" id="vys_st" style="margin-top:0"></div>
+      <p class="mini" data-t="vys.priklady"></p>
+      <div class="tlac" id="vys_pr" style="margin-top:0"></div>
+      <div class="vzorec" id="vys_vzorec" style="margin-top:12px"></div>
+      <div id="vys_sl"></div>
+      <label class="chk"><input type="checkbox" id="vys_konce" checked> <span data-t="okraje.ukaz"></span></label>
+      <div id="vys_pozn"></div>
+    </div>
+    <div class="card"><h3 data-t="vys.pravidlaNadpis"></h3><ul class="vl" id="vys_vl"></ul></div>
+    <div class="card"><h3 data-t="vys.sucinNadpis"></h3><div id="vys_sucin"></div></div>
+  </div>
+</section>
+
+<!-- ============ 6. POROVNANIE A KVÍZ (podkarty: Porovnanie funkcií, Časté omyly, Kvíz) ============ -->
+<section id="porov" data-karta hidden>
+  <div class="podkarty" role="tablist"></div>
+
+  <!-- 6a. Porovnanie funkcií -->
+  <div class="sek" data-pod="porovnanie">
+    <div class="gA" id="por_graf"></div>
+    <div class="tA card">
+      <h3 data-t="por.tabNadpis"></h3>
+      <div class="tabWrap"><table class="hodnoty volne porTab" id="por_tab"></table></div>
+    </div>
+    <div class="oA stlpec">
+      <div class="card">
+        <h2 data-t="por.nadpis"></h2>
+        <p data-t="por.uvod"></p>
+        <div class="tlac" id="por_tl"></div>
+        <p id="por_vyb" style="margin-top:12px"></p>
+        <p class="mini" data-t="por.poznamka"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6b. Časté omyly -->
+  <div data-pod="omyly" hidden>
+    <div class="card" style="margin-bottom:16px"><h2 data-t="omy.nadpis"></h2><p data-t="omy.uvod" style="margin:0"></p></div>
+    <div class="koefGrid" id="omy_grid"></div>
+  </div>
+
+  <!-- 6c. Kvíz -->
+  <div data-pod="kviz" hidden>
+    <div class="card">
+      <h2 data-t="kviz.nadpis"></h2>
+      <p data-t="kviz.uvod"></p>
+      <div class="tlac" id="kviz_uroven"></div>
+      <div class="tlac"><button class="primary" id="kviz_novy" data-t="kviz.novy"></button></div>
+      <div id="kviz_otazky"></div>
+      <p id="kvizVysl" aria-live="polite"></p>
+    </div>
+  </div>
+</section>
+
+<footer data-t="pata"></footer>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   POMOCNÉ FUNKCIE
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const U = TEXTY.ui;
+const EPS = 1e-9;                                         // tolerancia pre rozhodnutia o rovnosti
+const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
+const nahoda = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const MALO_POHYBU = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function cesta(o, p) { return p.split('.').reduce((x, k) => x == null ? x : x[k], o); }
+function vypln(t, o) { return String(t).replace(/\{(\w+)\}/g, (x, k) => (o && o[k] !== undefined) ? o[k] : x); }
+const jeNula = x => Math.abs(x) < EPS;
+const rovne = (a, b) => Math.abs(a - b) < EPS;
+const JE_CELE = x => Math.abs(x - Math.round(x)) < 1e-9;
+function nsd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b]; } return a || 1; }
+
+/* ===== Čísla v slovenskom zápise ===== */
+let DES = 2;                                              // počet desatinných miest (nastaviteľný v hlavičke)
+const HORNE = '⁰¹²³⁴⁵⁶⁷⁸⁹⁻';
+const hornyIndex = n => String(n).split('').map(z => z === '-' ? HORNE[10] : HORNE[+z]).join('');
+// číslo → text: desatinná čiarka, mínus „−“, zaokrúhlenie na d miest, bez zbytočných núl, tenká medzera v tisícoch
+function cis(x, d = DES) {
+  if (typeof x !== 'number' || !isFinite(x)) return '—';
+  if (Math.abs(x) >= 1e15) {                              // obrovské čísla: a · 10ⁿ
+    const e = Math.floor(Math.log10(Math.abs(x)));
+    return cis(x / Math.pow(10, e), 2) + '·10' + hornyIndex(e);
+  }
+  const m = Math.pow(10, d);
+  let v = Math.round(x * m) / m;
+  if (v === 0) v = 0;                                     // −0 → 0
+  let s = v.toFixed(d);
+  if (d > 0) s = s.replace(/0+$/, '').replace(/\.$/, '');
+  const zap = s[0] === '-'; if (zap) s = s.slice(1);
+  let [c, f] = s.split('.');
+  if (c.length > 4) c = c.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return (zap ? '−' : '') + c + (f ? ',' + f : '');
+}
+const cisK = x => cis(x, 4);                              // koeficienty a zadané čísla – zobraz presne
+// dá sa x zapísať presne s d desatinnými miestami?
+const presne = (x, d = DES) => Math.abs(x - Math.round(x * Math.pow(10, d)) / Math.pow(10, d)) < EPS * Math.max(1, Math.abs(x));
+const rovZnak = (x, d = DES) => presne(x, d) ? '=' : '≈';
+// záporné číslo do zátvorky (napr. pri delení): (−2)
+const zatv = x => x < 0 ? '(' + cisK(x) + ')' : cisK(x);
+// prečítanie čísla zo vstupu: povolená desatinná čiarka aj bodka, mínus aj „−“
+function citaj(s) { s = String(s).trim().replace(/\s/g, '').replace(/[−–]/g, '-').replace(',', '.'); return /^-?(\d+(\.\d*)?|\.\d+)$/.test(s) ? parseFloat(s) : NaN; }
+
+/* =====================================================================
+   POLYNÓMY
+   Polynóm je pole koeficientov c[0..n], kde c[i] je koeficient pri xⁱ.
+   Napríklad y = 2x − 4  →  c = [−4, 2].
+   ===================================================================== */
+/* POLYNÓMY START */
+// hodnota polynómu v bode x – Hornerova schéma: (…(cₙ·x + cₙ₋₁)·x + …)·x + c₀
+function evalPoly(c, x) {
+  let y = 0;
+  for (let i = c.length - 1; i >= 0; i--) y = y * x + c[i];
+  return y;
+}
+// derivácia: (cᵢ·xⁱ)' = i·cᵢ·xⁱ⁻¹
+function derivative(c) {
+  const d = [];
+  for (let i = 1; i < c.length; i++) d.push(i * c[i]);
+  return d.length ? d : [0];
+}
+// stupeň polynómu – nulové koeficienty vpredu sa ignorujú; −1 = nulový polynóm (stupeň nie je definovaný)
+function degree(c) {
+  for (let i = c.length - 1; i >= 0; i--) if (!jeNula(c[i])) return i;
+  return -1;
+}
+// zápis polynómu: [−4, 2] → „2x − 4“
+function polyText(c, x = 'x') {
+  const st = degree(c);
+  if (st < 0) return '0';
+  let s = '';
+  for (let i = st; i >= 0; i--) {
+    const a = c[i]; if (jeNula(a)) continue;
+    const abs = Math.abs(a);
+    const clen = i === 0 ? cisK(abs) : (rovne(abs, 1) ? '' : cisK(abs)) + x + (i > 1 ? hornyIndex(i) : '');
+    s += s === '' ? (a < 0 ? '−' : '') + clen : (a < 0 ? ' − ' : ' + ') + clen;
+  }
+  return s;
+}
+// presný zlomok čitateľ/menovateľ (pre desatinné čísla s najviac 3 miestami), zjednodušený
+function zlomok(cit, men) {
+  for (const M of [1, 2, 4, 5, 10, 20, 100, 1000]) {
+    const a = cit * M, b = men * M;
+    if (JE_CELE(a) && JE_CELE(b)) {
+      let p = Math.round(a), q = Math.round(b);
+      if (q === 0) return null;
+      if (q < 0) { p = -p; q = -q; }
+      const g = nsd(p, q);
+      return { p: p / g, q: q / g };
+    }
+  }
+  return null;
+}
+// koreň lineárnej funkcie y = kx + q
+function korenLin(k, q) {
+  if (jeNula(k)) return jeNula(q) ? { typ: 'vsetky' } : { typ: 'ziadny' };
+  const x = -q / k;
+  return { typ: 'jeden', x: jeNula(x) ? 0 : x, zl: zlomok(-q, k) };
+}
+/* POLYNÓMY KONIEC */
+
+// číslo ako HTML: celé / presné desatinné / zlomok ≈ desatinné
+function cisHTML(x, zl) {
+  if (zl && zl.q !== 1 && !presne(x)) {
+    return { rov: '=', html: (zl.p < 0 ? '−' : '') + `<span class="zl"><span>${Math.abs(zl.p)}</span><span>${zl.q}</span></span> ≈ ${cis(x)}` };
+  }
+  return { rov: rovZnak(x), html: cis(x) };
+}
+
+/* =====================================================================
+   GRAF – kreslenie
+   drawGraph(canvas, krivky, moznosti) – jeden opakovane použiteľný komponent.
+   krivky:   [{ c: [koeficienty] alebo f: x => y, farba, styl: 'plna'|'ciarkovana'|'bodkovana', hrubka, popis }]
+   moznosti: { view: {cx, cy, sx, sy}  – stred a mierka (pixely na jednotku),
+               znacky: [{ x, y, typ: 'koren'|'prY'|'vrchol'|'extrem'|'inflex'|'zvyr'|'poc'|'bod', popis, farba }],
+               sonda: { x, krivka } alebo null,
+               navrch: (ctx, T, obsadene) => {}  – vlastné kreslenie (trojuholník sklonu …) }
+   Vracia T – prepočty súradníc (px, py, wx, wy) a polohu sondy.
+   ===================================================================== */
+const FARBY = {
+  f: '#f3b453', ciel: '#6fb4ff', sklon: '#7fdc8f', sklon2: '#b9a3ff', koren: '#ff7a6b', prY: '#7fdc8f', vrchol: '#b9a3ff',
+  extrem: '#b9a3ff', inflex: '#6fb4ff', stred: '#ffffff',
+  zvyr: '#ffffff', text: '#e2e8f5', muted: '#a3adc6', pozadie: '#08101c', siva: '#8d97ad',
+  mriezka: 'rgba(140,160,215,.20)', mriezka2: 'rgba(140,160,215,.07)', os: 'rgba(226,232,245,.85)'
+};
+const STYLY = { plna: [], ciarkovana: [14, 9], bodkovana: [2, 7] };
+const PISMO = '16px system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
+const PISMO_B = '700 16px system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
+
+// pekný krok mriežky ≥ m: 1, 2, 5, 10, 20, 50 …
+function peknyKrok(m) {
+  if (!(m > 0) || !isFinite(m)) return 1;
+  const z = Math.pow(10, Math.floor(Math.log10(m)));
+  for (const k of [1, 2, 5, 10]) if (k * z >= m * (1 - 1e-12)) return k * z;
+  return 10 * z;
+}
+function dalsiKrok(s) { const z = Math.pow(10, Math.floor(Math.log10(s) + 1e-9)); const m = Math.round(s / z); return (m < 2 ? 2 : m < 5 ? 5 : 10) * z; }
+const mantisa = s => Math.round(s / Math.pow(10, Math.floor(Math.log10(s) + 1e-9)));
+const desKroku = s => Math.max(0, -Math.floor(Math.log10(s) + 1e-9));
+// hodnota krivky v bode x (polynóm alebo vlastná funkcia)
+const hodnota = (k, x) => k.f ? k.f(x) : evalPoly(k.c, x);
+const prekryv = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+// text s tmavým lemom – čitateľný aj nad mriežkou a krivkou
+function textLem(ctx, t, x, y, farba) {
+  ctx.lineJoin = 'round'; ctx.lineWidth = 5; ctx.strokeStyle = FARBY.pozadie; ctx.strokeText(t, x, y);
+  ctx.fillStyle = farba; ctx.fillText(t, x, y);
+}
+function kresliStitok(ctx, r, text, farba) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(8,14,26,.92)'; ctx.strokeStyle = farba; ctx.lineWidth = 1.5;
+  ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(r.x, r.y, r.w, r.h, 6); else ctx.rect(r.x, r.y, r.w, r.h);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = farba; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, r.x + 6, r.y + r.h / 2 + 1);
+  ctx.restore();
+}
+// popisok k bodu (x, y) v pixeloch – skúsi niekoľko polôh, aby sa neprekryl s inými
+function umiestniPopis(ctx, T, obsadene, text, x, y, farba, kandidati) {
+  ctx.font = PISMO;
+  const w = ctx.measureText(text).width + 12, h = 26;
+  const k = kandidati || [[12, -12 - h], [12, 12], [-12 - w, -12 - h], [-12 - w, 12], [-w / 2, -18 - h], [-w / 2, 18], [14, -h / 2], [-14 - w, -h / 2]];
+  for (const [dx, dy] of k) {
+    const r = { x: x + dx, y: y + dy, w, h };
+    if (r.x < 2 || r.y < 2 || r.x + w > T.W - 2 || r.y + h > T.H - 2) continue;
+    if (obsadene.some(o => prekryv(o, r))) continue;
+    obsadene.push(r); kresliStitok(ctx, r, text, farba); return r;
+  }
+  return null;                                            // nie je voľné miesto – popisok radšej vynecháme (text je aj pod grafom)
+}
+// značka bodu – tvar podľa typu (nerozlišujeme len farbou)
+function kresliZnacku(ctx, typ, x, y, farba) {
+  ctx.save(); ctx.setLineDash([]); ctx.lineWidth = 2.5; ctx.strokeStyle = '#04060c'; ctx.fillStyle = farba;
+  ctx.beginPath();
+  if (typ === 'koren') { ctx.arc(x, y, 8, 0, 7); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 3, 0, 7); ctx.fillStyle = '#04060c'; ctx.fill(); }
+  else if (typ === 'prY') { ctx.rect(x - 7, y - 7, 14, 14); ctx.fill(); ctx.stroke(); }
+  else if (typ === 'vrchol' || typ === 'extrem') { ctx.moveTo(x, y - 10); ctx.lineTo(x + 10, y); ctx.lineTo(x, y + 10); ctx.lineTo(x - 10, y); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  else if (typ === 'zvyr' || typ === 'stred') { ctx.arc(x, y, 12, 0, 7); ctx.strokeStyle = farba; ctx.lineWidth = 3; ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 7); ctx.fill(); }
+  else if (typ === 'poc') { ctx.arc(x, y, 6, 0, 7); ctx.strokeStyle = farba; ctx.lineWidth = 2.5; ctx.stroke(); }
+  else if (typ === 'inflex') { ctx.moveTo(x, y - 9); ctx.lineTo(x + 9, y + 7); ctx.lineTo(x - 9, y + 7); ctx.closePath(); ctx.fillStyle = FARBY.pozadie; ctx.fill(); ctx.strokeStyle = farba; ctx.lineWidth = 3; ctx.stroke(); }
+  else { ctx.arc(x, y, 5.5, 0, 7); ctx.fill(); ctx.stroke(); }
+  ctx.restore();
+}
+
+function drawGraph(platno, krivky, moz) {
+  const W = platno.clientWidth, H = platno.clientHeight;
+  if (W < 20 || H < 20 || !moz || !moz.view) return null;
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const bw = Math.round(W * dpr), bh = Math.round(H * dpr);
+  if (platno.width !== bw || platno.height !== bh) { platno.width = bw; platno.height = bh; }
+  const ctx = platno.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const v = moz.view;
+  // prepočty: svet (x, y) ↔ pixely (px, py)
+  const T = {
+    W, H, dpr, sx: v.sx, sy: v.sy,
+    px: x => W / 2 + (x - v.cx) * v.sx, py: y => H / 2 - (y - v.cy) * v.sy,
+    wx: p => v.cx + (p - W / 2) / v.sx, wy: p => v.cy - (p - H / 2) / v.sy
+  };
+  T.x0 = T.wx(0); T.x1 = T.wx(W); T.yHore = T.wy(0); T.yDole = T.wy(H);
+  const obsadene = [];                                    // obdĺžniky popiskov – aby sa neprekrývali
+  // miesta značiek – čísla na osiach sa im vyhnú
+  const miestaZnaciek = (moz.znacky || []).filter(z => isFinite(z.x) && isFinite(z.y)).map(z => ({ x: T.px(z.x) - 12, y: T.py(z.y) - 12, w: 24, h: 24 }));
+  const podZnackou = r => miestaZnaciek.some(o => prekryv(o, r));
+
+  ctx.fillStyle = FARBY.pozadie; ctx.fillRect(0, 0, W, H);
+  ctx.font = PISMO;
+
+  /* --- krok mriežky: 1, 2, 5, 10 …, aby sa popisky na osi x neprekrývali --- */
+  let kx = peknyKrok(64 / v.sx);
+  for (let i = 0; i < 30; i++) {
+    const d = desKroku(kx);
+    const w = Math.max(ctx.measureText(cis(Math.ceil(T.x0 / kx) * kx, d)).width, ctx.measureText(cis(Math.floor(T.x1 / kx) * kx, d)).width);
+    if (kx * v.sx >= w + 18) break;
+    kx = dalsiKrok(kx);
+  }
+  let ky = peknyKrok(40 / v.sy);
+  if (Math.abs(v.sx / v.sy - 1) < 1e-6) kx = ky = Math.max(kx, ky);   // rovnaká mierka → rovnaký krok na oboch osiach
+  const dX = desKroku(kx), dY = desKroku(ky);
+
+  const ciara = (x1, y1, x2, y2) => { ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); };
+  // jemná (vedľajšia) a hlavná mriežka
+  const mriezka = (krok, farba) => {
+    ctx.beginPath(); ctx.strokeStyle = farba; ctx.lineWidth = 1;
+    const a = Math.ceil(T.x0 / krok), b = Math.floor(T.x1 / krok);
+    if (b - a < 2000) for (let i = a; i <= b; i++) { const p = Math.round(T.px(i * krok)) + .5; ciara(p, 0, p, H); }
+    const c = Math.ceil(T.yDole / krok), e = Math.floor(T.yHore / krok);
+    if (e - c < 2000) for (let i = c; i <= e; i++) { const p = Math.round(T.py(i * krok)) + .5; ciara(0, p, W, p); }
+    ctx.stroke();
+  };
+  const sub = kx / (mantisa(kx) === 2 ? 4 : 5);
+  if (sub * Math.min(v.sx, v.sy) >= 9) mriezka(sub, FARBY.mriezka2);
+  mriezka(kx === ky ? kx : Math.max(kx, ky), FARBY.mriezka);
+
+  /* --- osi --- */
+  const osX = T.py(0), osY = T.px(0);                     // os x leží na py(0), os y na px(0)
+  const vidX = osX >= 0 && osX <= H, vidY = osY >= 0 && osY <= W;
+  ctx.strokeStyle = FARBY.os; ctx.fillStyle = FARBY.os; ctx.lineWidth = 2;
+  if (vidX) {
+    const p = Math.round(osX) + .5;
+    ctx.beginPath(); ciara(0, p, W - 2, p); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W - 1, p); ctx.lineTo(W - 13, p - 6); ctx.lineTo(W - 13, p + 6); ctx.closePath(); ctx.fill();
+  }
+  if (vidY) {
+    const p = Math.round(osY) + .5;
+    ctx.beginPath(); ciara(p, H, p, 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p, 1); ctx.lineTo(p - 6, 13); ctx.lineTo(p + 6, 13); ctx.closePath(); ctx.fill();
+  }
+
+  /* --- čísla na osi x --- */
+  ctx.font = PISMO;
+  let lyX, zarX;                                          // poloha popiskov osi x (aj keď je os mimo plátna)
+  if (osX < 0) { lyX = 4; zarX = 'top'; }
+  else if (osX > H) { lyX = H - 4; zarX = 'bottom'; }
+  else if (osX > H - 30) { lyX = osX - 6; zarX = 'bottom'; }
+  else { lyX = osX + 6; zarX = 'top'; }
+  ctx.textBaseline = zarX; ctx.textAlign = 'center';
+  {
+    const a = Math.ceil(T.x0 / kx), b = Math.floor(T.x1 / kx);
+    if (b - a < 1000) for (let i = a; i <= b; i++) {
+      if (i === 0 && vidY) continue;                      // 0 kreslíme raz pri počiatku
+      const p = T.px(i * kx), t = cis(i * kx, dX), w = ctx.measureText(t).width;
+      if (p - w / 2 < 2 || p + w / 2 > W - 2) continue;
+      if (vidX && p + w / 2 > W - 26) continue;           // miesto pre názov osi „x“
+      if (vidY && Math.abs(p - osY) < w / 2 + 8) continue;
+      if (podZnackou({ x: p - w / 2, y: zarX === 'top' ? lyX : lyX - 18, w, h: 18 })) continue;
+      textLem(ctx, t, p, lyX, FARBY.muted);
+      obsadene.push({ x: p - w / 2, y: zarX === 'top' ? lyX : lyX - 18, w, h: 18 });
+    }
+  }
+  /* --- čísla na osi y --- */
+  let lxY, zarY;
+  if (osY < 0) { lxY = 6; zarY = 'left'; }
+  else if (osY > W) { lxY = W - 6; zarY = 'right'; }
+  else if (osY < 60) { lxY = osY + 8; zarY = 'left'; }
+  else { lxY = osY - 8; zarY = 'right'; }
+  ctx.textAlign = zarY; ctx.textBaseline = 'middle';
+  {
+    const a = Math.ceil(T.yDole / ky), b = Math.floor(T.yHore / ky);
+    if (b - a < 1000) for (let i = a; i <= b; i++) {
+      if (i === 0 && vidX) continue;
+      const p = T.py(i * ky), t = cis(i * ky, dY), w = ctx.measureText(t).width;
+      if (p < 12 || p > H - 12) continue;
+      if (vidY && p < 30) continue;                       // miesto pre názov osi „y“
+      if (Math.abs(p - (zarX === 'top' ? lyX + 9 : lyX - 9)) < 20) continue;  // nie cez čísla osi x
+      if (podZnackou({ x: zarY === 'left' ? lxY : lxY - w, y: p - 9, w, h: 18 })) continue;
+      textLem(ctx, t, lxY, p, FARBY.muted);
+      obsadene.push({ x: zarY === 'left' ? lxY : lxY - w, y: p - 9, w, h: 18 });
+    }
+  }
+  if (vidX && vidY) { ctx.textAlign = 'right'; ctx.textBaseline = 'top'; textLem(ctx, '0', osY - 6, osX + 5, FARBY.muted); }
+  // názvy osí
+  ctx.font = PISMO_B;
+  if (vidX) { ctx.textAlign = 'right'; ctx.textBaseline = osX > 30 ? 'bottom' : 'top'; textLem(ctx, TEXTY.graf.osX, W - 6, osX > 30 ? osX - 8 : osX + 10, FARBY.text); }
+  if (vidY) { ctx.textAlign = 'left'; ctx.textBaseline = 'top'; textLem(ctx, TEXTY.graf.osY, osY + 12, 2, FARBY.text); }
+
+  /* --- krivky: hodnota pre každý pixel šírky plátna --- */
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
+  const n = Math.ceil(W * dpr);
+  for (const k of krivky) {
+    ctx.beginPath(); ctx.setLineDash(STYLY[k.styl] || []); ctx.lineWidth = k.hrubka || 3.5; ctx.strokeStyle = k.farba || FARBY.f;
+    ctx.lineJoin = 'round'; ctx.lineCap = k.styl === 'bodkovana' ? 'round' : 'butt';
+    let pero = false;
+    for (let i = 0; i <= n; i++) {
+      const p = i / dpr, y = hodnota(k, T.wx(p));
+      let q = T.py(y);
+      if (!isFinite(q)) { pero = false; continue; }       // NaN / Infinity → prerušíme čiaru
+      q = clamp(q, -4 * H, 5 * H);                        // ďaleko mimo plátna orežeme (bez obrovských súradníc)
+      if (pero) ctx.lineTo(p, q); else ctx.moveTo(p, q);
+      pero = true;
+    }
+    ctx.stroke();
+  }
+  ctx.restore(); ctx.setLineDash([]);
+  // názvy kriviek (f, cieľ …) – pri pravom okraji, kde je krivka viditeľná
+  for (const k of krivky) {
+    if (!k.popis) continue;
+    for (let p = W - 40; p > 30; p -= 24) {
+      const q = T.py(hodnota(k, T.wx(p)));
+      if (isFinite(q) && q > 30 && q < H - 30) { ctx.font = PISMO_B; umiestniPopis(ctx, T, obsadene, k.popis, p, q, k.farba || FARBY.f); break; }
+    }
+  }
+
+  /* --- vlastné kreslenie karty (trojuholník sklonu, šípky …) --- */
+  if (moz.navrch) { ctx.save(); moz.navrch(ctx, T, obsadene); ctx.restore(); ctx.setLineDash([]); }
+
+  /* --- značky bodov --- */
+  const zn = (moz.znacky || []).filter(z => isFinite(z.x) && isFinite(z.y));
+  for (const z of zn) {
+    const x = T.px(z.x), y = T.py(z.y);
+    if (x < -20 || x > W + 20 || y < -20 || y > H + 20) continue;
+    obsadene.push({ x: x - 11, y: y - 11, w: 22, h: 22 });
+  }
+  for (const z of zn) {
+    const x = T.px(z.x), y = T.py(z.y);
+    if (x < -20 || x > W + 20 || y < -20 || y > H + 20) continue;
+    const farba = z.farba || FARBY[z.typ] || FARBY.text;
+    kresliZnacku(ctx, z.typ, x, y, farba);
+    if (z.popis) umiestniPopis(ctx, T, obsadene, z.popis, x, y, farba);
+  }
+
+  /* --- sonda: jazdec na osi x, zvislá čiarkovaná čiara a bod na krivke --- */
+  T.sonda = null;
+  if (moz.sonda && krivky[moz.sonda.krivka || 0]) {
+    const k = krivky[moz.sonda.krivka || 0];
+    const sx = moz.sonda.x, sy = hodnota(k, sx);
+    const hx = T.px(sx), hy = clamp(vidX ? osX : (osX < 0 ? 0 : H), 18, H - 18);
+    if (hx >= -2 && hx <= W + 2) {
+      const yy = T.py(sy), by = isFinite(yy) ? clamp(yy, -2, H + 2) : hy;
+      ctx.save();
+      ctx.strokeStyle = FARBY.f; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx, by); ctx.stroke(); ctx.setLineDash([]);
+      // jazdec
+      ctx.fillStyle = FARBY.f; ctx.strokeStyle = '#1a0e02'; ctx.lineWidth = 2;
+      ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(hx - 22, hy - 14, 44, 28, 14); else ctx.rect(hx - 22, hy - 14, 44, 28);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#1a0e02';
+      ctx.beginPath(); ctx.moveTo(hx - 16, hy); ctx.lineTo(hx - 7, hy - 7); ctx.lineTo(hx - 7, hy + 7); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(hx + 16, hy); ctx.lineTo(hx + 7, hy - 7); ctx.lineTo(hx + 7, hy + 7); ctx.closePath(); ctx.fill();
+      // bod na krivke
+      if (isFinite(yy) && yy >= -8 && yy <= H + 8) {
+        ctx.beginPath(); ctx.arc(hx, yy, 8, 0, 7); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = FARBY.f; ctx.stroke();
+        umiestniPopis(ctx, T, obsadene, `(${cis(sx)}; ${cis(sy)})`, hx, yy, FARBY.f);
+      }
+      ctx.restore();
+      T.sonda = { hx, hy, by };
+    }
+  }
+  return T;
+}
+
+/* =====================================================================
+   GRAF – ovládanie (posúvanie, priblíženie, sonda, prispôsobenie)
+   novyGraf(kontajner, nastavenia) postaví plátno, tlačidlá a riadok sondy.
+   G.nastav(krivky, moznosti) – nové krivky a značky; moznosti navyše:
+     korene: [x …] (sonda sa k nim prichytáva), vsetkoKorene: true (nulová funkcia),
+     dolezite: [x …] (body, ktoré má „Prispôsob“ ukázať), rovnakaMierka (predvolene true)
+   ===================================================================== */
+const VIEW_MIN = 1e-3, VIEW_MAX = 1e6, STRED_MAX = 1e6;   // hranice mierky a posunu – pri extrémoch sa nič nerozbije
+function orezView(v) {
+  return { cx: clamp(v.cx, -STRED_MAX, STRED_MAX), cy: clamp(v.cy, -STRED_MAX, STRED_MAX), sx: clamp(v.sx, VIEW_MIN, VIEW_MAX), sy: clamp(v.sy, VIEW_MIN, VIEW_MAX) };
+}
+const VSETKY_GRAFY = [];
+
+function novyGraf(kontajner, nast = {}) {
+  kontajner.innerHTML = `
+    <div class="card stageCard">
+      <div class="grafLista">
+        <button class="zoom" data-a="plus" aria-label="${U.plusAria}">${U.plus}</button>
+        <button class="zoom" data-a="minus" aria-label="${U.minusAria}">${U.minus}</button>
+        <button data-a="povodny">${U.povodny}</button>
+        <button data-a="prisposob">${U.prisposob}</button>
+        <label class="chk"><input type="checkbox" checked data-a="sonda"> ${U.sonda}</label>
+      </div>
+      <div class="stage"><canvas tabindex="0" role="img" aria-label="${U.grafAria}"></canvas></div>
+      <div class="sondaInfo" aria-live="polite"></div>
+      <div class="legenda"></div>
+      <p class="priblizne">${U.ovladanie}</p>
+    </div>`;
+  const platno = $('canvas', kontajner), info = $('.sondaInfo', kontajner), leg = $('.legenda', kontajner);
+  const G = { platno, krivky: [], moz: {}, view: null, sonda: { zap: true, x: nast.sondaX ?? 1 }, T: null, anim: 0 };
+  VSETKY_GRAFY.push(G);
+
+  G.povodnyPohlad = () => {
+    const W = platno.clientWidth || 600, H = platno.clientHeight || 450;
+    const s = Math.min(W / 16, H / 12);
+    return orezView({ cx: 0, cy: 0, sx: s, sy: s });
+  };
+  G.nastav = (krivky, moz) => { G.krivky = krivky; G.moz = moz || {}; G.legenda(); G.kresli(); };
+  let caka = false;
+  G.kresli = () => { if (caka) return; caka = true; requestAnimationFrame(() => { caka = false; G.hned(); }); };
+  G.hned = () => {
+    if (platno.clientWidth < 20) return;                  // skrytá karta – nekreslíme
+    if (!G.view) G.view = G.povodnyPohlad();
+    G.T = drawGraph(platno, G.krivky, Object.assign({}, G.moz, { view: G.view, sonda: G.sonda.zap ? { x: G.sonda.x, krivka: 0 } : null }));
+    G.infoSonda();
+  };
+
+  /* --- prechod pohľadu animovaný cez requestAnimationFrame podľa skutočného času --- */
+  G.animujNa = (ciel, ms = 380) => {
+    ciel = orezView(ciel);
+    cancelAnimationFrame(G.anim);
+    if (MALO_POHYBU || !G.view) { G.view = ciel; G.kresli(); return; }
+    const z = Object.assign({}, G.view), t0 = performance.now();
+    const krok = t => {
+      const p = clamp((t - t0) / ms, 0, 1), e = ease(p);
+      G.view = {
+        cx: z.cx + (ciel.cx - z.cx) * e, cy: z.cy + (ciel.cy - z.cy) * e,
+        sx: z.sx * Math.pow(ciel.sx / z.sx, e), sy: z.sy * Math.pow(ciel.sy / z.sy, e)   // mierka sa mení logaritmicky
+      };
+      G.hned();
+      G.anim = p < 1 ? requestAnimationFrame(krok) : 0;
+    };
+    G.anim = requestAnimationFrame(krok);
+  };
+  G.zoom = f => { const v = G.view || G.povodnyPohlad(); G.animujNa({ cx: v.cx, cy: v.cy, sx: v.sx * f, sy: v.sy * f }); };
+  // priblíženie okolo bodu (px, py) – bod pod prstom/kurzorom ostane na mieste
+  G.zoomOkolo = (px, py, f, z = G.view) => {
+    const W = platno.clientWidth, H = platno.clientHeight;
+    const wx = z.cx + (px - W / 2) / z.sx, wy = z.cy - (py - H / 2) / z.sy;
+    const sx = clamp(z.sx * f, VIEW_MIN, VIEW_MAX), sy = clamp(z.sy * f, VIEW_MIN, VIEW_MAX);
+    return orezView({ sx, sy, cx: wx - (px - W / 2) / sx, cy: wy + (py - H / 2) / sy });
+  };
+  // „Prispôsob graf funkcii“: ukáž korene, priesečník s osou y a dôležité body
+  G.prisposob = () => {
+    const W = platno.clientWidth, H = platno.clientHeight; if (W < 20) return;
+    const xs = [0, ...(G.moz.korene || []), ...(G.moz.dolezite || [])].filter(x => isFinite(x));
+    for (const z of G.moz.znacky || []) if (isFinite(z.x)) xs.push(z.x);
+    let a = Math.min(...xs) - 2, b = Math.max(...xs) + 2;
+    if (b - a < 8) { const m = (a + b) / 2; a = m - 4; b = m + 4; }
+    let lo = 0, hi = 0;
+    for (const k of G.krivky) for (let i = 0; i <= 200; i++) {
+      const y = hodnota(k, a + (b - a) * i / 200);
+      if (isFinite(y)) { lo = Math.min(lo, y); hi = Math.max(hi, y); }
+    }
+    for (const z of G.moz.znacky || []) if (isFinite(z.y)) { lo = Math.min(lo, z.y); hi = Math.max(hi, z.y); }
+    if (hi - lo < 4) { const m = (hi + lo) / 2; lo = m - 2; hi = m + 2; }
+    const pad = (hi - lo) * .12; lo -= pad; hi += pad;
+    let sx = W / (b - a), sy = H / (hi - lo);
+    if (G.moz.rovnakaMierka !== false) sx = sy = Math.min(sx, sy);
+    G.animujNa({ cx: (a + b) / 2, cy: (lo + hi) / 2, sx, sy });
+  };
+
+  /* --- korene a prichytenie sondy --- */
+  const PRICHYT = 10, BLIZKO = 32;                        // v pixeloch
+  G.najblizsiKoren = x => {
+    let best = null;
+    for (const r of G.moz.korene || []) {
+      if (!isFinite(r)) continue;
+      const d = Math.abs((r - x) * (G.view ? G.view.sx : 1));
+      if (!best || d < best.d) best = { r, d };
+    }
+    return best;
+  };
+  G.nastavSondu = (x, magnet) => {
+    if (!isFinite(x)) return;
+    x = clamp(x, -STRED_MAX, STRED_MAX);
+    const k = G.najblizsiKoren(x);
+    if (magnet && k && k.d < PRICHYT) x = k.r;
+    G.sonda.x = x; G.kresli();
+  };
+  G.infoSonda = () => {
+    if (!G.sonda.zap) { info.innerHTML = TEXTY.graf.vypnuta; return; }
+    const k = G.krivky[0]; if (!k) { info.innerHTML = ''; return; }
+    const x = G.sonda.x, y = hodnota(k, x);
+    let h = vypln(TEXTY.graf.sondaInfo, { x: cis(x), y: cis(y), rov: jeNula(y) ? '=' : rovZnak(y) });
+    const kr = G.najblizsiKoren(x);
+    if (G.moz.vsetkoKorene) h += '<br>' + TEXTY.graf.vsade;
+    else if (kr && rovne(kr.r, x)) h += '<br>' + vypln(TEXTY.graf.naKoreni, { x: cis(x) });
+    else if (kr && kr.d < BLIZKO && Math.abs(y) * (G.view ? G.view.sy : 1) < 24) h +=   // blízko koreňa aj na grafe (bod je pri osi x)
+      '<br>' + TEXTY.graf.blizko + ` <button data-a="prichyt">${U.prichytit}</button>`;
+    if (G.T && !G.T.sonda) h += '<br>' + TEXTY.graf.mimo + ` <button data-a="stred">${U.sondaStred}</button>`;
+    if (info.innerHTML !== h) info.innerHTML = h;
+  };
+  // legenda: štýl čiary + názov krivky, tvary značiek
+  G.legenda = () => {
+    const casti = [];
+    for (const k of G.krivky) {
+      if (!k.popis) continue;
+      const d = (STYLY[k.styl] || []).join(' ');
+      casti.push(`<span><svg width="44" height="14" aria-hidden="true"><line x1="2" y1="7" x2="42" y2="7" stroke="${k.farba || FARBY.f}" stroke-width="3.5" stroke-dasharray="${d}" stroke-linecap="${k.styl === 'bodkovana' ? 'round' : 'butt'}"/></svg>${k.popis} (${TEXTY.styly[k.styl || 'plna']})</span>`);
+    }
+    const typy = [...new Set((G.moz.znacky || []).map(z => z.typ))];
+    const tvar = { koren: c => `<circle cx="10" cy="10" r="7" fill="${c}" stroke="#04060c" stroke-width="2"/><circle cx="10" cy="10" r="2.6" fill="#04060c"/>`,
+      prY: c => `<rect x="3.5" y="3.5" width="13" height="13" fill="${c}" stroke="#04060c" stroke-width="2"/>`,
+      vrchol: c => `<path d="M10 1 L19 10 L10 19 L1 10Z" fill="${c}" stroke="#04060c" stroke-width="2"/>`,
+      extrem: c => `<path d="M10 1 L19 10 L10 19 L1 10Z" fill="${c}" stroke="#04060c" stroke-width="2"/>`,
+      inflex: c => `<path d="M10 2 L18 16 L2 16Z" fill="none" stroke="${c}" stroke-width="2.5"/>`,
+      stred: c => `<circle cx="10" cy="10" r="8" fill="none" stroke="${c}" stroke-width="2.5"/><circle cx="10" cy="10" r="3.5" fill="${c}"/>`,
+      zvyr: c => `<circle cx="10" cy="10" r="8" fill="none" stroke="${c}" stroke-width="2.5"/><circle cx="10" cy="10" r="3.5" fill="${c}"/>`,
+      poc: c => `<circle cx="10" cy="10" r="6" fill="none" stroke="${c}" stroke-width="2.5"/>` };
+    for (const t of typy) if (tvar[t] && TEXTY.znacky[t]) casti.push(`<span><svg width="20" height="20" aria-hidden="true">${tvar[t](FARBY[t])}</svg>${TEXTY.znacky[t]}</span>`);
+    leg.innerHTML = casti.length ? `<span>${TEXTY.graf.legenda}</span>` + casti.join('') : '';
+  };
+
+  /* --- tlačidlá --- */
+  kontajner.addEventListener('click', e => {
+    const b = e.target.closest('[data-a]'); if (!b || b.tagName === 'INPUT') return;
+    const a = b.dataset.a;
+    if (a === 'plus') G.zoom(1.5);
+    else if (a === 'minus') G.zoom(1 / 1.5);
+    else if (a === 'povodny') G.animujNa(G.povodnyPohlad());
+    else if (a === 'prisposob') G.prisposob();
+    else if (a === 'prichyt') { const k = G.najblizsiKoren(G.sonda.x); if (k) G.nastavSondu(k.r); }
+    else if (a === 'stred') G.nastavSondu(G.view.cx);
+  });
+  $('[data-a="sonda"]', kontajner).addEventListener('change', e => {
+    G.sonda.zap = e.target.checked;
+    if (G.sonda.zap && G.T && !G.T.sonda && G.view) G.sonda.x = G.view.cx;
+    G.kresli();
+  });
+
+  /* --- myš a prsty: ťah = posun alebo sonda, dva prsty = priblíženie, koliesko = priblíženie --- */
+  const prsty = new Map();
+  let rezim = null, start = null;
+  const poloha = e => { const r = platno.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  const naSonde = p => {
+    const s = G.T && G.T.sonda; if (!s) return false;
+    if (Math.abs(p.x - s.hx) < 28 && Math.abs(p.y - s.hy) < 26) return true;         // jazdec
+    if (Math.abs(p.x - s.hx) < 22 && Math.abs(p.y - s.by) < 22) return true;         // bod na krivke
+    return Math.abs(p.x - s.hx) < 12 && p.y > Math.min(s.hy, s.by) && p.y < Math.max(s.hy, s.by);  // čiara
+  };
+  const zacniPinch = () => {
+    const [a, b] = [...prsty.values()];
+    start = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, m: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, v: Object.assign({}, G.view) };
+    rezim = 'pinch';
+  };
+  platno.addEventListener('pointerdown', e => {
+    if (!G.view) return;
+    cancelAnimationFrame(G.anim); G.anim = 0;
+    try { platno.setPointerCapture(e.pointerId); } catch (x) { /* nič */ }
+    const p = poloha(e); prsty.set(e.pointerId, p);
+    if (prsty.size === 1) {
+      if (G.sonda.zap && naSonde(p)) rezim = 'sonda';
+      else { rezim = 'pan'; start = { p, v: Object.assign({}, G.view) }; platno.classList.add('tahanie'); }
+    } else if (prsty.size === 2) zacniPinch();
+    e.preventDefault();
+  });
+  platno.addEventListener('pointermove', e => {
+    const p = poloha(e);
+    if (!prsty.has(e.pointerId)) {                        // len kurzor nad grafom
+      platno.classList.toggle('nadSondou', G.sonda.zap && naSonde(p)); return;
+    }
+    prsty.set(e.pointerId, p);
+    if (rezim === 'sonda' && G.T) G.nastavSondu(G.T.wx(p.x), true);
+    else if (rezim === 'pan') {
+      G.view = orezView({ cx: start.v.cx - (p.x - start.p.x) / start.v.sx, cy: start.v.cy + (p.y - start.p.y) / start.v.sy, sx: start.v.sx, sy: start.v.sy });
+      G.kresli();
+    } else if (rezim === 'pinch' && prsty.size >= 2) {
+      const [a, b] = [...prsty.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y) || 1, m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const v = G.zoomOkolo(start.m.x, start.m.y, d / start.d, start.v);   // priblíž okolo pôvodného stredu prstov …
+      v.cx -= (m.x - start.m.x) / v.sx; v.cy += (m.y - start.m.y) / v.sy;  // … a posuň podľa pohybu stredu
+      G.view = orezView(v); G.kresli();
+    }
+  });
+  const pusti = e => {
+    if (!prsty.has(e.pointerId)) return;
+    prsty.delete(e.pointerId);
+    if (prsty.size === 1) { const p = [...prsty.values()][0]; rezim = 'pan'; start = { p, v: Object.assign({}, G.view) }; }
+    else if (prsty.size === 0) { rezim = null; platno.classList.remove('tahanie'); }
+  };
+  platno.addEventListener('pointerup', pusti);
+  platno.addEventListener('pointercancel', pusti);
+  platno.addEventListener('wheel', e => {
+    if (!G.view) return;
+    e.preventDefault(); cancelAnimationFrame(G.anim); G.anim = 0;
+    const p = poloha(e), dy = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1);
+    G.view = G.zoomOkolo(p.x, p.y, Math.exp(-clamp(dy, -300, 300) * .0015)); G.kresli();
+  }, { passive: false });
+  // klávesnica: šípky posúvajú sondu, + a − približujú
+  platno.addEventListener('keydown', e => {
+    if (!G.view) return;
+    const k = e.key;
+    if (k === 'ArrowLeft' || k === 'ArrowRight') {
+      const d = peknyKrok(8 / G.view.sx) * (k === 'ArrowLeft' ? -1 : 1);
+      G.sonda.zap = true; $('[data-a="sonda"]', kontajner).checked = true;
+      G.nastavSondu(Math.round((G.sonda.x + d) / Math.abs(d)) * Math.abs(d), true);
+    } else if (k === '+' || k === '=') G.zoom(1.5);
+    else if (k === '-' || k === '_') G.zoom(1 / 1.5);
+    else return;
+    e.preventDefault();
+  });
+  if (window.ResizeObserver) new ResizeObserver(() => G.kresli()).observe(platno);
+  return G;
+}
+
+/* =====================================================================
+   POSUVNÍK s tlačidlami − a + (presné nastavenie aj na dotykovej obrazovke)
+   ===================================================================== */
+function posuvnik(el, { nazov, min, max, krok, hodnota: h0, zmena }) {
+  el.innerHTML = `<label class="sl"><span class="lbl"><span>${nazov}</span><b></b></span>
+    <span class="slRiadok"><button type="button" aria-label="${nazov} menej">−</button>
+    <input type="range" min="${min}" max="${max}" step="${krok}" value="${h0}" aria-label="${nazov}">
+    <button type="button" aria-label="${nazov} viac">+</button></span></label>`;
+  const inp = $('input', el), out = $('b', el), [bm, bp] = $$('button', el);
+  const P = {
+    get: () => +inp.value,
+    set: v => { inp.value = clamp(v, min, max); P.ukaz(); },
+    ukaz: () => { out.textContent = nazov.split(' ')[0] + ' = ' + cisK(+inp.value); }
+  };
+  inp.addEventListener('input', () => { P.ukaz(); zmena(+inp.value); });
+  const pridaj = d => { const v = clamp(Math.round((+inp.value + d) / krok) * krok, min, max); inp.value = v; P.ukaz(); zmena(v); };
+  bm.onclick = () => pridaj(-krok); bp.onclick = () => pridaj(krok);
+  P.ukaz();
+  return P;
+}
+
+/* =====================================================================
+   TABUĽKA HODNÔT – 7 hodnôt x, nastaviteľný začiatok a krok, prírastky medzi riadkami
+   vytvorTabulku(el, { poly: () => c, prirastky: true, zhrnutie: (prírastky, krok) => html, zmena: () => {} })
+   ===================================================================== */
+const POCET_RIADKOV = 7;
+function vytvorTabulku(el, cfg) {
+  const TT = TEXTY.tab;
+  el.innerHTML = `<h3>${TT.nadpis}</h3>
+    <div class="vstupy">
+      <label>${TT.zaciatok}<input class="num" data-v="start" inputmode="decimal" autocomplete="off" value="−3"></label>
+      <label>${TT.krok}<input class="num" data-v="krok" inputmode="decimal" autocomplete="off" value="1"></label>
+    </div>
+    <table class="hodnoty"><thead><tr><th>${TT.hlX}</th><th>${TT.hlY}</th>${cfg.prirastky ? `<th style="text-align:left">${TT.hlD}</th>` : ''}</tr></thead><tbody></tbody></table>
+    <p class="hlaska" aria-live="polite"></p>
+    <p class="mini zhrn"></p>
+    <p class="mini">${TT.klik}</p>`;
+  const tb = $('tbody', el), hl = $('.hlaska', el), zh = $('.zhrn', el);
+  const iS = $('[data-v="start"]', el), iK = $('[data-v="krok"]', el);
+  const Tb = { start: -3, krok: 1, vyb: null, xs: [], ys: [] };
+  const fix = x => Math.round(x * 1e10) / 1e10;           // odstráni chyby typu 0,1 + 0,2 = 0,30000000000000004
+  Tb.obnov = () => {
+    const c = cfg.poly();
+    Tb.xs = []; Tb.ys = [];
+    for (let i = 0; i < POCET_RIADKOV; i++) { const x = fix(Tb.start + i * Tb.krok); Tb.xs.push(x); Tb.ys.push(evalPoly(c, x)); }
+    const d = Tb.ys.slice(1).map((y, i) => y - Tb.ys[i]);
+    tb.innerHTML = Tb.xs.map((x, i) => `<tr tabindex="0" data-i="${i}" class="${Tb.vyb === i ? 'vyb' : ''}" aria-label="x = ${cisK(x)}, y = ${cis(Tb.ys[i])}">
+      <td>${cisK(x)}</td><td>${cis(Tb.ys[i])}</td>${cfg.prirastky ? `<td class="d">${i ? `<span aria-label="prírastok">${d[i - 1] > EPS ? '+' : ''}${cis(d[i - 1])}</span>` : ''}</td>` : ''}</tr>`).join('');
+    zh.innerHTML = cfg.zhrnutie ? cfg.zhrnutie(d, Tb.krok) : '';
+  };
+  // vybraný bod (riadok) pre zvýraznenie na grafe
+  Tb.bod = () => Tb.vyb === null ? null : { x: Tb.xs[Tb.vyb], y: Tb.ys[Tb.vyb] };
+  const nacitaj = () => {
+    const s = citaj(iS.value), k = citaj(iK.value);
+    const okS = isFinite(s) && Math.abs(s) <= 1e6, okK = isFinite(k) && !jeNula(k) && Math.abs(k) <= 1e5;
+    iS.classList.toggle('zle', !okS); iK.classList.toggle('zle', !okK);
+    hl.textContent = okS && okK ? '' : TT.chyba;
+    if (!okS || !okK) return;
+    Tb.start = s; Tb.krok = k; Tb.obnov(); cfg.zmena();
+  };
+  iS.addEventListener('input', nacitaj); iK.addEventListener('input', nacitaj);
+  const vyber = tr => { const i = +tr.dataset.i; Tb.vyb = Tb.vyb === i ? null : i; Tb.obnov(); cfg.zmena(); const n = $(`tr[data-i="${i}"]`, tb); if (n) n.focus(); };
+  tb.addEventListener('click', e => { const tr = e.target.closest('tr'); if (tr) vyber(tr); });
+  tb.addEventListener('keydown', e => { const tr = e.target.closest('tr'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); vyber(tr); } });
+  return Tb;
+}
+// spoločné: zvýraznený bod z tabuľky ako značka grafu
+const znackaTab = Tb => { const b = Tb.bod(); return b ? [{ x: b.x, y: b.y, typ: 'zvyr', popis: `(${cis(b.x)}; ${cis(b.y)})` }] : []; };
+
+/* =====================================================================
+   PODKARTY – tlačidlá v .podkarty prepínajú bloky [data-pod] v rámci karty
+   stav.pod = aktívna podkarta, stav.ukaz(p) ju zobrazí; adresa: #karta/podkarta
+   ===================================================================== */
+function vytvorPodkarty(id, texty, stav) {
+  const nav = $(`#${id} .podkarty`);
+  for (const [k, t] of Object.entries(texty)) {
+    const b = document.createElement('button'); b.dataset.p = k; b.setAttribute('role', 'tab'); b.textContent = t;
+    b.onclick = () => stav.ukaz(k); nav.appendChild(b);
+  }
+  stav.ukaz = (p, ticho) => {
+    stav.pod = p;
+    $$(`#${id} [data-pod]`).forEach(e => { e.hidden = e.dataset.pod !== p; });
+    $$('button', nav).forEach(b => { const on = b.dataset.p === p; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+    if (!ticho && AKT === id) { try { history.replaceState(null, '', '#' + id + '/' + p); } catch (e) { /* nič */ } }
+    VSETKY_GRAFY.forEach(G => G.kresli());
+  };
+  const m = new RegExp('^#' + id + '/([a-z]+)').exec(location.hash);
+  stav.ukaz(m && texty[m[1]] ? m[1] : Object.keys(texty)[0], true);
+  PODKARTA[id] = () => stav.pod;
+}
+
+/* =====================================================================
+   KARTA 1: KONŠTANTNÁ FUNKCIA y = q
+   ===================================================================== */
+const KON = { q: 2, anim: null, G: null, Tb: null, sl: null };
+function initKonst() {
+  const TK = TEXTY.konst;
+  KON.G = novyGraf($('#konst_graf'), { sondaX: 1 });
+  KON.Tb = vytvorTabulku($('#konst_tab'), { poly: () => [KON.q], prirastky: true, zhrnutie: () => TK.zhrnutie, zmena: obnovKonst });
+  KON.sl = posuvnik($('#konst_slQ'), { nazov: TK.slQ, min: -6, max: 6, krok: .5, hodnota: KON.q, zmena: v => { KON.q = v; obnovKonst(); } });
+  $('#konst_anim').onclick = () => {
+    KON.anim = KON.anim ? null : { t0: performance.now() };
+    if (KON.anim) { const slucka = () => { if (!KON.anim) return; KON.G.hned(); if (performance.now() - KON.anim.t0 < 4000) requestAnimationFrame(slucka); }; requestAnimationFrame(slucka); }
+    obnovKonst();
+  };
+  KON.Tb.obnov(); obnovKonst();
+}
+// šípky „x → y“: z niekoľkých bodov na osi x vystúpia na priamku – všetky do rovnakej výšky q
+function kresliPriradenie(ctx, T, obsadene) {
+  if (!KON.anim) return;
+  const t = MALO_POHYBU ? 99 : (performance.now() - KON.anim.t0) / 1000;
+  const xs = [-6, -4, -2, 0, 2, 4, 6], q = KON.q;
+  ctx.strokeStyle = FARBY.sklon2; ctx.fillStyle = FARBY.sklon2; ctx.lineWidth = 2.5;
+  xs.forEach((x, j) => {
+    const p = ease(clamp((t - j * .35) / .7, 0, 1));
+    if (p <= 0) return;
+    const X = T.px(x), Y0 = T.py(0), Y1 = T.py(q * p);
+    ctx.setLineDash([2, 6]); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(X, Y0); ctx.lineTo(X, Y1); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(X, Y0, 5, 0, 7); ctx.fill();
+    if (Math.abs(Y1 - Y0) > 14) {                         // hrot šípky
+      const s = Y1 < Y0 ? 1 : -1;
+      ctx.beginPath(); ctx.moveTo(X, Y1); ctx.lineTo(X - 7, Y1 + 12 * s); ctx.lineTo(X + 7, Y1 + 12 * s); ctx.closePath(); ctx.fill();
+    }
+  });
+  if (t > xs.length * .35 + .4) {
+    const X = T.px(-5), Y = T.py(q);
+    umiestniPopis(ctx, T, obsadene, vypln(TEXTY.konst.animPopis, { q: cisK(q) }), X, Y, FARBY.sklon2, [[-40, q >= 0 ? -44 : 18], [-40, q >= 0 ? 18 : -44], [0, -44], [0, 18]]);
+  }
+}
+function obnovKonst() {
+  const TK = TEXTY.konst, q = KON.q, c = [q];
+  $('#konst_vzorec').textContent = 'f(x) = ' + polyText(c);
+  $('#konst_anim').textContent = KON.anim ? TK.animSkry : TK.anim;
+  const st = degree(c);
+  const vl = [TK.defObor, vypln(TK.oborH, { q: cisK(q) }), jeNula(q) ? TK.korenVsetky : vypln(TK.korenNie, { q: cisK(q) }),
+    st === 0 ? vypln(TK.stupen, { q: cisK(q) }) : TK.nulova];
+  $('#konst_vl').innerHTML = vl.map(t => `<li>${t}</li>`).join('');
+  KON.Tb.obnov();
+  KON.G.nastav([{ c, farba: FARBY.f, styl: 'plna', popis: 'f', hrubka: jeNula(q) ? 5 : 3.5 }], {
+    znacky: [{ x: 0, y: q, typ: 'prY', popis: `(0; ${cisK(q)})` }, ...znackaTab(KON.Tb)],
+    korene: [], vsetkoKorene: jeNula(q), navrch: kresliPriradenie
+  });
+}
+
+/* =====================================================================
+   KARTA 2: LINEÁRNA FUNKCIA y = kx + q
+   ===================================================================== */
+const LIN = { k: 2, q: -4, G: null, Tb: null, slK: null, slQ: null, kroky: null, hra: null, skore: 0 };
+function initLin() {
+  const TL = TEXTY.lin;
+  LIN.G = novyGraf($('#lin_graf'), { sondaX: 1 });
+  LIN.Tb = vytvorTabulku($('#lin_tab'), {
+    poly: () => [LIN.q, LIN.k], prirastky: true, zmena: obnovLin,
+    zhrnutie: (d, krok) => d.every(x => Math.abs(x - d[0]) < 1e-6 * Math.max(1, Math.abs(d[0])))
+      ? vypln(TL.zhrnutie, { krok: cisK(krok), krokZ: zatv(krok), k: cisK(LIN.k), d: cis(LIN.k * krok) }) : TL.zhrnutieNie
+  });
+  LIN.slK = posuvnik($('#lin_slK'), { nazov: TL.slK, min: -6, max: 6, krok: .5, hodnota: LIN.k, zmena: v => { LIN.k = v; LIN.kroky = null; obnovLin(); } });
+  LIN.slQ = posuvnik($('#lin_slQ'), { nazov: TL.slQ, min: -6, max: 6, krok: .5, hodnota: LIN.q, zmena: v => { LIN.q = v; LIN.kroky = null; obnovLin(); } });
+  $('#lin_anim').onclick = () => {
+    LIN.kroky = LIN.kroky ? null : { t0: performance.now() };
+    if (LIN.kroky) { const z = LIN.kroky; const slucka = () => { if (LIN.kroky !== z) return; LIN.G.hned(); if (performance.now() - z.t0 < 6000) requestAnimationFrame(slucka); }; requestAnimationFrame(slucka); }
+    obnovLin();
+  };
+  initHra();
+  LIN.Tb.obnov(); obnovLin();
+}
+const kxText = k => rovne(k, 1) ? 'x' : rovne(k, -1) ? '−x' : cisK(k) + 'x';
+
+// trojuholník sklonu z bodu (0; q): o 1 doprava (čiarkovane), o k nahor/nadol (bodkovane)
+function kresliSklon(ctx, T, obsadene) {
+  const k = LIN.k, q = LIN.q;
+  if (LIN.kroky) return kresliKroky(ctx, T, obsadene);
+  if (jeNula(k)) return;
+  const A = [T.px(0), T.py(q)], B = [T.px(1), T.py(q)], C = [T.px(1), T.py(q + k)];
+  if (B[0] - A[0] < 18) return;                           // príliš oddialené – trojuholník by bol bod
+  ctx.fillStyle = 'rgba(127,220,143,.13)';
+  ctx.beginPath(); ctx.moveTo(...A); ctx.lineTo(...B); ctx.lineTo(...C); ctx.closePath(); ctx.fill();
+  ctx.lineWidth = 3; ctx.strokeStyle = FARBY.sklon; ctx.setLineDash([10, 6]);
+  ctx.beginPath(); ctx.moveTo(...A); ctx.lineTo(...B); ctx.stroke();
+  ctx.strokeStyle = FARBY.sklon2; ctx.setLineDash([2, 6]); ctx.lineCap = 'round'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(...B); ctx.lineTo(...C); ctx.stroke();
+  ctx.setLineDash([]);
+  const hore = k > 0;
+  umiestniPopis(ctx, T, obsadene, '+1', (A[0] + B[0]) / 2, A[1], FARBY.sklon, hore ? [[-16, 6], [-16, -32]] : [[-16, -32], [-16, 6]]);
+  umiestniPopis(ctx, T, obsadene, (hore ? '↑ ' : '↓ ') + (hore ? '+' : '') + cisK(k), B[0], (B[1] + C[1]) / 2, FARBY.sklon2, [[8, -13], [-90, -13]]);
+}
+// animácia „Krokuj po priamke“: bod kráča po 1 doprava a o k nahor/nadol, kroky zostávajú nakreslené
+function kresliKroky(ctx, T, obsadene) {
+  const k = LIN.k, q = LIN.q, f = x => k * x + q;
+  const t = MALO_POHYBU ? 99 : (performance.now() - LIN.kroky.t0) / 1000, DUR = .9, X0 = -3, N = 6;
+  const vel = T.px(1) - T.px(0) >= 34;                    // popisky len ak je dosť miesta
+  let bod = null;
+  for (let j = 0; j < N; j++) {
+    const p = clamp((t - j * DUR) / DUR, 0, 1); if (p <= 0) break;
+    const x = X0 + j, ph = ease(clamp(p * 2, 0, 1)), pv = ease(clamp(p * 2 - 1, 0, 1));
+    const A = [T.px(x), T.py(f(x))], B = [T.px(x + ph), T.py(f(x))], C = [T.px(x + 1), T.py(f(x) + k * pv)];
+    ctx.lineWidth = 3; ctx.strokeStyle = FARBY.sklon; ctx.setLineDash([10, 6]); ctx.lineCap = 'butt';
+    ctx.beginPath(); ctx.moveTo(...A); ctx.lineTo(...B); ctx.stroke();
+    bod = B;
+    if (pv > 0) {
+      ctx.strokeStyle = FARBY.sklon2; ctx.setLineDash([2, 6]); ctx.lineCap = 'round'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(T.px(x + 1), T.py(f(x))); ctx.lineTo(...C); ctx.stroke();
+      bod = C;
+      if (p >= 1 && vel && !jeNula(k)) umiestniPopis(ctx, T, obsadene, (k > 0 ? '+' : '') + cisK(k), C[0], (T.py(f(x)) + C[1]) / 2, FARBY.sklon2, [[6, -13], [-60, -13]]);
+    }
+  }
+  ctx.setLineDash([]);
+  if (bod) { ctx.beginPath(); ctx.arc(bod[0], bod[1], 7, 0, 7); ctx.fillStyle = FARBY.sklon; ctx.fill(); ctx.strokeStyle = '#04060c'; ctx.lineWidth = 2; ctx.stroke(); }
+}
+
+// výpočet koreňa po krokoch: kx + q = 0 → kx = −q → x = −q : k
+function krokyKorena(k, q) {
+  const TL = TEXTY.lin, r = korenLin(k, q);
+  const riadok = (rov, op, vys) => `<div class="r${vys ? ' vys' : ''}"><span>${rov}</span>${op ? `<span class="op">| ${op}</span>` : ''}</div>`;
+  const qT = jeNula(q) ? '' : (q > 0 ? ' + ' : ' − ') + cisK(Math.abs(q));
+  let h = '';
+  if (r.typ === 'jeden') {
+    h += riadok(`${kxText(k)}${qT} = 0`, jeNula(q) ? (rovne(k, 1) ? '' : ': ' + zatv(k)) : (q > 0 ? '− ' : '+ ') + cisK(Math.abs(q)));
+    if (!jeNula(q)) h += riadok(`${kxText(k)} = ${cisK(-q)}`, rovne(k, 1) ? '' : ': ' + zatv(k));
+    if (!rovne(k, 1)) h += riadok(`x = ${cisK(-q)} : ${zatv(k)}`);
+    const c = cisHTML(r.x, r.zl);
+    h += riadok(`x ${c.rov} ${c.html}`, '', true);
+    h += `<p style="margin:8px 0 0">${vypln(TL.korenVys, { rov: c.rov, x: c.html, xd: cis(r.x) })}</p>`;
+  } else {
+    h += riadok(`0 · x${qT} = 0`, '');
+    h += riadok(`${cisK(q)} = 0`, '', true);
+    h += `<p style="margin:8px 0 0">${r.typ === 'ziadny' ? vypln(TL.korenZiadny, { q: cisK(q) }) : TL.korenVsetky}</p>`;
+  }
+  return h;
+}
+
+function obnovLin() {
+  const TL = TEXTY.lin, k = LIN.k, q = LIN.q, c = [q, k];
+  $('#lin_vzorec').textContent = 'f(x) = ' + polyText(c);
+  $('#lin_anim').textContent = LIN.kroky ? TL.sklonSkry : TL.sklonAnim;
+  const st = degree(c);
+  const vl = [
+    jeNula(k) ? TL.konstantna : vypln(k > 0 ? TL.rastuca : TL.klesajuca, { k: cisK(k), ka: cisK(Math.abs(k)) }),
+    vypln(TL.prY, { q: cisK(q) }),
+    vypln(TL.defObor, { h: jeNula(k) ? '{' + cisK(q) + '}' : 'ℝ' }),
+    st >= 0 ? vypln(TL.stupen, { st }) : TEXTY.konst.nulova
+  ];
+  $('#lin_vl').innerHTML = vl.map(t => `<li>${t}</li>`).join('');
+  let pozn = '';
+  if (jeNula(k)) pozn += `<div class="box zlty">${vypln(TL.k0, { q: cisK(q), st: st >= 0 ? st : '– (nulová funkcia)' })}</div>`;
+  else if (jeNula(q)) pozn += `<div class="box info">${vypln(TL.q0, { k: rovne(k, 1) ? '' : rovne(k, -1) ? '−' : cisK(k) })}</div>`;
+  $('#lin_pozn').innerHTML = pozn;
+  $('#lin_kroky').innerHTML = krokyKorena(k, q);
+
+  const r = korenLin(k, q);
+  const zn = [];
+  if (r.typ === 'jeden' && jeNula(r.x)) zn.push({ x: 0, y: 0, typ: 'koren', popis: `${TEXTY.znacky.koren} (0; 0) = ${TEXTY.znacky.poc}` });
+  else {
+    zn.push({ x: 0, y: q, typ: 'prY', popis: `(0; ${cisK(q)})` });
+    if (r.typ === 'jeden') zn.push({ x: r.x, y: 0, typ: 'koren', popis: `${TEXTY.znacky.koren} x ${rovZnak(r.x)} ${cis(r.x)}` });
+  }
+  LIN.Tb.obnov();
+  zn.push(...znackaTab(LIN.Tb));
+  const krivky = [{ c, farba: FARBY.f, styl: 'plna', popis: 'f', hrubka: r.typ === 'vsetky' ? 5 : 3.5 }];
+  if (LIN.hra) krivky.push({ c: [LIN.hra.q, LIN.hra.k], farba: FARBY.ciel, styl: 'ciarkovana', popis: LIN.hra.hotovo ? 'cieľ ✔' : 'cieľ', hrubka: 3 });
+  LIN.G.nastav(krivky, { znacky: zn, korene: r.typ === 'jeden' ? [r.x] : [], vsetkoKorene: r.typ === 'vsetky', navrch: kresliSklon });
+  hraKontrola();
+}
+
+/* ----- Hra „Nastav priamku“: úspech sa rozhoduje porovnaním koeficientov, nie pixelov ----- */
+function initHra() {
+  const TH = TEXTY.lin.hra;
+  $('#lin_hraTl').innerHTML = `<button class="primary" data-h="start">${TH.start}</button>
+    <button data-h="napoveda" hidden>${TH.napoveda}</button><button data-h="nova" hidden>${TH.nova}</button>`;
+  $('#lin_hraTl').addEventListener('click', e => {
+    const b = e.target.closest('[data-h]'); if (!b) return;
+    const a = b.dataset.h;
+    if (a === 'start') { if (LIN.hra) { LIN.hra = null; obnovLin(); } else novaPriamka(); }
+    else if (a === 'nova') novaPriamka();
+    else if (a === 'napoveda' && LIN.hra) { LIN.hra.nap = Math.min(LIN.hra.nap + 1, TH.napovedy.length); hraKontrola(); }
+  });
+}
+function novaPriamka() {
+  // cieľ: k a q sú násobky 0,5; k ≠ 0, aby nebola vodorovná; nie totožná s aktuálnou priamkou
+  let k, q;
+  do { k = nahoda(-6, 6) / 2; q = nahoda(-8, 8) / 2; } while (jeNula(k) || (rovne(k, LIN.k) && rovne(q, LIN.q)));
+  LIN.hra = { k, q, nap: 0, hotovo: false };
+  LIN.kroky = null;
+  obnovLin();
+}
+function hraKontrola() {
+  const TH = TEXTY.lin.hra, H = LIN.hra, st = $('#lin_hraStav');
+  $('[data-h="start"]').textContent = H ? TH.koniec : TH.start;
+  $('[data-h="start"]').classList.toggle('primary', !H);
+  $('[data-h="napoveda"]').hidden = !H; $('[data-h="nova"]').hidden = !H;
+  if (!H) { st.innerHTML = LIN.skore ? `<p class="skore">${vypln(TH.skore, { n: LIN.skore })}</p>` : ''; return; }
+  const okK = rovne(LIN.k, H.k), okQ = rovne(LIN.q, H.q);
+  if (okK && okQ && !H.hotovo) { H.hotovo = true; LIN.skore++; LIN.G.nastav(LIN.G.krivky.map((x, i) => i === 1 ? Object.assign({}, x, { popis: 'cieľ ✔' }) : x), LIN.G.moz); }
+  if (!(okK && okQ)) H.hotovo = false;
+  let h = '';
+  if (H.hotovo) h += `<p>${vypln(TH.uspech, { f: polyText([LIN.q, LIN.k]) })}</p>`;
+  else {
+    h += okQ ? `<p>${TH.qOk}</p>` : '';
+    h += okK ? `<p>${TH.kOk}</p>` : '';
+    if (!okQ && !okK) h += `<p>${TH.stav}</p>`;
+  }
+  for (let i = 0; i < H.nap && !H.hotovo; i++) h += `<p class="box zlty" style="margin:6px 0">💡 ${vypln(TH.napovedy[i], { q: cisK(H.q), k: (H.k > 0 ? '+' : '') + cisK(H.k) })}</p>`;
+  h += `<p class="skore">${vypln(TH.skore, { n: LIN.skore })}</p>`;
+  st.innerHTML = h;
+  $('[data-h="napoveda"]').disabled = H.hotovo || H.nap >= TH.napovedy.length;
+}
+
+/* =====================================================================
+   KARTA 3: KVADRATICKÁ FUNKCIA y = ax² + bx + c
+   Polynóm p = [c, b, a] (rovnaká architektúra: p[i] je koeficient pri xⁱ).
+   Podkarty: Kvadratická funkcia (+ hra), Čo robia koeficienty, Vrcholový tvar, Korene.
+   ===================================================================== */
+/* KVADRATICKÁ MATEMATIKA START */
+const kvKoef = p => ({ a: p[2] || 0, b: p[1] || 0, c: p[0] || 0 });
+// vrchol: x_v je koreň derivácie f'(x) = 2ax + b, teda x_v = −b/(2a); y_v = c − b²/(4a). Pri a = 0 vrchol nie je.
+function vrcholKvad(p) {
+  const { a, b, c } = kvKoef(p);
+  if (jeNula(a)) return null;
+  const d = derivative(p);                                // [b, 2a]
+  const x = korenLin(d[1], d[0]).x;
+  const y = c - b * b / (4 * a);
+  return { x: jeNula(x) ? 0 : x, y: jeNula(y) ? 0 : y };
+}
+const diskriminant = p => { const { a, b, c } = kvKoef(p); return b * b - 4 * a * c; };
+// korene; pri a = 0 sa funkcia správa ako lineárna (použije korenLin)
+function korenKvad(p) {
+  const { a, b, c } = kvKoef(p);
+  if (jeNula(a)) { const r = korenLin(b, c); return Object.assign({ linearna: true, korene: r.typ === 'jeden' ? [r.x] : [] }, r); }
+  const D = b * b - 4 * a * c;
+  if (jeNula(D)) { const x = jeNula(b) ? 0 : -b / (2 * a); return { typ: 'jeden', D: 0, x1: x, x2: x, korene: [x] }; }   // rovnosť D = 0 s toleranciou 1e-9
+  if (D < 0) return { typ: 'ziadny', D, korene: [] };
+  // stabilný výpočet: q = −(b + sgn(b)·√D)/2, x₁ = q/a, x₂ = c/q (bez odčítania dvoch blízkych čísel)
+  const s = Math.sqrt(D), q = -(b + (b >= 0 ? s : -s)) / 2;
+  let x1 = q / a, x2 = c / q;
+  if (x1 > x2) [x1, x2] = [x2, x1];
+  const z = x => jeNula(x) ? 0 : x;
+  return { typ: 'dva', D, x1: z(x1), x2: z(x2), korene: [z(x1), z(x2)] };
+}
+// vrcholový tvar a(x − m)² + n → všeobecný: b = −2am, c = am² + n
+const vrcholNaVseob = (a, m, n) => [a * m * m + n, -2 * a * m, a];
+// všeobecný → vrcholový: m = −b/(2a), n = c − b²/(4a)
+function vseobNaVrchol(p) { const V = vrcholKvad(p); return V ? { a: p[2], m: V.x, n: V.y } : null; }
+/* KVADRATICKÁ MATEMATIKA KONIEC */
+
+/* ----- zápisy ----- */
+const aPred = a => rovne(a, 1) ? '' : rovne(a, -1) ? '−' : cisK(a);                // 1 a −1 pred zátvorkou nepíšeme
+const cinitel = (r, d = DES) => jeNula(r) ? 'x' : `(x ${r > 0 ? '−' : '+'} ${cis(Math.abs(r), d)})`;   // (x − r)
+function vrcholText(a, m, n, d = 4) {
+  if (jeNula(a)) return cis(n, d);
+  let s = aPred(a) + (jeNula(m) ? 'x²' : cinitel(m, d) + '²');
+  if (!jeNula(n)) s += (n > 0 ? ' + ' : ' − ') + cis(Math.abs(n), d);
+  return s;
+}
+const sucinText = (a, R) => aPred(a) + (R.typ === 'jeden' ? cinitel(R.x1) + '²' : cinitel(R.x1) + cinitel(R.x2));
+const zatvC = x => x < 0 ? '(' + cis(x) + ')' : cis(x);                 // zaokrúhlené záporné číslo do zátvorky
+const zlHTML = (cit, men) => `<span class="zl"><span>${cit}</span><span>${men}</span></span>`;
+const XV = 'x<sub>v</sub>', YV = 'y<sub>v</sub>';
+const riadokK = (t, vys, op) => `<div class="r${vys ? ' vys' : ''}"><span>${t}</span>${op ? `<span class="op">${op}</span>` : ''}</div>`;
+const bodText = (x, y) => `(${cis(x)}; ${cis(y)})`;
+// korene → text „x₁ ≈ 1,38“ a zoznam pre sondu
+function koreneZoznam(R) { return R.typ === 'jeden' || R.typ === 'dva' ? R.korene : []; }
+function znackyKvad(p, R, V) {
+  const zn = [{ x: 0, y: p[0], typ: 'prY', popis: `(0; ${cisK(p[0])})` }];
+  if (V) zn.push({ x: V.x, y: V.y, typ: 'vrchol', popis: 'V' + bodText(V.x, V.y) });
+  for (const x of koreneZoznam(R)) {
+    if (V && R.typ === 'jeden') continue;                 // dvojnásobný koreň = vrchol, nekreslíme dve značky na sebe
+    zn.push({ x, y: 0, typ: 'koren', popis: `x ${rovZnak(x)} ${cis(x)}` });
+  }
+  if (V && R.typ === 'jeden') zn[1].typ = 'koren', zn[1].popis = `V = ${TEXTY.znacky.koren} ${bodText(V.x, 0)}`;
+  return zn;
+}
+
+/* ----- kreslenie: zvislá čiara (os súmernosti) a šípka ----- */
+function kresliZvislu(ctx, T, obsadene, x, farba, popis) {
+  const X = T.px(x); if (X < -5 || X > T.W + 5) return;
+  ctx.save(); ctx.strokeStyle = farba; ctx.lineWidth = 2; ctx.setLineDash([10, 7]);
+  ctx.beginPath(); ctx.moveTo(X, 0); ctx.lineTo(X, T.H); ctx.stroke(); ctx.restore();
+  if (popis) umiestniPopis(ctx, T, obsadene, popis, X, 36, farba, [[8, -10], [-8 - ctx.measureText(popis).width - 12, -10], [8, 30]]);
+}
+function kresliSipku(ctx, T, obsadene, x1, y1, x2, y2, farba, popis) {
+  const A = [T.px(x1), T.py(y1)], B = [T.px(x2), T.py(y2)];
+  const d = Math.hypot(B[0] - A[0], B[1] - A[1]); if (!(d > 6) || d > 1e5) return;
+  const ux = (B[0] - A[0]) / d, uy = (B[1] - A[1]) / d;
+  ctx.save(); ctx.strokeStyle = farba; ctx.fillStyle = farba; ctx.lineWidth = 3.5; ctx.setLineDash([]); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0] - ux * 10, B[1] - uy * 10); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(B[0], B[1]); ctx.lineTo(B[0] - ux * 14 - uy * 7, B[1] - uy * 14 + ux * 7); ctx.lineTo(B[0] - ux * 14 + uy * 7, B[1] - uy * 14 - ux * 7); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  if (popis) umiestniPopis(ctx, T, obsadene, popis, (A[0] + B[0]) / 2, (A[1] + B[1]) / 2, farba);
+}
+
+const KV = {
+  pod: 'zaklad',
+  Z: { a: 1, b: -2, c: -3, porov: false, hra: null, skore: 0 },     // podkarta Kvadratická funkcia
+  R: { a: 1, b: -5, c: 6 },                                         // podkarta Korene
+  V: { a: 2, m: 1, n: -3, krok: 0, t0: -Infinity, vseob: false },           // podkarta Vrcholový tvar
+  sceny: []                                                         // mini scény „Čo robia koeficienty“
+};
+function initKvad() {
+  initKvZaklad(); initKvKoef(); initKvVrch(); initKvKor();
+  vytvorPodkarty('kvad', TEXTY.kvad.podkarty, KV);
+}
+function obnovKvad() { obnovKvZaklad(); obnovKvVrch(); obnovKvKor(); KV.sceny.forEach(s => s.kresli()); }
+
+/* ---------- 3a. Kvadratická funkcia ---------- */
+function initKvZaklad() {
+  const TQ = TEXTY.kvad, Z = KV.Z;
+  Z.G = novyGraf($("#kvz_graf"), { sondaX: -2 });
+  Z.Tb = vytvorTabulku($('#kvz_tab'), {
+    poly: () => [Z.c, Z.b, Z.a], prirastky: true, zmena: obnovKvZaklad,
+    zhrnutie: (d, krok) => jeNula(Z.a)
+      ? vypln(TEXTY.lin.zhrnutie, { krok: cisK(krok), krokZ: zatv(krok), k: cisK(Z.b), d: cis(Z.b * krok) })
+      : vypln(TQ.zhrnutie, { d2: cis(2 * Z.a * krok * krok) })
+  });
+  const zmen = k => v => { Z[k] = v; obnovKvZaklad(); };
+  Z.slA = posuvnik($('#kvz_slA'), { nazov: TQ.slA, min: -6, max: 6, krok: .5, hodnota: Z.a, zmena: zmen('a') });
+  Z.slB = posuvnik($('#kvz_slB'), { nazov: TQ.slB, min: -6, max: 6, krok: .5, hodnota: Z.b, zmena: zmen('b') });
+  Z.slC = posuvnik($('#kvz_slC'), { nazov: TQ.slC, min: -6, max: 6, krok: .5, hodnota: Z.c, zmena: zmen('c') });
+  $('#kvz_porov').addEventListener('change', e => { Z.porov = e.target.checked; obnovKvZaklad(); });
+  initKvHra();
+  Z.Tb.obnov(); obnovKvZaklad();
+}
+// výpočet vrcholu po krokoch
+function krokyVrcholu(a, b, c) {
+  const p = [c, b, a], V = vrcholKvad(p);
+  const xz = cisHTML(V.x, zlomok(-b, 2 * a)), yz = cisHTML(V.y, zlomok(4 * a * c - b * b, 4 * a));
+  let h = riadokK(`${XV} = −b / (2a)`);
+  h += riadokK(`${XV} = −${zatv(b)} / (2 · ${zatv(a)}) = ${cisK(-b)} / ${zatv(2 * a)}`);
+  h += riadokK(`${XV} ${xz.rov} ${xz.html}`, true);
+  h += riadokK(`${YV} = c − b² / (4a)`);
+  h += riadokK(`${YV} = ${cisK(c)} − ${zatv(b)}² / (4 · ${zatv(a)}) = ${cisK(c)} − ${cisK(b * b)} / ${zatv(4 * a)}`);
+  h += riadokK(`${YV} ${yz.rov} ${yz.html}`, true);
+  const fx = evalPoly(p, V.x);
+  return h + `<p style="margin:8px 0 0">${vypln(TEXTY.kvad.vrcholVys, { xv: cis(V.x), yv: cis(V.y), rov: rovZnak(fx), fx: cis(fx) })}</p>`;
+}
+function obnovKvZaklad() {
+  const TQ = TEXTY.kvad, Z = KV.Z, p = [Z.c, Z.b, Z.a], V = vrcholKvad(p), R = korenKvad(p);
+  $('#kvz_vzorec').textContent = 'f(x) = ' + polyText(p);
+  const vl = [];
+  if (V) {
+    vl.push(vypln(Z.a > 0 ? TQ.nahor : TQ.nadol, { a: cisK(Z.a), yv: cis(V.y) }));
+    const aa = Math.abs(Z.a);
+    vl.push(rovne(aa, 1) ? TQ.rovnaka : vypln(aa > 1 ? TQ.uzsia : TQ.sirsia, { aa: cisK(aa) }));
+    vl.push(vypln(TQ.os, { xv: cis(V.x) }));
+  }
+  vl.push(vypln(TQ.prY, { c: cisK(Z.c) }));
+  if (V) {
+    const r = x => rovZnak(x) + ' ' + cis(x);
+    vl.push(vypln(TQ.prX, { t: R.typ === 'dva' ? vypln(TQ.prX2, { r1: r(R.x1), r2: r(R.x2) }) : R.typ === 'jeden' ? vypln(TQ.prX1, { r1: r(R.x1) }) : TQ.prX0 }));
+  }
+  $('#kvz_vl').innerHTML = vl.map(t => `<li>${t}</li>`).join('');
+  $('#kvz_pozn').innerHTML = V ? '' : `<div class="box zlty" style="margin-bottom:8px">${vypln(TQ.a0, { f: polyText(p) })}</div>`;
+  // pri a = 0 namiesto vrcholu ukážeme výpočet koreňa lineárnej funkcie (z karty Lineárna)
+  $('#kvz_kroky').innerHTML = V ? krokyVrcholu(Z.a, Z.b, Z.c) : `<p>${TQ.vrcholA0}</p>` + krokyKorena(Z.b, Z.c);
+  Z.Tb.obnov();
+  const zn = V ? znackyKvad(p, R, V) : [{ x: 0, y: Z.c, typ: 'prY', popis: `(0; ${cisK(Z.c)})` }, ...(R.typ === 'jeden' ? [{ x: R.x, y: 0, typ: 'koren', popis: `x ${rovZnak(R.x)} ${cis(R.x)}` }] : [])];
+  zn.push(...znackaTab(Z.Tb));
+  const krivky = [{ c: p, farba: FARBY.f, styl: 'plna', popis: 'f', hrubka: R.typ === 'vsetky' ? 5 : 3.5 }];
+  if (Z.porov) krivky.push({ c: [0, 0, 1], farba: FARBY.siva, styl: 'bodkovana', popis: TQ.zakladna, hrubka: 3 });
+  if (Z.hra) krivky.push({ c: Z.hra.p, farba: FARBY.ciel, styl: 'ciarkovana', popis: Z.hra.hotovo ? 'cieľ ✔' : 'cieľ', hrubka: 3 });
+  Z.G.nastav(krivky, {
+    znacky: zn, korene: koreneZoznam(R), vsetkoKorene: R.typ === 'vsetky', dolezite: V ? [V.x] : [],
+    navrch: V ? (ctx, T, ob) => kresliZvislu(ctx, T, ob, V.x, FARBY.vrchol, vypln(TQ.osPopis, { xv: cis(V.x) })) : null
+  });
+  kvHraKontrola();
+}
+
+/* ----- Hra „Uhádni parabolu“: cieľ zo zadaného vrcholového tvaru, úspech = zhoda koeficientov (tolerancia 1e-9) ----- */
+function initKvHra() {
+  const TH = TEXTY.kvad.hra, box = $('#kvz_hraTl');
+  box.innerHTML = `<button class="primary" data-kh="start">${TH.start}</button>
+    <button data-kh="napoveda" hidden>${TH.napoveda}</button><button data-kh="nova" hidden>${TH.nova}</button>`;
+  box.addEventListener('click', e => {
+    const b = e.target.closest('[data-kh]'); if (!b) return;
+    const a = b.dataset.kh, H = KV.Z.hra;
+    if (a === 'start') { if (H) { KV.Z.hra = null; obnovKvZaklad(); } else novaParabola(); }
+    else if (a === 'nova') novaParabola();
+    else if (a === 'napoveda' && H) { H.nap = Math.min(H.nap + 1, TH.napovedy.length); kvHraKontrola(); }
+  });
+}
+function novaParabola() {
+  // a je násobok 0,5 (a ≠ 0), m a n sú celé čísla; b a c musia byť dosiahnuteľné posuvníkmi (−6 až 6)
+  const Z = KV.Z; let a, m, n, p;
+  do { a = nahoda(-4, 4) / 2; m = nahoda(-3, 3); n = nahoda(-4, 4); p = vrcholNaVseob(a, m, n); }
+  while (jeNula(a) || Math.abs(p[1]) > 6 || Math.abs(p[0]) > 6 || (rovne(p[2], Z.a) && rovne(p[1], Z.b) && rovne(p[0], Z.c)));
+  Z.hra = { a, m, n, p, nap: 0, hotovo: false };
+  obnovKvZaklad();
+}
+function kvHraKontrola() {
+  const TH = TEXTY.kvad.hra, Z = KV.Z, H = Z.hra, st = $('#kvz_hraStav'), box = $('#kvz_hraTl');
+  const bStart = $('[data-kh="start"]', box), bNap = $('[data-kh="napoveda"]', box), bNova = $('[data-kh="nova"]', box);
+  bStart.textContent = H ? TH.koniec : TH.start; bStart.classList.toggle('primary', !H);
+  bNap.hidden = !H; bNova.hidden = !H;
+  if (!H) { st.innerHTML = Z.skore ? `<p class="skore">${vypln(TH.skore, { n: Z.skore })}</p>` : ''; return; }
+  const ok = { a: rovne(Z.a, H.p[2]), b: rovne(Z.b, H.p[1]), c: rovne(Z.c, H.p[0]) };
+  const vsetko = ok.a && ok.b && ok.c;
+  if (vsetko && !H.hotovo) { H.hotovo = true; Z.skore++; Z.G.nastav(Z.G.krivky.map(k => k.c === H.p ? Object.assign({}, k, { popis: 'cieľ ✔' }) : k), Z.G.moz); }
+  if (!vsetko) H.hotovo = false;
+  let h = '';
+  if (H.hotovo) h += `<p>${vypln(TH.uspech, { f: polyText(H.p), v: vrcholText(H.a, H.m, H.n) })}</p>`;
+  else {
+    const sedi = ['a', 'b', 'c'].filter(k => ok[k]);
+    h += sedi.length ? sedi.map(k => `<p>${vypln(TH.ok, { k })}</p>`).join('') : `<p>${TH.stav}</p>`;
+  }
+  const V = vrcholKvad([Z.c, Z.b, Z.a]), aa = Math.abs(H.a);
+  const dosad = {
+    m: cisK(H.m), n: cisK(H.n), mz: zatv(H.m), c: cisK(H.p[0]), a: cisK(H.a),
+    tv: V ? 'V' + bodText(V.x, V.y) : '– (a = 0)',
+    smer: H.a > 0 ? TH.smer.hore : TH.smer.dole, sirka: rovne(aa, 1) ? TH.sirka.rovnaky : aa > 1 ? TH.sirka.uzsi : TH.sirka.sirsi
+  };
+  for (let i = 0; i < H.nap && !H.hotovo; i++) h += `<p class="box zlty" style="margin:6px 0">💡 ${vypln(TH.napovedy[i], dosad)}</p>`;
+  h += `<p class="skore">${vypln(TH.skore, { n: Z.skore })}</p>`;
+  st.innerHTML = h;
+  bNap.disabled = H.hotovo || H.nap >= TH.napovedy.length;
+}
+
+/* ---------- 3b. Čo robia koeficienty: mini scény (drawGraph bez posúvania) ---------- */
+// cfg: { nadpis, koef: 'a'|'b'|'c', zaklad: {a, b, c}, zaver, pevne, extra, scena: (aktuálne, pôvodné) => { krivky, znacky, navrch, text } }
+function miniScena(el, cfg) {
+  const TKo = TEXTY.kvad.koef;
+  el.innerHTML = `<h3>${cfg.nadpis}</h3>
+    <div class="stage"><canvas class="miniPl" role="img" aria-label="${cfg.nadpis}"></canvas></div>
+    <p class="miniVzorec" aria-live="polite"></p>
+    <div class="slm"></div>
+    <p class="mini pevne"></p>${cfg.extra || ''}
+    <div class="tlac"><button data-m="hraj">${TKo.prehraj}</button><button data-m="spat">${TKo.spat}</button></div>
+    <p class="box pravda">${cfg.zaver}</p>`;
+  const pl = $('canvas', el), out = $('.miniVzorec', el);
+  const S = { k: Object.assign({}, cfg.zaklad), v0: cfg.zaklad[cfg.koef], hodn: cfg.zaklad[cfg.koef], anim: null, el };
+  S.sl = posuvnik($('.slm', el), { nazov: cfg.koef, min: -6, max: 6, krok: .5, hodnota: S.hodn, zmena: v => { S.stop(); S.hodn = v; S.kresli(); } });
+  let caka = false;
+  S.kresli = () => { if (caka) return; caka = true; requestAnimationFrame(() => { caka = false; S.hned(); }); };
+  S.hned = () => {
+    const W = pl.clientWidth; if (W < 20) return;
+    const s = W / 12;                                      // x od −6 po 6, rovnaká mierka
+    const pov = Object.assign({}, S.k, { [cfg.koef]: S.v0 }), akt = Object.assign({}, S.k, { [cfg.koef]: S.hodn });
+    const o = cfg.scena(akt, pov);
+    drawGraph(pl, o.krivky, { view: { cx: 0, cy: 0, sx: s, sy: s }, znacky: o.znacky, navrch: o.navrch });
+    out.innerHTML = o.text;
+    $('.pevne', el).textContent = vypln(cfg.pevne, { a: cisK(S.k.a), b: cisK(S.k.b), c: cisK(S.k.c) });
+  };
+  // „Prehraj“: koeficient sa plynulo kýve okolo pôvodnej hodnoty (4 s, časovanie podľa skutočného času)
+  S.stop = () => { S.anim = null; $('[data-m="hraj"]', el).textContent = TKo.prehraj; };
+  el.addEventListener('click', e => {
+    const b = e.target.closest('[data-m]'); if (!b || b.tagName === 'INPUT') return;
+    if (b.dataset.m === 'spat') { S.stop(); S.hodn = S.v0; S.sl.set(S.v0); S.kresli(); return; }
+    if (b.dataset.m !== 'hraj') return;
+    if (S.anim) { S.stop(); return; }
+    const a0 = { t0: performance.now() }; S.anim = a0; b.textContent = TKo.zastav;
+    const DUR = 4000, A = cfg.koef === 'a' ? 2.5 : 4;
+    const slucka = t => {
+      if (S.anim !== a0) return;
+      const u = MALO_POHYBU ? 1 : (t - a0.t0) / DUR;
+      if (u >= 1) { S.hodn = S.v0; S.sl.set(S.v0); S.stop(); S.hned(); return; }
+      S.hodn = clamp(S.v0 + A * Math.sin(2 * Math.PI * u), -6, 6); S.sl.set(S.hodn); S.hned();
+      requestAnimationFrame(slucka);
+    };
+    requestAnimationFrame(slucka);
+  });
+  VSETKY_GRAFY.push(S); KV.sceny.push(S);
+  return S;
+}
+// spoločný popis pod scénou: vzorec a vrchol
+function textSceny(p, V) {
+  const TKo = TEXTY.kvad.koef;
+  return V ? `y = <b>${polyText(p)}</b><br>${vypln(TKo.vrchol, { x: cis(V.x), y: cis(V.y) })}` : `y = <b>${polyText(p)}</b><br>${vypln(TKo.priamka, { f: polyText(p) })}`;
+}
+// spoločné krivky: aktuálna (plná) a pôvodná (sivá bodkovaná)
+const kvKrivky = (p, p0) => [{ c: p, farba: FARBY.f, styl: 'plna', popis: 'f' }, { c: p0, farba: FARBY.siva, styl: 'bodkovana', popis: TEXTY.kvad.povodna, hrubka: 3 }];
+const kvVrcholZn = (V, V0) => [...(V0 ? [{ x: V0.x, y: V0.y, typ: 'bod', farba: FARBY.siva }] : []), ...(V ? [{ x: V.x, y: V.y, typ: 'vrchol' }] : [])];
+// scéna a: vrchol sa pohybuje po priamke y = c + b·x/2 (pre b ≠ 0)
+function scenaA(k, z) {
+  const p = [k.c, k.b, k.a], p0 = [z.c, z.b, z.a], V = vrcholKvad(p), V0 = vrcholKvad(p0), kr = kvKrivky(p, p0);
+  if (!jeNula(k.b)) { const hr = Math.abs(k.b) / 12; kr.push({ f: x => Math.abs(x) >= hr - 1e-9 ? k.c + k.b * x / 2 : NaN, farba: FARBY.vrchol, styl: 'ciarkovana', hrubka: 2, popis: TEXTY.kvad.koef.drahaV }); }
+  return { krivky: kr, znacky: kvVrcholZn(V, V0), text: textSceny(p, V) };
+}
+// scéna b: dotyčnica v (0; c) má sklon f'(0) = b; vrchol sa pohybuje po parabole y = c − a·x²
+function scenaB(k, z) {
+  const p = [k.c, k.b, k.a], p0 = [z.c, z.b, z.a], V = vrcholKvad(p), V0 = vrcholKvad(p0), kr = kvKrivky(p, p0);
+  const sklon = evalPoly(derivative(p), 0);
+  kr.push({ c: [k.c, sklon], farba: FARBY.sklon, styl: 'bodkovana', hrubka: 3, popis: TEXTY.kvad.koef.dotycnica });
+  if (!jeNula(k.a)) kr.push({ c: [k.c, 0, -k.a], farba: FARBY.vrchol, styl: 'ciarkovana', hrubka: 2, popis: TEXTY.kvad.koef.drahaV });
+  return { krivky: kr, znacky: [{ x: 0, y: k.c, typ: 'prY' }, ...kvVrcholZn(V, V0)],
+    text: textSceny(p, V) + `<br>${TEXTY.kvad.koef.dotycnica}: y = ${polyText([k.c, sklon])} (sklon ${cisK(sklon)})` };
+}
+// scéna c: celý graf sa posunie zvisle o Δc
+function scenaC(k, z) {
+  const p = [k.c, k.b, k.a], p0 = [z.c, z.b, z.a], V = vrcholKvad(p), V0 = vrcholKvad(p0), dc = k.c - z.c;
+  const sip = (ctx, T, ob) => {
+    if (jeNula(dc)) return;
+    const pop = vypln(TEXTY.kvad.koef.posun, { d: (dc > 0 ? '+' : '') + cis(dc) });
+    for (const x of V0 ? [V0.x, V0.x + 1.5, V0.x - 1.5] : [-2, 0, 2]) kresliSipku(ctx, T, ob, x, evalPoly(p0, x), x, evalPoly(p, x), FARBY.vrchol, x === (V0 ? V0.x : 0) ? pop : null);
+  };
+  return { krivky: kvKrivky(p, p0), znacky: kvVrcholZn(V, V0), navrch: sip, text: textSceny(p, V) };
+}
+function initKvKoef() {
+  const TKo = TEXTY.kvad.koef;
+  const sa = miniScena($('#kvf_a'), { nadpis: TKo.a.nadpis, koef: 'a', zaklad: { a: 1, b: 2, c: -1 }, pevne: TKo.a.pevne, zaver: TKo.a.zaver, scena: scenaA,
+    extra: `<label class="chk"><input type="checkbox" data-m="b0"> ${TKo.a.prepni}</label>` });
+  $('[data-m="b0"]', sa.el).addEventListener('change', e => { sa.k.b = e.target.checked ? 0 : 2; sa.k.c = e.target.checked ? 0 : -1; sa.kresli(); });
+  miniScena($('#kvf_b'), { nadpis: TKo.b.nadpis, koef: 'b', zaklad: { a: 1, b: 0, c: -1 }, pevne: TKo.b.pevne, zaver: TKo.b.zaver, scena: scenaB });
+  miniScena($('#kvf_c'), { nadpis: TKo.c.nadpis, koef: 'c', zaklad: { a: 1, b: -2, c: 0 }, pevne: TKo.c.pevne, zaver: TKo.c.zaver, scena: scenaC });
+}
+
+/* ---------- 3c. Vrcholový tvar: y = x² → a·x² → a(x − m)² → a(x − m)² + n ---------- */
+function kvvParam(s) { const V = KV.V; return { a: s >= 1 ? V.a : 1, m: s >= 2 ? V.m : 0, n: s >= 3 ? V.n : 0 }; }
+// aktuálne (animované) parametre: plynulý prechod z predchádzajúceho kroku za 0,8 s
+function kvvAktualne() {
+  const V = KV.V, p1 = kvvParam(V.krok);
+  if (V.krok === 0) return p1;
+  const p0 = kvvParam(V.krok - 1), t = MALO_POHYBU ? 1 : ease(clamp((performance.now() - V.t0) / 800, 0, 1));
+  return { a: p0.a + (p1.a - p0.a) * t, m: p0.m + (p1.m - p0.m) * t, n: p0.n + (p1.n - p0.n) * t };
+}
+function initKvVrch() {
+  const TV = TEXTY.kvad.vrch, V = KV.V;
+  V.G = novyGraf($('#kvv_graf'), { sondaX: 1 });
+  const zmen = k => v => { V[k] = v; V.t0 = -Infinity; obnovKvVrch(); };
+  V.slA = posuvnik($('#kvv_slA'), { nazov: TV.slA, min: -6, max: 6, krok: .5, hodnota: V.a, zmena: zmen('a') });
+  V.slM = posuvnik($('#kvv_slM'), { nazov: TV.slM, min: -6, max: 6, krok: .5, hodnota: V.m, zmena: zmen('m') });
+  V.slN = posuvnik($('#kvv_slN'), { nazov: TV.slN, min: -6, max: 6, krok: .5, hodnota: V.n, zmena: zmen('n') });
+  $('#kvv_tl').innerHTML = `<button class="primary" data-v="dalsi">${TV.dalsi}</button><button data-v="znova">${TV.znova}</button><button data-v="vsetky">${TV.vsetky}</button>`;
+  $('#kvv_tl').addEventListener('click', e => {
+    const b = e.target.closest('[data-v]'); if (!b) return;
+    if (b.dataset.v === 'dalsi' && V.krok < 3) { V.krok++; V.t0 = performance.now(); animKvVrch(); }
+    else if (b.dataset.v === 'znova') { V.krok = 0; V.t0 = -Infinity; }
+    else if (b.dataset.v === 'vsetky') { V.krok = 3; V.t0 = -Infinity; }
+    obnovKvVrch();
+  });
+  $('#kvv_prepni').onclick = () => { V.vseob = !V.vseob; obnovKvVrch(); };
+  obnovKvVrch();
+}
+function animKvVrch() {
+  const t0 = KV.V.t0;
+  const slucka = () => { if (KV.V.t0 !== t0) return; obnovKvVrchGraf(); if (performance.now() - t0 < 850) requestAnimationFrame(slucka); };
+  requestAnimationFrame(slucka);
+}
+function kvvPopisKroku(i) {
+  const TV = TEXTY.kvad.vrch, { a, m, n } = KV.V;
+  let f, t;
+  if (i === 0) { f = 'x²'; t = TV.k0; }
+  else if (i === 1) {
+    f = vrcholText(a, 0, 0); const aa = Math.abs(a);
+    t = jeNula(a) ? TV.k1nula : vypln(rovne(aa, 1) ? TV.k1rov : aa > 1 ? TV.k1roz : TV.k1stl, { a: cisK(a), aa: cisK(aa) }) + (a < 0 ? TV.k1prek : '');
+  } else if (i === 2) {
+    f = vrcholText(a, m, 0);
+    t = vypln(jeNula(m) ? TV.k2nic : m > 0 ? TV.k2prava : TV.k2lava, { m: cisK(m), mm: cisK(Math.abs(m)) });
+  } else {
+    f = vrcholText(a, m, n);
+    t = vypln(jeNula(n) ? TV.k3nic : n > 0 ? TV.k3hore : TV.k3dole, { n: cisK(n), nn: cisK(Math.abs(n)) });
+  }
+  return `<b>${i}. y = ${f}</b> – ${t}`;
+}
+function obnovKvVrch() {
+  const TV = TEXTY.kvad.vrch, V = KV.V, p = vrcholNaVseob(V.a, V.m, V.n);
+  const vt = 'y = ' + vrcholText(V.a, V.m, V.n), gt = 'y = ' + polyText(p);
+  $('#kvv_vzorec').textContent = V.vseob ? gt : vt;
+  $('#kvv_kroky').innerHTML = [0, 1, 2, 3].map(i => `<li class="${i === V.krok ? 'akt' : i > V.krok ? 'bud' : ''}">${kvvPopisKroku(i)}</li>`).join('');
+  $$('#kvv_tl [data-v="dalsi"]')[0].disabled = V.krok >= 3;
+  $('#kvv_pozn').innerHTML = jeNula(V.a) ? `<div class="box zlty">${vypln(TV.a0, { n: cisK(V.n) })}</div>` : '';
+  // prepojenie so všeobecným tvarom – krivka ostáva rovnaká, mení sa len zápis
+  let h;
+  if (jeNula(V.a)) h = `<p>${vypln(TV.a0, { n: cisK(V.n) })}</p>`;
+  else {
+    const [hl, dr] = V.vseob ? [gt, vt] : [vt, gt];
+    h = `<div class="vzorec">${hl}</div><div class="vzorec druhy">= ${dr.slice(4)}</div><div class="kroky">`;
+    if (!V.vseob) {
+      h += riadokK(TV.roznasob);
+      h += riadokK(`b = −2am = −2 · ${zatv(V.a)} · ${zatv(V.m)} = <b>${cisK(p[1])}</b>`);
+      h += riadokK(`c = am² + n = ${zatv(V.a)} · ${zatv(V.m)}² + ${zatv(V.n)} = <b>${cisK(p[0])}</b>`);
+    } else {
+      const W = vseobNaVrchol(p);
+      h += riadokK(`m = −b / (2a) = −${zatv(p[1])} / (2 · ${zatv(V.a)}) = <b>${cisK(W.m)}</b>`);
+      h += riadokK(`n = c − b² / (4a) = ${cisK(p[0])} − ${zatv(p[1])}² / (4 · ${zatv(V.a)}) = <b>${cisK(W.n)}</b>`);
+    }
+    h += `</div><p class="mini">${TV.ista}</p>`;
+  }
+  $('#kvv_prep').innerHTML = h;
+  obnovKvVrchGraf();
+}
+function obnovKvVrchGraf() {
+  const TV = TEXTY.kvad.vrch, V = KV.V, cur = kvvAktualne(), pc = vrcholNaVseob(cur.a, cur.m, cur.n), R = korenKvad(pc);
+  const krivky = [{ c: pc, farba: FARBY.f, styl: 'plna', popis: 'f' }, { c: [0, 0, 1], farba: FARBY.siva, styl: 'bodkovana', popis: TEXTY.kvad.zakladna, hrubka: 3 }];
+  if (V.krok >= 2) { const q = kvvParam(V.krok - 1); krivky.push({ c: vrcholNaVseob(q.a, q.m, q.n), farba: FARBY.ciel, styl: 'ciarkovana', popis: TV.predch, hrubka: 2.5 }); }
+  const zn = jeNula(cur.a) ? [] : [{ x: cur.m, y: cur.n, typ: 'vrchol', popis: 'V' + bodText(cur.m, cur.n) }];
+  V.G.nastav(krivky, {
+    znacky: zn, korene: koreneZoznam(R), vsetkoKorene: R.typ === 'vsetky', dolezite: [V.m],
+    navrch: (ctx, T, ob) => {                             // šípky posunov: vodorovne o m, zvisle o n
+      if (V.krok >= 2 && !jeNula(cur.m)) kresliSipku(ctx, T, ob, 0, 0, cur.m, 0, FARBY.ciel, vypln(TV.posunM, { m: cisK(V.m) }));
+      if (V.krok >= 3 && !jeNula(cur.n)) kresliSipku(ctx, T, ob, V.m, 0, V.m, cur.n, FARBY.sklon, vypln(TV.posunN, { n: cisK(V.n) }));
+    }
+  });
+}
+
+/* ---------- 3d. Korene kvadratickej funkcie ---------- */
+function initKvKor() {
+  const TQ = TEXTY.kvad, R = KV.R;
+  R.G = novyGraf($('#kvk_graf'), { sondaX: 1 });
+  const zmen = k => v => { R[k] = v; obnovKvKor(); };
+  posuvnik($('#kvk_slA'), { nazov: TQ.slA, min: -6, max: 6, krok: .5, hodnota: R.a, zmena: zmen('a') });
+  posuvnik($('#kvk_slB'), { nazov: TQ.slB, min: -6, max: 6, krok: .5, hodnota: R.b, zmena: zmen('b') });
+  posuvnik($('#kvk_slC'), { nazov: TQ.slC, min: -6, max: 6, krok: .5, hodnota: R.c, zmena: zmen('c') });
+  obnovKvKor();
+}
+// výpočet diskriminantu a koreňov po krokoch
+function krokyDiskriminantu(a, b, c) {
+  const TK = TEXTY.kvad.kor, p = [c, b, a], D = diskriminant(p), R = korenKvad(p);
+  let h = '<div class="kroky">' + riadokK('D = b² − 4ac');
+  h += riadokK(`D = ${zatv(b)}² − 4 · ${zatv(a)} · ${zatv(c)}`);
+  h += riadokK(`D = ${cisK(b * b)} − ${zatv(4 * a * c)}`);
+  h += riadokK(`D = ${cisK(D)}`, true) + '</div>';
+  const druh = R.typ === 'dva' ? ['plus', 'pravda'] : R.typ === 'jeden' ? ['nula', 'zlty'] : ['minus', 'omyl'];
+  h += `<div class="box ${druh[1]} kvStav">${TK.stav[druh[0]]}</div><div class="kroky">`;
+  const mb = jeNula(b) ? '' : cisK(-b) + ' ';
+  if (R.typ === 'dva') {
+    const s = Math.sqrt(D), pr = presne(s, 6), sT = pr ? cisK(s) : '√' + cisK(D);
+    h += riadokK(`x<sub>1,2</sub> = ${zlHTML('−b ± √D', '2a')} = ${zlHTML(`${mb}± √${cisK(D)}`, cisK(2 * a))}`);
+    h += riadokK(pr ? `√D = √${cisK(D)} = ${cisK(s)}` : `√D = √${cisK(D)} ≈ ${cis(s)}`);
+    [[-1, '1'], [1, '2']].forEach(([zn, i]) => {
+      const x = (-b + zn * s) / (2 * a), v = pr ? cisHTML(x, zlomok(-b + zn * s, 2 * a)) : { rov: '≈', html: cis(x) };
+      h += riadokK(`x<sub>${i}</sub> = ${zlHTML(`${mb}${zn < 0 ? '−' : '+'} ${sT}`, cisK(2 * a))} ${v.rov} ${v.html}`, true);
+    });
+  } else if (R.typ === 'jeden') {
+    const v = cisHTML(R.x1, zlomok(-b, 2 * a));
+    h += riadokK(`x = ${zlHTML('−b', '2a')} = ${zlHTML(cisK(-b), cisK(2 * a))} ${v.rov} ${v.html}`, true);
+  } else h += riadokK(vypln(TK.neexistuje, { D: cisK(D) }), true);
+  return h + '</div>';
+}
+function obnovKvKor() {
+  const TQ = TEXTY.kvad, TK = TQ.kor, S = KV.R, p = [S.c, S.b, S.a], V = vrcholKvad(p), R = korenKvad(p);
+  $('#kvk_vzorec').textContent = 'f(x) = ' + polyText(p);
+  const n = R.typ === 'dva' ? 2 : R.typ === 'jeden' ? 1 : 0;
+  if (!V) {                                               // a = 0 → lineárna funkcia
+    $('#kvk_graficky').innerHTML = '';
+    $('#kvk_vypocet').innerHTML = `<div class="box zlty" style="margin:0 0 8px">${vypln(TK.a0, { f: polyText(p) })}</div><div class="kroky">${krokyKorena(S.b, S.c)}</div>`;
+    $('#kvk_sucin').innerHTML = `<p>${TK.sucinA0}</p>`;
+    $('#kvk_viete').innerHTML = `<p>${TK.vieteNie}</p>`;
+  } else {
+    $('#kvk_graficky').innerHTML = vypln(TK.graficky, { t: TK['g' + n] });
+    const D = diskriminant(p), poloha = jeNula(V.y) ? 'na' : V.y < 0 ? 'pod' : 'nad';
+    $('#kvk_vypocet').innerHTML = krokyDiskriminantu(S.a, S.b, S.c) + `<p class="box info">${vypln(TK.vztah, {
+      smer: S.a > 0 ? TQ.hra.smer.hore : TQ.hra.smer.dole, poloha: TK.poloha[poloha], yv: cis(V.y), zn: jeNula(D) ? '=' : D > 0 ? '&gt;' : '&lt;' })}</p>`;
+    // súčinový tvar a overenie rozvinutím: a(x − x₁)(x − x₂) = a[x² − (x₁ + x₂)x + x₁x₂]
+    if (n) {
+      const s = R.x1 + R.x2, q = R.x1 * R.x2, pr = presne(R.x1) && presne(R.x2), zn = pr ? '=' : '≈';
+      const bb = -S.a * s, cc = S.a * q, ok = Math.abs(bb - S.b) < 1e-9 && Math.abs(cc - S.c) < 1e-9;
+      let h = `<p>${TK.sucin}</p><div class="vzorec">y ${zn} ${sucinText(S.a, R)}</div><p class="mini">${TK.overenie}</p><div class="kroky">`;
+      h += riadokK(`a(x − x₁)(x − x₂) = a · [x² − (x₁ + x₂)x + x₁ · x₂]`);
+      h += riadokK(`= ${zatv(S.a)} · [x² − ${zatvC(s)}x + ${zatvC(q)}]`);
+      h += riadokK(`= ${polyText([cc, bb, S.a])} ${ok ? '✔' : ''}`, true);
+      h += '</div>' + (pr ? '' : `<p class="mini">${TK.zaokr}</p>`);
+      $('#kvk_sucin').innerHTML = h;
+      const r = (x, y) => `${cis(x)} ${rovZnak(x)} ${cis(y)}`;
+      $('#kvk_viete').innerHTML = `<p>${TK.vieteUvod}</p><div class="kroky">` +
+        riadokK(`x₁ + x₂ = ${cis(R.x1)} + ${zatvC(R.x2)} ${rovZnak(s)} ${cis(s)}`, false, `−b/a = ${cis(-S.b / S.a)} ${Math.abs(s + S.b / S.a) < 1e-9 ? '✔' : '✘'}`) +
+        riadokK(`x₁ · x₂ = ${cis(R.x1)} · ${zatvC(R.x2)} ${rovZnak(q)} ${cis(q)}`, false, `c/a = ${cis(S.c / S.a)} ${Math.abs(q - S.c / S.a) < 1e-9 ? '✔' : '✘'}`) + '</div>';
+    } else {
+      $('#kvk_sucin').innerHTML = `<p>${TK.sucin}</p><p class="box omyl">${TK.sucinNie}</p>`;
+      $('#kvk_viete').innerHTML = `<p>${TK.vieteUvod}</p><p>${TK.vieteNie}</p>`;
+    }
+  }
+  const zn = V ? znackyKvad(p, R, V) : [{ x: 0, y: S.c, typ: 'prY', popis: `(0; ${cisK(S.c)})` }, ...(R.typ === 'jeden' ? [{ x: R.x, y: 0, typ: 'koren', popis: `x ${rovZnak(R.x)} ${cis(R.x)}` }] : [])];
+  KV.R.G.nastav([{ c: p, farba: FARBY.f, styl: 'plna', popis: 'f', hrubka: R.typ === 'vsetky' ? 5 : 3.5 }], {
+    znacky: zn, korene: koreneZoznam(R), vsetkoKorene: R.typ === 'vsetky', dolezite: V ? [V.x] : [],
+    navrch: V ? (ctx, T, ob) => kresliZvislu(ctx, T, ob, V.x, FARBY.vrchol, null) : null
+  });
+}
+
+/* =====================================================================
+   ČASŤ 3 – SPOLOČNÁ MATEMATIKA PRE STUPNE 1 AŽ 5
+   ===================================================================== */
+/* REÁLNE KORENE START */
+const TOL_KOREN = 1e-9;
+// realRoots(c): všetky reálne korene polynómu, zoradené, s násobnosťou: [{ x, nas }]
+//  1. Korene derivácie (rekurzívne tou istou funkciou) rozdelia os x na intervaly, kde je f monotónna.
+//  2. V každom takom intervale je najviac jeden jednoduchý koreň – nájde ho delenie intervalu (ak sa mení znamienko).
+//  3. Ak je v koreni derivácie |f| ≤ 1e-9, graf sa osi x dotýka → viacnásobný koreň (násobnosť = násobnosť v derivácii + 1).
+//  Počiatočný interval (−B; B) dáva Cauchyho odhad B = 1 + max |cᵢ / cₙ|. Nulový polynóm → null (koreňom je každé x).
+function realRoots(c) {
+  const st = degree(c);
+  if (st < 0) return null;
+  if (st === 0) return [];
+  const p = c.slice(0, st + 1);
+  if (st === 1) { const x = -p[0] / p[1]; return [{ x: jeNula(x) ? 0 : x, nas: 1 }]; }
+  let B = 0;
+  for (let i = 0; i < st; i++) B = Math.max(B, Math.abs(p[i] / p[st]));
+  B += 1;
+  const f = x => evalPoly(p, x), vysl = [], body = [-B];
+  for (const r of realRoots(derivative(p)) || []) {
+    if (r.x <= -B || r.x >= B) continue;
+    if (Math.abs(f(r.x)) <= TOL_KOREN) vysl.push({ x: jeNula(r.x) ? 0 : r.x, nas: r.nas + 1 });   // dotyk osi x
+    body.push(r.x);
+  }
+  body.push(B);
+  for (let i = 0; i + 1 < body.length; i++) {
+    let a = body[i], b = body[i + 1], fa = f(a);
+    const fb = f(b);
+    if (Math.abs(fa) <= TOL_KOREN || Math.abs(fb) <= TOL_KOREN || fa * fb > 0) continue;   // bez zmeny znamienka (koreň v kraji je už zapísaný)
+    for (let k = 0; k < 200; k++) {                       // delenie intervalu až po presnosť čísel v počítači
+      const s = (a + b) / 2; if (s <= a || s >= b) break;
+      const fs = f(s);
+      if (fs === 0) { a = b = s; break; }
+      if ((fs < 0) === (fa < 0)) { a = s; fa = fs; } else b = s;
+    }
+    const x = (a + b) / 2;
+    vysl.push({ x: jeNula(x) ? 0 : x, nas: 1 });
+  }
+  return vysl.sort((u, v) => u.x - v.x);
+}
+/* REÁLNE KORENE KONIEC */
+
+// súčin polynómov (roznásobenie zátvoriek)
+function polyMul(p, q) {
+  const r = new Array(p.length + q.length - 1).fill(0);
+  for (let i = 0; i < p.length; i++) for (let j = 0; j < q.length; j++) r[i + j] += p[i] * q[j];
+  return r;
+}
+// správanie na okrajoch: kam ide ľavý a pravý koniec grafu (+1 nahor, −1 nadol)
+function konce(p) {
+  const st = degree(p); if (st < 1) return null;
+  const pravy = Math.sign(p[st]), lavy = st % 2 ? -pravy : pravy;
+  return { lavy, pravy, kluc: `${lavy > 0 ? 'hore' : 'dole'},${pravy > 0 ? 'hore' : 'dole'}` };
+}
+// analýza polynómu: korene, lokálne extrémy (korene f′ nepárnej násobnosti), inflexné body (korene f″ nepárnej násobnosti)
+function analyzaPoly(c) {
+  const st = degree(c), p = c.slice(0, Math.max(st, 0) + 1);
+  if (st < 0) return { st, p: [0], korene: null, extremy: [], inflexie: [] };
+  const korene = realRoots(p), d1 = derivative(p), d2 = derivative(d1), extremy = [], inflexie = [];
+  if (st >= 2) for (const r of realRoots(d1)) if (r.nas % 2 === 1) {
+    const y = evalPoly(p, r.x);
+    let s = evalPoly(d2, r.x);
+    if (Math.abs(s) < 1e-9) s = evalPoly(p, r.x + 1e-3) + evalPoly(p, r.x - 1e-3) - 2 * y;   // vyšší rád – rozhodne okolie
+    extremy.push({ x: r.x, y, typ: s < 0 ? 'max' : 'min' });
+  }
+  if (st >= 3) for (const r of realRoots(d2)) if (r.nas % 2 === 1) inflexie.push({ x: r.x, y: evalPoly(p, r.x) });
+  return { st, p, korene, extremy, inflexie };
+}
+// diskriminant kubickej funkcie p = [d, c, b, a]
+function diskriminantKub(p) {
+  const d = p[0] || 0, c = p[1] || 0, b = p[2] || 0, a = p[3] || 0;
+  return 18 * a * b * c * d - 4 * b * b * b * d + b * b * c * c - 4 * a * c * c * c - 27 * a * a * d * d;
+}
+// jeden krok delenia intervalu; st = { l, r, fl, fr }
+function krokBisekcie(p, st) {
+  const s = (st.l + st.r) / 2, fs = evalPoly(p, s);
+  if (fs === 0) return { l: s, r: s, fl: 0, fr: 0, s, fs, pon: 'presne' };
+  if ((fs < 0) === (st.fl < 0)) return { l: s, r: st.r, fl: fs, fr: st.fr, s, fs, pon: 'r' };   // znamienko sa mení v [s; r]
+  return { l: st.l, r: s, fl: st.fl, fr: fs, s, fs, pon: 'l' };                                 // znamienko sa mení v [l; s]
+}
+// celé delenie intervalu, kým je šírka ≥ tol
+function bisekcia(p, l, r, tol = 0.001) {
+  const fl = evalPoly(p, l), fr = evalPoly(p, r);
+  if (fl === 0 || fr === 0) return { stav: 'kraj', x: fl === 0 ? l : r, fl, fr, kroky: [] };
+  if (fl * fr > 0) return { stav: 'rovnake', fl, fr, kroky: [] };
+  let st = { l, r, fl, fr };
+  const kroky = [];
+  while (st.r - st.l >= tol) { st = krokBisekcie(p, st); kroky.push(st); if (st.pon === 'presne') break; }
+  const x = (st.l + st.r) / 2;
+  return { stav: 'ok', kroky, x, fx: evalPoly(p, x), fl, fr };
+}
+
+/* ----- spoločné zápisy a kreslenie pre stupne 3 až 5 ----- */
+const SPODNE = '₀₁₂₃₄₅₆₇₈₉';
+const korenText = r => `x ${rovZnak(r.x)} ${cis(r.x)}` + (r.nas > 1 ? ` (${r.nas}×)` : '');
+function slovoKorene(n) { const P = TEXTY.poly; return n === 0 ? P.k0 : n === 1 ? P.k1 : vypln(n <= 4 ? P.k24 : P.k5, { n }); }
+function slovoBody(n) { const P = TEXTY.poly; return n === 0 ? P.b0 : n === 1 ? P.b1 : vypln(n <= 4 ? P.b24 : P.b5, { n }); }
+const sumaNas = K => (K || []).reduce((s, r) => s + r.nas, 0);
+// značky: korene (s násobnosťou), lokálne extrémy, inflexné body, priesečník s osou y; zhodné body len raz
+function znackyPoly(A) {
+  const zn = [], K = A.korene || [];
+  const naKoreni = (x, y) => Math.abs(y) < 1e-9 && K.some(r => Math.abs(r.x - x) < 1e-6);
+  const vBode0 = [...A.extremy, ...A.inflexie].some(e => Math.abs(e.x) < 1e-6);   // extrém či inflexia v x = 0 už má súradnice v popisku
+  if (!naKoreni(0, A.p[0]) && !vBode0) zn.push({ x: 0, y: A.p[0], typ: 'prY', popis: `(0; ${cis(A.p[0])})` });
+  for (const e of A.extremy) if (!naKoreni(e.x, e.y)) zn.push({ x: e.x, y: e.y, typ: 'extrem', popis: (e.typ === 'max' ? 'max ' : 'min ') + bodText(e.x, e.y) });
+  for (const i of A.inflexie) if (!naKoreni(i.x, i.y)) zn.push({ x: i.x, y: i.y, typ: 'inflex', popis: 'I' + bodText(i.x, i.y) });
+  for (const r of K) zn.push({ x: r.x, y: 0, typ: 'koren', popis: korenText(r) });
+  return zn;
+}
+// šípky pri okrajoch plátna: kam idú konce grafu (ob = null → bez popiskov, pre malé grafy)
+function kresliKonce(ctx, T, ob, p) {
+  const K = konce(p); if (!K) return;
+  [[34, K.lavy, TEXTY.okraje.lavy], [T.W - 34, K.pravy, TEXTY.okraje.pravy]].forEach(([X, smer, txt]) => {
+    const y1 = T.H / 2 + smer * 30, y2 = smer > 0 ? 44 : T.H - 44;
+    kresliSipku(ctx, T, ob, T.wx(X), T.wy(y1), T.wx(X), T.wy(y2), FARBY.vrchol, null);
+    if (ob) umiestniPopis(ctx, T, ob, txt + (smer > 0 ? ' ↑' : ' ↓'), X, (y1 + y2) / 2, FARBY.vrchol, X < T.W / 2 ? [[12, -13], [12, 20]] : [[-150, -13], [-150, 20]]);
+  });
+}
+// súčinový tvar a jeho overenie postupným roznásobením (ak má polynóm stupňa n práve n reálnych koreňov s násobnosťou)
+function sucinHTML(A) {
+  const P = TEXTY.poly;
+  if (A.st < 1) return `<p>${A.st < 0 ? P.nulovy : P.sucinNie.replace('{st}', 0)}</p>`;
+  if (sumaNas(A.korene) !== A.st) return `<p>${vypln(P.sucin, { st: A.st })}</p><p class="box omyl">${vypln(P.sucinNie, { st: A.st })}</p>`;
+  const lead = A.p[A.st], pr = A.korene.every(r => presne(r.x)), zn = pr ? '=' : '≈';
+  const K = A.korene.slice().sort((u, v) => (jeNula(u.x) ? -1 : 0) - (jeNula(v.x) ? -1 : 0));   // činiteľ x píšeme prvý: x(x + 2)(x − 2)
+  const zapis = aPred(lead) + K.map(r => cinitel(r.x) + (r.nas > 1 ? hornyIndex(r.nas) : '')).join('');
+  const vsetky = []; K.forEach(r => { for (let j = 0; j < r.nas; j++) vsetky.push(r.x); });
+  let h = `<p>${vypln(P.sucin, { st: A.st })}</p><div class="vzorec">y ${zn} ${zapis}</div><p class="mini">${P.overenie}</p><div class="kroky">`;
+  let suc = [-vsetky[0], 1];
+  for (let i = 1; i < vsetky.length; i++) {
+    suc = polyMul(suc, [-vsetky[i], 1]);
+    // medzivýsledky; posledný súčin (už aj s a) je v zvýraznenom riadku nižšie
+    if (i < vsetky.length - 1 || !rovne(lead, 1)) h += riadokK(`${vsetky.slice(0, i + 1).map(x => cinitel(x)).join('')} ${zn} ${polyText(suc.map(v => Math.round(v * 1e4) / 1e4))}`);
+  }
+  const rozv = suc.map(v => v * lead), ok = rozv.every((v, i) => Math.abs(v - (A.p[i] || 0)) < 1e-6 * Math.max(1, Math.abs(A.p[i] || 0)));
+  h += riadokK(`${aPred(lead)}${vsetky.map(x => cinitel(x)).join('')} ${zn} ${polyText(rozv.map(v => Math.round(v * 1e4) / 1e4))} ${ok ? '✔' : ''}`, true);
+  return h + '</div>' + (pr ? '' : `<p class="mini">${P.zaokr}</p>`);
+}
+// malý graf bez posúvania (typy, okraje, omyly, kvíz); data() → { krivky, znacky, navrch, rozsah, cx, cy, ypol }
+function miniGraf(platno, data) {
+  const M = { platno, data };
+  let caka = false;
+  M.kresli = () => { if (caka) return; caka = true; requestAnimationFrame(() => { caka = false; M.hned(); }); };
+  M.hned = () => {
+    const W = platno.clientWidth, H = platno.clientHeight; if (W < 20) return;
+    const d = M.data(), s = W / (2 * (d.rozsah || 5));
+    drawGraph(platno, d.krivky, { view: { cx: d.cx || 0, cy: d.cy || 0, sx: s, sy: d.ypol ? H / (2 * d.ypol) : s }, znacky: d.znacky, navrch: d.navrch });
+  };
+  const ro = window.ResizeObserver ? new ResizeObserver(() => M.kresli()) : null;
+  if (ro) ro.observe(platno);
+  M.zrus = () => { if (ro) ro.disconnect(); const i = VSETKY_GRAFY.indexOf(M); if (i >= 0) VSETKY_GRAFY.splice(i, 1); };
+  VSETKY_GRAFY.push(M); M.kresli();
+  return M;
+}
+// štítok v ľavom hornom rohu malého grafu (bez ohľadu na ostatné popisky)
+function stitokVRohu(ctx, T, text, farba) { ctx.font = PISMO; kresliStitok(ctx, { x: 8, y: 8, w: ctx.measureText(text).width + 12, h: 26 }, text, farba); }
+// výška pohľadu pre malý graf: podľa najväčšej |f| na [−r; r], v medziach 3 až 12
+function ypolPre(p, r) {
+  let M = 0;
+  for (let i = 0; i <= 80; i++) { const y = Math.abs(evalPoly(p, -r + 2 * r * i / 80)); if (isFinite(y)) M = Math.max(M, y); }
+  return clamp(M * 1.1, 3, 12);
+}
+
+/* =====================================================================
+   KARTA 4: KUBICKÁ FUNKCIA y = ax³ + bx² + cx + d   (+ podkarta Delenie intervalu)
+   ===================================================================== */
+const KB = { a: 1, b: 0, c: -4, d: 0, konce: true, pod: 'funkcia', sl: {}, typy: [] };
+const KUB_TYPY = { tri: [0, -4, 0, 1], dva: [2, -3, 0, 1], troj: [0, 0, 0, 1], jeden: [3, -3, 0, 1] };   // x³ − 4x, x³ − 3x + 2, x³, x³ − 3x + 3
+// typ kubickej funkcie podľa koreňov (počet rôznych a násobnosť)
+function typKubickej(A) {
+  if (A.st !== 3) return null;
+  const n = A.korene.length;
+  return n === 3 ? 'tri' : n === 2 ? 'dva' : A.korene[0].nas === 3 ? 'troj' : 'jeden';
+}
+function initKub() {
+  const TB = TEXTY.kub;
+  KB.G = novyGraf($('#kub_graf'), { sondaX: 1 });
+  [['a', TB.slA], ['b', TB.slB], ['c', TB.slC], ['d', TB.slD]].forEach(([k, n]) => {
+    KB.sl[k] = posuvnik($('#kub_sl' + k.toUpperCase()), { nazov: n, min: -6, max: 6, krok: .5, hodnota: KB[k], zmena: v => { KB[k] = v; obnovKub(); } });
+  });
+  $('#kub_konce').addEventListener('change', e => { KB.konce = e.target.checked; obnovKub(); });
+  // typické grafy – klik ich nastaví na hlavnom grafe
+  const box = $('#kub_typy');
+  for (const [k, p] of Object.entries(KUB_TYPY)) {
+    const b = document.createElement('button'); b.className = 'typ'; b.dataset.typ = k;
+    const A = analyzaPoly(p), D = diskriminantKub(p);
+    b.innerHTML = `<span class="stage"><canvas class="miniPl maly" role="img" aria-label="${TB.typy[k]}"></canvas></span><b>${TB.typy[k]}</b><span>y = ${polyText(p)}<br>Δ = ${cis(D)}<br>${TB.typyPopis[k]}</span>`;
+    box.appendChild(b);
+    KB.typy.push(miniGraf($('canvas', b), () => ({ krivky: [{ c: p, hrubka: 3 }], znacky: A.korene.map(r => ({ x: r.x, y: 0, typ: 'koren' })), rozsah: 3, ypol: 6 })));
+    b.onclick = () => { ['a', 'b', 'c', 'd'].forEach((q, i) => { KB[q] = p[3 - i]; KB.sl[q].set(KB[q]); }); obnovKub(); KB.G.prisposob(); };
+  }
+  initDel();
+  vytvorPodkarty('kub', TB.podkarty, KB);
+  obnovKub();
+}
+// výpočet Δ po členoch
+function krokyDelta(p) {
+  const [d, c, b, a] = p, z = zatv, cl = [
+    ['18abcd', `18 · ${z(a)} · ${z(b)} · ${z(c)} · ${z(d)}`, 18 * a * b * c * d],
+    ['−4b³d', `−4 · ${z(b)}³ · ${z(d)}`, -4 * b * b * b * d],
+    ['b²c²', `${z(b)}² · ${z(c)}²`, b * b * c * c],
+    ['−4ac³', `−4 · ${z(a)} · ${z(c)}³`, -4 * a * c * c * c],
+    ['−27a²d²', `−27 · ${z(a)}² · ${z(d)}²`, -27 * a * a * d * d]
+  ];
+  let h = '<div class="kroky">' + riadokK('Δ = 18abcd − 4b³d + b²c² − 4ac³ − 27a²d²');
+  for (const [n, t, v] of cl) h += riadokK(`${n} = ${t} = ${cisK(v)}`);
+  h += riadokK(`Δ = ${cl.map(x => zatv(x[2])).join(' + ')} = ${cisK(diskriminantKub(p))}`, true);
+  return h + '</div>';
+}
+function obnovKub() {
+  const TB = TEXTY.kub, p = [KB.d, KB.c, KB.b, KB.a], A = analyzaPoly(p), K = A.korene || [];
+  $('#kub_vzorec').textContent = 'f(x) = ' + polyText(p);
+  $('#kub_pozn').innerHTML = A.st === 3 ? '' : `<div class="box zlty" style="margin-bottom:8px">${vypln(TB.a0, { f: polyText(p), st: A.st < 0 ? '–' : A.st })}</div>`;
+  // vlastnosti: extrémy a inflexný bod
+  const vl = [];
+  if (A.st >= 2) vl.push(vypln(TB.extremy, { d: polyText(derivative(A.p)), t: A.extremy.length ? A.extremy.map(e => (e.typ === 'max' ? 'maximum ' : 'minimum ') + bodText(e.x, e.y)).join(', ') : TB.extremyZiadne }));
+  if (A.st === 3) { const I = A.inflexie[0]; vl.push(vypln(TB.inflex, { x: cis(I.x), y: cis(I.y) })); }
+  $('#kub_vl').innerHTML = vl.map(t => `<li>${t}</li>`).join('');
+  // počet koreňov a prečo aspoň jeden
+  const Ko = konce(A.p);
+  $('#kub_pocet').innerHTML = A.korene === null ? `<p>${TEXTY.poly.nulovy}</p>` :
+    `<p>${vypln(TB.pocet, { t: slovoKorene(K.length), m: sumaNas(K) !== K.length ? ' ' + vypln(TEXTY.poly.snas, { m: sumaNas(K) }) : '' })}</p>` +
+    (A.st === 3 ? `<p class="box info">${vypln(TB.preco, { zn: KB.a > 0 ? '&gt;' : '&lt;', okraje: TEXTY.okraje[Ko.kluc] })}</p>` : '');
+  // diskriminant Δ a jeho vzťah k počtu koreňov
+  if (A.st === 3) {
+    const D = diskriminantKub(p), typ = typKubickej(A);
+    const druh = jeNula(D) ? ['nula', 'zlty'] : D > 0 ? ['plus', 'pravda'] : ['minus', 'omyl'];
+    $('#kub_delta').innerHTML = krokyDelta(p) + `<div class="box ${druh[1]} kvStav">${vypln(TB.stav[druh[0]], { typ: typ === 'troj' ? TB.nulaTri : TB.nulaDva })}</div>`;
+  } else $('#kub_delta').innerHTML = `<p>${TB.deltaNie}</p>`;
+  $('#kub_sucin').innerHTML = sucinHTML(A);
+  const typ = typKubickej(A);
+  $$('#kub_typy .typ').forEach(b => b.classList.toggle('akt', b.dataset.typ === typ));
+  KB.G.nastav([{ c: p, farba: FARBY.f, styl: 'plna', popis: 'f', hrubka: A.korene === null ? 5 : 3.5 }], {
+    znacky: znackyPoly(A), korene: K.map(r => r.x), vsetkoKorene: A.korene === null, rovnakaMierka: false,
+    dolezite: [...A.extremy.map(e => e.x), ...A.inflexie.map(i => i.x)],
+    navrch: KB.konce ? (ctx, T, ob) => kresliKonce(ctx, T, ob, A.p) : null
+  });
+}
+
+/* ---------- 4b. Delenie intervalu ---------- */
+// funkcie z animácie: kubické a vyššie (aj x⁵ + x − 1, pre ktorú vzorec neexistuje)
+const DEL_FUNKCIE = [[-2, 0, 0, 1], [2, -3, 0, 1], [0, -1, 0, 1], [4, 0, -5, 0, 1], [0, -1, 0, 0, 0, 1], [-1, 1, 0, 0, 0, 1]];
+const DL = { fi: 0, l: 1, r: 2, st: null, kroky: [], anim: null };
+const delP = () => DEL_FUNKCIE[DL.fi];
+function initDel() {
+  const TD = TEXTY.del;
+  DL.G = novyGraf($('#del_graf'), { sondaX: 1 });
+  DL.G.sonda.zap = false; $('#del_graf [data-a="sonda"]').checked = false;   // tu by sonda len zavadzala (dá sa zapnúť)
+  $('#del_fun').innerHTML = DEL_FUNKCIE.map((p, i) => `<button data-f="${i}">y = ${polyText(p)}</button>`).join('');
+  $('#del_fun').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (!b) return; DL.fi = +b.dataset.f; delReset(); DL.G.prisposob(); });
+  DL.slL = posuvnik($('#del_slL'), { nazov: TD.slL, min: -4, max: 4, krok: .25, hodnota: DL.l, zmena: v => { DL.l = v; delReset(); } });
+  DL.slR = posuvnik($('#del_slR'), { nazov: TD.slR, min: -4, max: 4, krok: .25, hodnota: DL.r, zmena: v => { DL.r = v; delReset(); } });
+  $('#del_tl').innerHTML = `<button class="primary" data-d="krok">${TD.krok}</button><button data-d="dokonci">${TD.dokonci}</button><button data-d="znova">${TD.znova}</button><button data-d="pribliz">${TD.pribliz}</button>`;
+  $('#del_tl').addEventListener('click', e => {
+    const b = e.target.closest('[data-d]'); if (!b) return;
+    const a = b.dataset.d;
+    if (a === 'krok') delKrok(true);
+    else if (a === 'dokonci') { while (delStav() === 'ok' && !delHotovo()) delKrok(false); delPribliz(false); }
+    else if (a === 'znova') { delReset(); DL.G.prisposob(); }
+    else if (a === 'pribliz') delPribliz(false);
+  });
+  delReset();
+}
+function delStav() {
+  const p = delP();
+  if (DL.l >= DL.r) return 'zle';
+  const fl = evalPoly(p, DL.l), fr = evalPoly(p, DL.r);
+  return fl === 0 || fr === 0 ? 'kraj' : fl * fr > 0 ? 'rovnake' : 'ok';
+}
+const delHotovo = () => DL.st.r - DL.st.l < 0.001 || DL.st.pon === 'presne';
+function delReset() {
+  const p = delP();
+  DL.kroky = []; DL.anim = null;
+  DL.st = { l: DL.l, r: DL.r, fl: evalPoly(p, DL.l), fr: evalPoly(p, DL.r) };
+  obnovDel();
+}
+function delKrok(anim) {
+  if (delStav() !== 'ok' || delHotovo()) return;
+  const od = { l: DL.st.l, r: DL.st.r };
+  DL.st = krokBisekcie(delP(), DL.st); DL.kroky.push(DL.st);
+  if (anim && !MALO_POHYBU) {                             // interval sa plynulo zúži (0,5 s)
+    const A = { od, t0: performance.now() }; DL.anim = A;
+    const slucka = t => { if (DL.anim !== A) return; DL.G.hned(); if (t - A.t0 < 520) requestAnimationFrame(slucka); else DL.anim = null; };
+    requestAnimationFrame(slucka);
+  }
+  obnovDel();
+  if (anim) delPribliz(true);
+}
+// priblíženie na interval (automaticky len keď je interval na grafe užší ako 60 px)
+function delPribliz(len) {
+  const G = DL.G, w = DL.st.r - DL.st.l;
+  if (!G.view || !(w > 0)) return;
+  if (len && w * G.view.sx > 60) return;
+  // vodorovne: interval na 40 % šírky; zvisle: aby boli vidieť hodnoty f(l) a f(r) so znamienkami
+  const sx = clamp(G.platno.clientWidth * .4 / w, VIEW_MIN, VIEW_MAX);
+  const sy = clamp(G.platno.clientHeight * .35 / Math.max(Math.abs(DL.st.fl), Math.abs(DL.st.fr), 1e-9), VIEW_MIN, VIEW_MAX);
+  G.animujNa({ cx: (DL.st.l + DL.st.r) / 2, cy: 0, sx, sy });
+}
+const znakText = v => v > 0 ? TEXTY.del.zn.plus : v < 0 ? TEXTY.del.zn.minus : TEXTY.del.zn.nula;
+const znak = v => v > 0 ? '+' : v < 0 ? '−' : '0';
+function obnovDel() {
+  const TD = TEXTY.del, p = delP(), stav = delStav(), A = analyzaPoly(p), S = DL.st;
+  $$('#del_fun button').forEach(b => b.classList.toggle('on', +b.dataset.f === DL.fi));
+  const k = DL.kroky.length, w = S.r - S.l;
+  $('#del_stav').innerHTML = vypln(TD.stav, { k, l: cis(S.l, 4), r: cis(S.r, 4), w: cis(w, 4) });
+  let box = '';
+  if (stav === 'zle') box = `<div class="box omyl">${TD.zleKraje}</div>`;
+  else if (stav === 'rovnake') box = `<div class="box omyl">${vypln(TD.rovnake, { fl: cis(S.fl), fr: cis(S.fr) })}</div>`;
+  else if (stav === 'kraj') box = `<div class="box pravda">${vypln(TD.vKraji, { x: cis(S.fl === 0 ? DL.l : DL.r) })}</div>`;
+  else if (S.pon === 'presne') box = `<div class="box pravda">${vypln(TD.presny, { x: cis(S.s, 4) })}</div>`;
+  else if (delHotovo()) { const x = (S.l + S.r) / 2; box = `<div class="box pravda">${vypln(TD.hotovo, { k, w: cis(w, 5), x: cis(x, 4), fx: cis(Math.abs(evalPoly(p, x)), 4) })}</div>`; }
+  else if (!k) box = `<p>${vypln(TD.zaciatok, { fl: cis(S.fl), fr: cis(S.fr) })}</p>`;
+  else box = `<p>${vypln(TD.posledny, { k, s: cis(S.s, 5), fs: cis(S.fs, 4), z: znakText(S.fs), kraj: S.pon === 'r' ? 'l' : 'r', pol: TD.ponechaj[S.pon] })}</p>`;
+  $('#del_box').innerHTML = box;
+  $$('#del_tl [data-d="krok"], #del_tl [data-d="dokonci"]').forEach(b => { b.disabled = stav !== 'ok' || delHotovo(); });
+  // tabuľka krokov
+  const H = TD.hl;
+  $('#del_tab').innerHTML = `<thead><tr><th>${H.k}</th><th>${H.s}</th><th>${H.f}</th><th>${H.pon}</th><th>${H.l}</th><th>${H.r}</th><th>${H.w}</th></tr></thead><tbody>` +
+    `<tr><td>0</td><td>–</td><td>–</td><td>–</td><td>${cis(DL.l, 4)}</td><td>${cis(DL.r, 4)}</td><td>${cis(DL.r - DL.l, 4)}</td></tr>` +
+    DL.kroky.map((s, i) => `<tr><td>${i + 1}</td><td>${cis(s.s, 5)}</td><td>${cis(s.fs, 4)} (${znak(s.fs)})</td><td>${TD.ponechaj[s.pon]}</td><td>${cis(s.l, 5)}</td><td>${cis(s.r, 5)}</td><td>${cis(s.r - s.l, 5)}</td></tr>`).join('') + '</tbody>';
+  // graf: pás intervalu, kraje so znamienkami, posledný stred
+  const zn = (A.korene || []).map(r => ({ x: r.x, y: 0, typ: 'koren' }));
+  if (stav !== 'zle') {
+    zn.push({ x: S.l, y: evalPoly(p, S.l), typ: 'bod', farba: S.fl < 0 ? FARBY.koren : FARBY.sklon, popis: vypln(TD.lPopis, { z: znak(S.fl) }) });
+    if (S.r !== S.l) zn.push({ x: S.r, y: evalPoly(p, S.r), typ: 'bod', farba: S.fr < 0 ? FARBY.koren : FARBY.sklon, popis: vypln(TD.rPopis, { z: znak(S.fr) }) });
+  }
+  if (k && S.pon !== 'presne') zn.push({ x: S.s, y: S.fs, typ: 'stred', popis: vypln(TD.sPopis, { z: znak(S.fs) }) });
+  DL.G.nastav([{ c: p, farba: FARBY.f, styl: 'plna', popis: 'f' }], {
+    znacky: zn, korene: (A.korene || []).map(r => r.x), rovnakaMierka: false, dolezite: [DL.l, DL.r],
+    navrch: (ctx, T) => {
+      let l = DL.st.l, r = DL.st.r;
+      if (DL.anim) { const t = ease(clamp((performance.now() - DL.anim.t0) / 500, 0, 1)); l = DL.anim.od.l + (l - DL.anim.od.l) * t; r = DL.anim.od.r + (r - DL.anim.od.r) * t; }
+      if (delStav() === 'zle') return;
+      const X1 = T.px(l), X2 = T.px(r), cerv = delStav() === 'rovnake';
+      ctx.fillStyle = cerv ? 'rgba(255,122,107,.12)' : 'rgba(243,180,83,.16)';
+      ctx.fillRect(X1, 0, Math.max(X2 - X1, 2), T.H);
+      ctx.strokeStyle = cerv ? FARBY.koren : FARBY.f; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+      ctx.beginPath(); ctx.moveTo(X1, 0); ctx.lineTo(X1, T.H); ctx.moveTo(X2, 0); ctx.lineTo(X2, T.H); ctx.stroke();
+    }
+  });
+}
+
+/* =====================================================================
+   KARTA 5: VYŠŠIE STUPNE (n = 1 až 5)
+   ===================================================================== */
+const VS = { n: 4, c: [4, 0, -5, 0, 1, 0], konce: true, sl: [], okraje: [] };
+const VS_PRIKLADY = [{ n: 4, c: [4, 0, -5, 0, 1, 0] }, { n: 4, c: [1, 0, 0, 0, 1, 0] }, { n: 5, c: [0, -1, 0, 0, 0, 1] }];   // x⁴ − 5x² + 4, x⁴ + 1, x⁵ − x
+const OKRAJE_PRIKLADY = [{ p: [0, 0, 1], par: 0, zn: 1 }, { p: [0, 0, -1], par: 0, zn: -1 }, { p: [0, 0, 0, 1], par: 1, zn: 1 }, { p: [0, 0, 0, -1], par: 1, zn: -1 }];
+function initVys() {
+  const TV = TEXTY.vys;
+  VS.G = novyGraf($('#vys_graf'), { sondaX: 1.5 });
+  $('#vys_st').innerHTML = [1, 2, 3, 4, 5].map(n => `<button data-n="${n}">n = ${n}</button>`).join('');
+  $('#vys_st').addEventListener('click', e => { const b = e.target.closest('[data-n]'); if (b) vysStupen(+b.dataset.n); });
+  $('#vys_pr').innerHTML = VS_PRIKLADY.map((P, i) => `<button data-p="${i}">y = ${polyText(P.c)}</button>`).join('');
+  $('#vys_pr').addEventListener('click', e => {
+    const b = e.target.closest('[data-p]'); if (!b) return;
+    const P = VS_PRIKLADY[+b.dataset.p]; VS.n = P.n; VS.c = P.c.slice();
+    VS.sl.forEach((s, i) => s.set(VS.c[i])); obnovVys(); VS.G.prisposob();
+  });
+  const box = $('#vys_sl');
+  for (let i = 5; i >= 0; i--) {
+    const d = document.createElement('div'); d.dataset.i = i; box.appendChild(d);
+    VS.sl[i] = posuvnik(d, { nazov: `a${SPODNE[i]} (${i === 0 ? TV.abs : vypln(TV.pri, { m: i > 1 ? hornyIndex(i) : '' })})`, min: -6, max: 6, krok: .5, hodnota: VS.c[i], zmena: v => { VS.c[i] = v; obnovVys(); } });
+  }
+  $('#vys_konce').addEventListener('change', e => { VS.konce = e.target.checked; obnovVys(); });
+  // tabuľka štyroch prípadov správania na okrajoch s malými grafmi
+  const ok = $('#vys_okraje');
+  OKRAJE_PRIKLADY.forEach(O => {
+    const d = document.createElement('div'); d.className = 'okraj'; d.dataset.k = O.par + ',' + O.zn;
+    d.innerHTML = `<span class="stage"><canvas class="miniPl maly" role="img" aria-label="y = ${polyText(O.p)}"></canvas></span><b>${O.par ? TV.neparnyH : TV.parnyH}, ${O.zn > 0 ? TV.kladny : TV.zaporny}</b><span>${TEXTY.okraje[konce(O.p).kluc]} (y = ${polyText(O.p)})</span>`;
+    ok.appendChild(d);
+    VS.okraje.push(miniGraf($('canvas', d), () => ({ krivky: [{ c: O.p, hrubka: 3 }], rozsah: 2.5, navrch: (ctx, T) => kresliKonce(ctx, T, null, O.p) })));
+  });
+  obnovVys();
+}
+function vysStupen(n) {
+  VS.n = n;
+  for (let i = n + 1; i <= 5; i++) VS.c[i] = 0;
+  if (jeNula(VS.c[n])) VS.c[n] = 1;
+  VS.sl.forEach((s, i) => s.set(VS.c[i]));
+  obnovVys();
+}
+function obnovVys() {
+  const TV = TEXTY.vys, p = VS.c.slice(0, VS.n + 1), A = analyzaPoly(p), K = A.korene || [], st = A.st;
+  $$('#vys_sl > div').forEach(d => { d.hidden = +d.dataset.i > VS.n; });
+  $$('#vys_st button').forEach(b => b.classList.toggle('on', +b.dataset.n === VS.n));
+  $$('#vys_pr button').forEach(b => { const P = VS_PRIKLADY[+b.dataset.p]; b.classList.toggle('on', P.n === VS.n && P.c.every((v, i) => rovne(v, VS.c[i]))); });
+  $('#vys_vzorec').textContent = 'f(x) = ' + polyText(p);
+  $('#vys_pozn').innerHTML = st < VS.n ? `<div class="box zlty">${vypln(TV.vedNula, { i: SPODNE[VS.n], st: st < 0 ? '–' : st })}</div>` : '';
+  const vl = [];
+  if (st >= 1) {
+    vl.push(vypln(TV.korene, { st, t: slovoKorene(K.length) + (sumaNas(K) !== K.length ? ' ' + vypln(TEXTY.poly.snas, { m: sumaNas(K) }) : '') }));
+    vl.push(vypln(TV.obraty, { m: st - 1, e: A.extremy.length }));
+    vl.push(st % 2 ? TV.neparny : TV.parny);
+    vl.push(vypln(TV.okraje, { t: TEXTY.okraje[konce(A.p).kluc] }));
+  } else vl.push(st < 0 ? TEXTY.poly.nulovy : TEXTY.okraje.vodorovne);
+  $('#vys_vl').innerHTML = vl.map(t => `<li>${t}</li>`).join('');
+  $('#vys_sucin').innerHTML = sucinHTML(A);
+  const kl = st >= 1 ? (st % 2) + ',' + Math.sign(A.p[st]) : '';
+  $$('#vys_okraje .okraj').forEach(d => d.classList.toggle('akt', d.dataset.k === kl));
+  VS.G.nastav([{ c: p, farba: FARBY.f, styl: 'plna', popis: 'f', hrubka: A.korene === null ? 5 : 3.5 }], {
+    znacky: znackyPoly(A), korene: K.map(r => r.x), vsetkoKorene: A.korene === null, rovnakaMierka: false,
+    dolezite: [...A.extremy.map(e => e.x), ...A.inflexie.map(i => i.x)],
+    navrch: VS.konce ? (ctx, T, ob) => kresliKonce(ctx, T, ob, A.p) : null
+  });
+}
+
+/* =====================================================================
+   KARTA 6: POROVNANIE A KVÍZ (podkarty Porovnanie funkcií, Časté omyly, Kvíz)
+   ===================================================================== */
+const POR_PRIKLADY = [[2], [-1, 2], [-3, -2, 1], [0, -1, 0, 1], [4, 0, -5, 0, 1], [0, -1, 0, 0, 0, 1]];   // 2, 2x − 1, x² − 2x − 3, x³ − x, x⁴ − 5x² + 4, x⁵ − x
+const PO = { vyb: [3], mod: false, pod: 'porovnanie' };
+const KRIVKY_FARBY = () => [FARBY.f, FARBY.ciel, FARBY.sklon, FARBY.koren, FARBY.vrchol, FARBY.siva];
+const KRIVKY_STYLY = ['plna', 'ciarkovana', 'bodkovana'];
+function initPorov() {
+  const TP = TEXTY.por;
+  PO.G = novyGraf($('#por_graf'), { sondaX: .5 });
+  $('#por_tl').innerHTML = `<button data-o="mod">${TP.mod}</button><button data-o="vymaz">${TP.vymaz}</button>`;
+  $('#por_tl').addEventListener('click', e => {
+    const b = e.target.closest('[data-o]'); if (!b) return;
+    if (b.dataset.o === 'mod') { PO.mod = !PO.mod; if (!PO.mod) PO.vyb = PO.vyb.slice(-1); }
+    else PO.vyb = [];
+    obnovPor();
+  });
+  $('#por_tab').addEventListener('click', e => { const tr = e.target.closest('tr[data-n]'); if (tr) porVyber(+tr.dataset.n); });
+  $('#por_tab').addEventListener('keydown', e => { const tr = e.target.closest('tr[data-n]'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); porVyber(+tr.dataset.n); } });
+  initOmyly(); initKviz();
+  vytvorPodkarty('porov', TP.podkarty, PO);
+  obnovPor();
+}
+function porVyber(n) {
+  if (!PO.mod) PO.vyb = [n];
+  else PO.vyb = PO.vyb.includes(n) ? PO.vyb.filter(x => x !== n) : [...PO.vyb, n];
+  obnovPor();
+}
+function obnovPor() {
+  const TP = TEXTY.por, H = TP.hl;
+  // tabuľka: najviac koreňov a obratov aj okraje sa počítajú zo stupňa, korene príkladu cez realRoots
+  $('#por_tab').innerHTML = `<thead><tr><th>${H.st}</th><th>${H.nazov}</th><th>${H.tvar}</th><th>${H.kor}</th><th>${H.obr}</th><th>${H.okr}</th><th>${H.pr}</th></tr></thead><tbody>` +
+    POR_PRIKLADY.map((p, n) => {
+      const K = konce(p), R = realRoots(p);
+      return `<tr tabindex="0" data-n="${n}" class="${PO.vyb.includes(n) ? 'vyb' : ''}"><td>${n}</td><td>${TP.nazvy[n]}</td><td>${TP.tvary[n]}</td><td>${n === 0 ? TP.nulova : n}</td><td>${Math.max(0, n - 1)}</td><td>${K ? TEXTY.okraje[K.kluc] : TEXTY.okraje.vodorovne}</td><td>y = ${polyText(p)} (${R.length ? R.map(r => cis(r.x)).join('; ') : '–'})</td></tr>`;
+    }).join('') + '</tbody>';
+  const tl = $('#por_tl [data-o="mod"]'); tl.classList.toggle('on', PO.mod);
+  const F = KRIVKY_FARBY();
+  const krivky = PO.vyb.map((n, i) => ({ c: POR_PRIKLADY[n], farba: F[i % F.length], styl: KRIVKY_STYLY[i % 3], popis: vypln(TP.styl, { n }), hrubka: 3.5 }));
+  $('#por_vyb').innerHTML = krivky.length ? `<b>${TP.vGrafe}</b> ` + krivky.map((k, i) => `<span style="color:${k.farba}">${k.popis}: y = ${polyText(k.c)} (${TEXTY.styly[k.styl]})</span>`).join(' · ') : '';
+  const A = krivky.length ? analyzaPoly(krivky[0].c) : null;
+  PO.G.nastav(krivky, { znacky: A ? znackyPoly(A) : [], korene: A ? (A.korene || []).map(r => r.x) : [], rovnakaMierka: false });
+}
+
+/* ---------- 6b. Časté omyly: každý má malú scénu s animáciou t ∈ [0; 1] ---------- */
+const OMYLY = [
+  { t0: .2, scena: t => { const k = .5 + 2.5 * t, TO = TEXTY.omy; return { rozsah: 3.5, cy: 2,
+      krivky: [{ c: [1, k], popis: vypln(TO.k, { k: cis(k, 1) }) }], znacky: [{ x: 0, y: 1, typ: 'prY', popis: TO.q }],
+      navrch: (ctx, T, ob) => { kresliSipku(ctx, T, ob, 0, 1, 1, 1, FARBY.sklon, '1'); kresliSipku(ctx, T, ob, 1, 1, 1, 1 + k, FARBY.vrchol, 'k'); } }; } },
+  { t0: .8, scena: t => { const a = .5 + 3.5 * t; return { rozsah: 3.5, cy: 3,
+      krivky: [{ c: [0, 0, a], popis: vypln(TEXTY.omy.a, { a: cis(a, 1) }) }, { c: [0, 0, 1], farba: FARBY.siva, styl: 'bodkovana', popis: 'x²', hrubka: 3 }] }; } },
+  { t0: 1, scena: t => { const m = 3 * t; return { rozsah: 3.5, cx: 1.5, cy: 2,
+      krivky: [{ c: vrcholNaVseob(1, m, 0), popis: 'f' }, { c: [0, 0, 1], farba: FARBY.siva, styl: 'bodkovana', popis: 'x²', hrubka: 3 }],
+      znacky: [{ x: m, y: 0, typ: 'vrchol', popis: 'V' + bodText(m, 0) }],
+      navrch: (ctx, T, ob) => kresliSipku(ctx, T, ob, 0, -0.8, m, -0.8, FARBY.ciel, vypln(TEXTY.omy.m, { m: cis(m, 1) })) }; } },
+  { t0: 1, scena: t => { const p = [-2 + 3 * t, 0, 1], R = realRoots(p); return { rozsah: 3, cy: 1,
+      krivky: [{ c: p, popis: 'y = ' + polyText(p.map(v => Math.round(v * 10) / 10)) }], znacky: R.map(r => ({ x: r.x, y: 0, typ: 'koren' })),
+      navrch: (ctx, T, ob) => stitokVRohu(ctx, T, vypln(TEXTY.omy.pocet, { n: R.length }), FARBY.koren) }; } },
+  { t0: .5, scena: t => { const p = [-4 + 8 * t, -3, 0, 1], R = realRoots(p); return { rozsah: 3, ypol: 7,
+      krivky: [{ c: p, popis: 'f' }], znacky: R.map(r => ({ x: r.x, y: 0, typ: 'koren' })),
+      navrch: (ctx, T, ob) => stitokVRohu(ctx, T, vypln(TEXTY.omy.pocet, { n: R.length }), FARBY.koren) }; } },
+  { t0: 1, scena: t => { const p = [t, -2, 1], R = realRoots(p); return { rozsah: 2.5, cx: 1, cy: 1,   // (x − 1)² − (1 − t)
+      krivky: [{ c: p, popis: 'f' }], znacky: R.map(r => ({ x: r.x, y: 0, typ: 'koren', popis: r.nas > 1 ? korenText(r) : null })) }; } },
+  { t0: 0, scena: t => { const r = 2 * Math.pow(.002, t), x = Math.SQRT2, des = clamp(Math.round(-Math.log10(r)) + 1, 1, 5); return { rozsah: r, cx: x,
+      krivky: [{ c: [-2, 0, 1], popis: 'y = x² − 2' }], znacky: [{ x, y: 0, typ: 'koren' }],
+      navrch: (ctx, T, ob) => stitokVRohu(ctx, T, vypln(TEXTY.omy.zGrafu, { x: cis(x, des) }), FARBY.koren) }; } },
+  { t0: 1, bezAnim: true, scena: () => ({ rozsah: 2, cx: 1, cy: .6,
+      krivky: [{ c: [1, -2, 1], popis: 'y = (x − 1)²' }],
+      znacky: [{ x: 0, y: 1, typ: 'bod', farba: FARBY.sklon, popis: 'f(0) = 1 (+)' }, { x: 2, y: 1, typ: 'bod', farba: FARBY.sklon, popis: 'f(2) = 1 (+)' }, { x: 1, y: 0, typ: 'koren', popis: korenText({ x: 1, nas: 2 }) }],
+      navrch: (ctx, T) => { ctx.fillStyle = 'rgba(255,122,107,.12)'; ctx.fillRect(T.px(0), 0, T.px(2) - T.px(0), T.H); } }) }
+];
+function initOmyly() {
+  const TO = TEXTY.omy, grid = $('#omy_grid');
+  OMYLY.forEach((O, i) => {
+    const Tx = TO.zoznam[i], el = document.createElement('div'); el.className = 'card';
+    el.innerHTML = `<h3>${Tx.nadpis}</h3><div class="stage"><canvas class="miniPl" role="img" aria-label="${Tx.nadpis}"></canvas></div>
+      <div class="box omyl"><b class="h">✘ ${TO.omyl}</b>${Tx.omyl}</div><div class="box pravda"><b class="h">✔ ${TO.oprava}</b>${Tx.oprava}</div>
+      ${O.bezAnim ? '' : `<div class="tlac"><button>${TO.ukaz}</button></div>`}`;
+    grid.appendChild(el);
+    const S = { t: O.t0, a: null };
+    const M = miniGraf($('canvas', el), () => O.scena(S.t));
+    if (!O.bezAnim) $('button', el).onclick = () => {     // animácia 2,5 s podľa skutočného času
+      const A = { t0: performance.now() }; S.a = A;
+      const slucka = now => { if (S.a !== A) return; const u = MALO_POHYBU ? 1 : clamp((now - A.t0) / 2500, 0, 1); S.t = ease(u); M.hned(); if (u < 1) requestAnimationFrame(slucka); };
+      requestAnimationFrame(slucka);
+    };
+  });
+}
+
+/* ---------- 6c. Kvíz: otázky sa generujú náhodne, správna odpoveď sa vždy vypočíta ---------- */
+const KZ = { u: 1, otazky: [], mini: [], body: 0, zodp: 0 };
+const vyberZ = a => a[Math.floor(Math.random() * a.length)];
+function zamiesaj(a) { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
+const nenula = (a, b) => { let x; do { x = nahoda(a, b); } while (x === 0); return x; };
+const vzorkyX = [-2.3, -0.7, 0.4, 1.9, 3.1];
+const rozne = (p, q) => vzorkyX.some(x => Math.abs(evalPoly(p, x) - evalPoly(q, x)) > 1e-6);
+// prvý chybný krok: kroky majú buď sol (riešenie rovnice v tom kroku), alebo ok (kontrola dosadením)
+function prvaChyba(kroky) {
+  for (let i = 1; i < kroky.length; i++) {
+    const k = kroky[i];
+    if ('ok' in k ? !k.ok : Math.abs(k.sol - kroky[i - 1].sol) > 1e-9) return i;
+  }
+  return 0;
+}
+// ako sa zmenil graf p0 → p1 (vypočíta sa z polynómov, nie je zapísané pri otázke)
+function klasifikujZmenu(p0, p1) {
+  const n = Math.max(p0.length, p1.length), d = [];
+  for (let i = 0; i < n; i++) d.push((p1[i] || 0) - (p0[i] || 0));
+  if (degree(d) === 0) return { k: d[0] > 0 ? 'hore' : 'dole', d: Math.abs(d[0]) };
+  if (degree(p0) === 1 && degree(p1) === 1) return { k: 'sklon', a0: p0[1], a1: p1[1] };
+  const V0 = vrcholKvad(p0), V1 = vrcholKvad(p1);
+  if (V0 && V1) {
+    if (rovne(p0[2], p1[2]) && rovne(V0.y, V1.y)) return { k: V1.x > V0.x ? 'doprava' : 'dolava', d: Math.abs(V1.x - V0.x), x0: V0.x, x1: V1.x };
+    if (rovne(V0.x, V1.x) && rovne(V0.y, V1.y)) return { k: p0[2] * p1[2] < 0 ? 'preklopi' : Math.abs(p1[2]) > Math.abs(p0[2]) ? 'uzsia' : 'sirsia', a0: p0[2], a1: p1[2] };
+  }
+  return { k: 'ine' };
+}
+// nezávislá kontrola zmeny dosadzovaním
+function overZmenu(p0, p1, Z) {
+  const f0 = x => evalPoly(p0, x), f1 = x => evalPoly(p1, x);
+  if (Z.k === 'hore' || Z.k === 'dole') { const d = Z.k === 'hore' ? Z.d : -Z.d; return vzorkyX.every(x => Math.abs(f1(x) - f0(x) - d) < 1e-9); }
+  if (Z.k === 'doprava' || Z.k === 'dolava') { const h = Z.k === 'doprava' ? Z.d : -Z.d; return vzorkyX.every(x => Math.abs(f1(x) - f0(x - h)) < 1e-9); }
+  if (Z.k === 'sklon') return degree(p0) === 1 && degree(p1) === 1 && rovne(p0[0], p1[0]) && !rovne(p0[1], p1[1]);
+  const V = vrcholKvad(p0), r = vzorkyX.filter(x => Math.abs(x - V.x) > .1).map(x => (f1(x) - V.y) / (f0(x) - V.y));
+  if (!r.every(q => Math.abs(q - r[0]) < 1e-9)) return false;
+  return Z.k === 'uzsia' ? r[0] > 1 : Z.k === 'sirsia' ? r[0] > 0 && r[0] < 1 : Z.k === 'preklopi' ? r[0] < 0 : false;
+}
+// parabolu s celočíselným vrcholom zapíšeme vo vrcholovom tvare (zmena m alebo n je tak viditeľná), inak všeobecne
+function textFunkcie(p) {
+  if (degree(p) !== 2) return polyText(p);
+  const W = vseobNaVrchol(p);
+  return JE_CELE(W.m) && JE_CELE(W.n) ? vrcholText(W.a, W.m, W.n) : polyText(p);
+}
+
+const GEN_KVIZ = {
+  // koreň lineárnej funkcie (číslo)
+  korenLin(u) {
+    const TQ = TEXTY.kviz.q; let k, q;
+    if (u === 1) { k = nenula(-4, 4); q = -k * nahoda(-5, 5); } else { k = nenula(-8, 8) / 2; q = nahoda(-12, 12) / 2; }
+    if (jeNula(q)) q = 0;
+    const p = [q, k], r = korenLin(k, q), h = cisHTML(r.x, r.zl);
+    return { typ: 'korenLin', cislo: true, spravna: r.x, text: vypln(TQ.korenLin, { f: polyText(p) }),
+      vys: vypln(TQ.korenLinVys, { q: cisK(-q), k: zatv(k), rov: h.rov, x: h.html }),
+      vysGraf: () => ({ krivky: [{ c: p }], znacky: [{ x: r.x, y: 0, typ: 'koren', popis: korenText({ x: r.x, nas: 1 }) }], rozsah: Math.max(5, Math.abs(r.x) + 2), cx: r.x / 2 }),
+      over: () => Math.abs(evalPoly(p, r.x)) < 1e-9 };
+  },
+  // súradnica vrcholu (číslo)
+  vrchol(u) {
+    const TQ = TEXTY.kviz.q, a = u === 1 ? 1 : vyberZ([-2, -1, -0.5, 0.5, 1, 2]), m = nahoda(-4, 4), n = nahoda(-5, 5);
+    const p = vrcholNaVseob(a, m, n), V = vrcholKvad(p), os = vyberZ(['x', 'y']), sp = os === 'x' ? V.x : V.y;
+    return { typ: 'vrchol', cislo: true, spravna: sp, text: vypln(TQ.vrchol, { os, f: polyText(p) }),
+      vys: vypln(TQ.vrcholVys, { xv: cis(V.x), yv: cis(V.y) }),
+      vysGraf: () => ({ krivky: [{ c: p }], znacky: [{ x: V.x, y: V.y, typ: 'vrchol', popis: 'V' + bodText(V.x, V.y) }], rozsah: 4, cx: V.x, cy: V.y }),
+      over: () => Math.abs(evalPoly(derivative(p), V.x)) < 1e-9 && Math.abs(evalPoly(p, V.x) - V.y) < 1e-9 && rovne(sp, os === 'x' ? m : n) };
+  },
+  // počet koreňov kvadratickej funkcie (z D)
+  pocetD() {
+    const TQ = TEXTY.kviz.q, druh = nahoda(0, 2), a = nenula(-3, 3); let p;
+    if (druh === 2) { const r1 = nahoda(-4, 4); let r2; do { r2 = nahoda(-4, 4); } while (r2 === r1); p = polyMul([-r1, 1], [-r2, 1]); }
+    else if (druh === 1) { const r = nahoda(-4, 4); p = polyMul([-r, 1], [-r, 1]); }
+    else { const h = nahoda(-3, 3), k = nahoda(1, 4); p = [h * h + k, -2 * h, 1]; }
+    p = p.map(v => v * a);
+    const n = korenKvad(p).korene.length, D = diskriminant(p);
+    return { typ: 'pocetD', moznosti: ['0', '1', '2'], spravna: n, text: vypln(TQ.pocetD, { f: polyText(p) }),
+      vys: vypln(TQ.pocetDVys, { D: cisK(D), t: TQ.pocetDT[n] }),
+      vysGraf: () => ({ krivky: [{ c: p }], znacky: realRoots(p).map(r => ({ x: r.x, y: 0, typ: 'koren' })), rozsah: 5, ypol: ypolPre(p, 5) }),
+      over: () => n === druh && n === realRoots(p).length && (druh === 2 ? D > 0 : druh === 1 ? jeNula(D) : D < 0) };
+  },
+  // počet rôznych koreňov z grafu (kubická alebo 4. stupňa, zostrojená z činiteľov)
+  pocetGraf() {
+    const TQ = TEXTY.kviz.q, kub = Math.random() < .5;
+    let p, ocak, half, pokus = 0;
+    do {
+      ocak = new Set();
+      const f2 = () => {
+        const t = nahoda(0, 2);
+        if (t === 0) { const a = nahoda(-3, 3), b = nahoda(-3, 3); ocak.add(a); ocak.add(b); return polyMul([-a, 1], [-b, 1]); }
+        if (t === 1) { const r = nahoda(-3, 3); ocak.add(r); return polyMul([-r, 1], [-r, 1]); }
+        const h = nahoda(-2, 2), k = vyberZ([1, 2, 3]); return [h * h + k, -2 * h, 1];   // (x − h)² + k > 0, bez koreňa
+      };
+      if (kub) { const r = nahoda(-3, 3); ocak.add(r); p = polyMul([-r, 1], f2()); } else p = polyMul(f2(), f2());
+      const L = vyberZ([1, -1, .5, -.5]); p = p.map(v => v * L);   // jeden spoločný násobok pre celý polynóm
+      half = ypolPre(p, 4);
+      pokus++;
+      // extrémy blízko osi x (ale nie na nej) by sa z obrázka nedali rozlíšiť – takú funkciu vymeníme
+    } while (pokus < 60 && analyzaPoly(p).extremy.some(e => Math.abs(e.y) > 1e-9 && Math.abs(e.y) < .1 * half));
+    const R = realRoots(p), n = R.length;
+    return { typ: 'pocetGraf', moznosti: kub ? ['0', '1', '2', '3'] : ['0', '1', '2', '3', '4'], spravna: n, text: TQ.pocetGraf,
+      graf: () => ({ krivky: [{ c: p }], rozsah: 4.5, ypol: half }),
+      vys: vypln(TQ.pocetGrafVys, { b: slovoBody(n), z: R.map(korenText).join(', ') || '–' }),
+      vysGraf: () => ({ krivky: [{ c: p }], znacky: R.map(r => ({ x: r.x, y: 0, typ: 'koren' })), rozsah: 4.5, ypol: half }),
+      over: () => n === ocak.size };
+  },
+  // priraď vzorec ku grafu
+  prirad(u) {
+    const TQ = TEXTY.kviz.q; let p;
+    if (u === 1) p = [nahoda(-4, 4), nenula(-3, 3)];
+    else if (u === 2) p = vrcholNaVseob(vyberZ([-2, -1, -0.5, 0.5, 1, 2]), nahoda(-3, 3), nahoda(-4, 4));
+    else { const L = vyberZ([1, -1, .5, -.5]); p = polyMul(polyMul([-nahoda(-3, 3), 1], [-nahoda(-3, 3), 1]), [-nahoda(-3, 3), 1]).map(v => v * L); }
+    const kand = [p.map(v => -v), p.map((v, i) => i === 0 ? -v : v), p.map((v, i) => i === 0 ? v + 2 : v), p.map((v, i) => i === 1 ? -v : v),
+      p.map((v, i) => i % 2 ? -v : v), p.map((v, i) => i === p.length - 1 ? 2 * v : v), p.map((v, i) => i === 0 ? v - 3 : v)];
+    const vyb = [p];
+    for (const q of zamiesaj(kand)) { if (vyb.length === 4) break; if (vyb.every(w => rozne(w, q) && polyText(w) !== polyText(q))) vyb.push(q); }
+    const por = zamiesaj(vyb), sp = por.indexOf(p), moz = por.map(q => 'y = ' + polyText(q));
+    const half = u === 1 ? null : ypolPre(p, 4.5);
+    return { typ: 'prirad', moznosti: moz, spravna: sp, text: TQ.prirad,
+      graf: () => ({ krivky: [{ c: p }], rozsah: 4.5, ypol: half }),
+      vys: vypln(TQ.priradVys, { f: polyText(p), c: cis(p[0]) }),
+      over: () => moz[sp] === 'y = ' + polyText(p) && por.every((q, i) => i === sp || rozne(q, p)) && vyb.length === 4 };
+  },
+  // ako sa zmení graf pri zmene koeficientu
+  zmena(u) {
+    const TZ = TEXTY.kviz; let p0, p1, pool;
+    if (u === 1) {
+      const k = nenula(-3, 3), q = nahoda(-3, 3); p0 = [q, k];
+      if (Math.random() < .6) p1 = [q + nenula(-4, 4), k]; else { let k2; do { k2 = nenula(-3, 3); } while (k2 === k); p1 = [q, k2]; }
+      pool = ['hore', 'dole', 'sklon', 'doprava', 'dolava'];
+    } else {
+      const a = vyberZ([-2, -1, 1, 2]), m = nahoda(-3, 3), n = nahoda(-3, 3), d = nenula(-3, 3), druh = vyberZ(['n', 'm', 'a2', 'a05', 'neg']);
+      const [a1, m1, n1] = druh === 'n' ? [a, m, n + d] : druh === 'm' ? [a, m + d, n] : druh === 'a2' ? [2 * a, m, n] : druh === 'a05' ? [a / 2, m, n] : [-a, m, n];
+      p0 = vrcholNaVseob(a, m, n); p1 = vrcholNaVseob(a1, m1, n1);
+      pool = ['hore', 'dole', 'doprava', 'dolava', 'uzsia', 'sirsia', 'preklopi'];
+    }
+    const Z = klasifikujZmenu(p0, p1), dd = cisK(Z.d || nahoda(1, 3));
+    const kluce = zamiesaj([Z.k, ...zamiesaj(pool.filter(k => k !== Z.k)).slice(0, 3)]), moz = kluce.map(k => vypln(TZ.zmeny[k], { d: dd }));
+    return { typ: 'zmena', moznosti: moz, spravna: kluce.indexOf(Z.k), text: vypln(TZ.q.zmena, { f0: textFunkcie(p0), f1: textFunkcie(p1) }),
+      vys: vypln(TZ.zmenyVys[Z.k] || '', { d: dd, x0: cis(Z.x0), x1: cis(Z.x1), a0: cisK(Z.a0), a1: cisK(Z.a1) }),
+      vysGraf: () => ({ krivky: [{ c: p1, popis: 'f₁' }, { c: p0, farba: FARBY.siva, styl: 'bodkovana', hrubka: 3, popis: 'f₀' }], rozsah: 5, cy: 1 }),
+      over: () => Z.k !== 'ine' && overZmenu(p0, p1, Z) };
+  },
+  // správanie na okrajoch
+  konce(u) {
+    const TQ = TEXTY.kviz.q, st = vyberZ(u === 1 ? [1, 2] : u === 2 ? [2, 3] : [3, 4, 5]), p = [];
+    for (let i = 0; i < st; i++) p.push(nahoda(-3, 3));
+    p.push(vyberZ([1, -1, 2, -2, .5, -.5]));
+    const K = konce(p), kluce = zamiesaj(['hore,hore', 'dole,dole', 'dole,hore', 'hore,dole']);
+    return { typ: 'konce', moznosti: kluce.map(k => TEXTY.okraje[k]), spravna: kluce.indexOf(K.kluc), text: vypln(TQ.konce, { f: polyText(p) }),
+      vys: vypln(TQ.konceVys, { st, par: TQ.par[st % 2], a: cisK(p[st]), zn: p[st] > 0 ? TQ.zn.kl : TQ.zn.za, t: TEXTY.okraje[K.kluc] }),
+      vysGraf: () => ({ krivky: [{ c: p }], rozsah: 4, ypol: ypolPre(p, 4), navrch: (ctx, T) => kresliKonce(ctx, T, null, p) }),
+      over: () => { const l = Math.sign(evalPoly(p, -1e4)), r = Math.sign(evalPoly(p, 1e4)); return K.kluc === `${l > 0 ? 'hore' : 'dole'},${r > 0 ? 'hore' : 'dole'}`; } };
+  },
+  // nájdi chybu v kroku výpočtu
+  chyba(u) {
+    const TQ = TEXTY.kviz.q, typ = u === 1 ? 'lin' : u === 3 ? 'D' : vyberZ(['lin', 'D']);
+    let kroky, e, spr, f, p;
+    if (typ === 'lin') {
+      const k = nenula(-6, 6), x0 = nenula(-5, 5), q = -k * x0;
+      p = [q, k]; f = polyText(p);
+      do {
+        e = nahoda(1, 3);
+        const r = e === 1 ? q : -q, [a, b] = e === 2 ? [k, r] : [r, k];
+        const v = e === 3 ? vyberZ([a / b + 1, a / b - 1, -a / b]) : a / b;
+        kroky = [{ t: `${f} = 0`, sol: -q / k }, { t: `${kxText(k)} = ${cisK(r)}`, sol: r / k }, { t: `x = ${cisK(a)} : ${zatv(b)}`, sol: a / b }, { t: `x ${rovZnak(v)} ${cis(v)}`, sol: v }];
+      } while (prvaChyba(kroky) !== e);                   // (výmena delenca a deliteľa pri x = ±1 by chybu nespravila)
+      spr = [null, `${kxText(k)} = ${cisK(-q)}`, `x = ${cisK(-q)} : ${zatv(k)}`, `x = ${cisK(x0)}`][e];
+    } else {
+      const a = nenula(-3, 3), b = nenula(-6, 6), c = nenula(-6, 6);
+      p = [c, b, a]; f = polyText(p); e = nahoda(1, 3);
+      const cS = e === 1 ? -c : c, B2 = e === 2 ? -b * b : b * b, F = 4 * a * cS, val = e === 3 ? B2 + F : B2 - F;
+      kroky = [{ t: 'D = b² − 4ac' }, { t: `D = ${zatv(b)}² − 4 · ${zatv(a)} · ${zatv(cS)}`, ok: cS === c },
+        { t: `D = ${cisK(B2)} − ${zatv(F)}`, ok: B2 === b * b && F === 4 * a * cS }, { t: `D = ${cisK(val)}`, ok: val === B2 - F }];
+      spr = [null, `D = ${zatv(b)}² − 4 · ${zatv(a)} · ${zatv(c)}`, `D = ${cisK(b * b)} − ${zatv(4 * a * cS)}`, `D = ${cisK(B2 - F)}`][e];
+    }
+    const i = prvaChyba(kroky);
+    return { typ: 'chyba', kroky, moznosti: [2, 3, 4].map(j => vypln(TQ.krok, { i: j })), spravna: i - 1,
+      text: vypln(TQ.chyba, { co: vypln(TQ.chybaCo[typ], { f }) }), vys: vypln(TQ.chybaVys, { i: i + 1, spr }),
+      vysGraf: () => ({ krivky: [{ c: p }], znacky: realRoots(p).map(r => ({ x: r.x, y: 0, typ: 'koren' })), rozsah: 5, ypol: typ === 'D' ? ypolPre(p, 5) : null }),
+      over: () => i === e };
+  }
+};
+// zloženie kvízu (12 otázok) podľa úrovne
+const ZOSTAVY_KVIZ = {
+  1: ['korenLin', 'korenLin', 'korenLin', 'vrchol', 'pocetD', 'pocetD', 'konce', 'konce', 'prirad', 'prirad', 'zmena', 'chyba'],
+  2: ['korenLin', 'vrchol', 'vrchol', 'pocetD', 'pocetD', 'prirad', 'prirad', 'zmena', 'zmena', 'konce', 'chyba', 'chyba'],
+  3: ['pocetGraf', 'pocetGraf', 'pocetGraf', 'konce', 'konce', 'prirad', 'prirad', 'vrchol', 'zmena', 'chyba', 'chyba', 'korenLin']
+};
+function initKviz() {
+  const TZ = TEXTY.kviz;
+  $('#kviz_uroven').innerHTML = `<span class="mini" style="margin:0">${TZ.uroven}</span>` + Object.entries(TZ.urovne).map(([k, t]) => `<button data-u="${k}">${t}</button>`).join('');
+  $('#kviz_uroven').addEventListener('click', e => { const b = e.target.closest('[data-u]'); if (b) { KZ.u = +b.dataset.u; novyKviz(); } });
+  $('#kviz_novy').onclick = novyKviz;
+  novyKviz();
+}
+function novyKviz() {
+  KZ.mini.forEach(M => M.zrus()); KZ.mini = [];
+  $$('#kviz_uroven [data-u]').forEach(b => b.classList.toggle('on', +b.dataset.u === KZ.u));
+  KZ.otazky = zamiesaj(ZOSTAVY_KVIZ[KZ.u]).map(t => GEN_KVIZ[t](KZ.u));
+  KZ.body = 0; KZ.zodp = 0;
+  const box = $('#kviz_otazky'); box.innerHTML = '';
+  KZ.otazky.forEach((q, i) => vykresliOtazku(q, i, box));
+  vysledokKvizu();
+}
+function vykresliOtazku(q, i, box) {
+  const TZ = TEXTY.kviz, d = document.createElement('div'); d.className = 'otazka';
+  d.innerHTML = `<div class="q"><span class="por">${i + 1}.</span> ${q.text}</div>` +
+    (q.kroky ? `<ol class="chybaKroky">${q.kroky.map(k => `<li>${k.t}</li>`).join('')}</ol>` : '') +
+    (q.graf ? '<div class="obr stage"><canvas class="miniPl"></canvas></div>' : '') +
+    (q.cislo ? `<div class="vstup"><input class="num" inputmode="decimal" autocomplete="off" aria-label="Odpoveď na otázku ${i + 1}"><button class="primary">${TZ.over}</button></div>`
+      : `<div class="moznosti">${q.moznosti.map((m, j) => `<button data-j="${j}">${m}</button>`).join('')}</div>`) +
+    '<div class="fb" aria-live="polite"></div>';
+  box.appendChild(d);
+  if (q.graf) KZ.mini.push(miniGraf($('canvas', d), q.graf));
+  const fb = $('.fb', d);
+  if (q.cislo) {
+    const inp = $('input', d), btn = $('.vstup button', d);
+    const skontroluj = () => {
+      if (q.hotova) return;
+      const v = citaj(inp.value);
+      if (!isFinite(v)) { fb.className = 'fb zle'; fb.innerHTML = TZ.zleCislo; return; }
+      inp.disabled = btn.disabled = true;
+      vyhodnot(q, d, Math.abs(v - q.spravna) <= .01 + 1e-9, cis(q.spravna, Math.max(DES, 2)));
+    };
+    btn.onclick = skontroluj;
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') skontroluj(); });
+  } else $('.moznosti', d).addEventListener('click', e => {
+    const b = e.target.closest('[data-j]'); if (!b || q.hotova) return;
+    const j = +b.dataset.j, tl = $$('.moznosti button', d);
+    tl.forEach(x => { x.disabled = true; });
+    tl[q.spravna].classList.add('ok'); if (j !== q.spravna) b.classList.add('zle');
+    vyhodnot(q, d, j === q.spravna, q.moznosti[q.spravna]);
+  });
+}
+function vyhodnot(q, d, ok, odp) {
+  const TZ = TEXTY.kviz, fb = $('.fb', d);
+  q.hotova = true; KZ.zodp++; if (ok) KZ.body++;
+  fb.className = 'fb ' + (ok ? 'ok' : 'zle');
+  fb.innerHTML = `<b>${ok ? TZ.spravne : TZ.nespravne}</b> ${ok ? '' : vypln(TZ.spravnaOdp, { o: odp })} ${q.vys}` + (q.vysGraf ? '<div class="obr stage"><canvas class="miniPl"></canvas></div>' : '');
+  if (q.vysGraf) KZ.mini.push(miniGraf($('canvas', fb), q.vysGraf));
+  vysledokKvizu();
+}
+function vysledokKvizu() {
+  const TZ = TEXTY.kviz, m = KZ.otazky.length;
+  $('#kvizVysl').innerHTML = KZ.zodp === m ? vypln(TZ.hotovo, { n: KZ.body, m }) : vypln(TZ.vysledok, { z: KZ.zodp, m, n: KZ.body });
+}
+
+/* =====================================================================
+   TESTY – spustia sa, keď adresa obsahuje ?test (výsledok v konzole)
+   ===================================================================== */
+function spustiTesty() {
+  const v = [];
+  const over = (nazov, dostal, cakal) => { const ok = String(dostal) === String(cakal); v.push({ test: nazov, dostal: String(dostal), cakal: String(cakal), ok }); };
+  const c = [-4, 2];
+  [[-2, -8], [0, -4], [2, 0], [3, 2]].forEach(([x, y]) => over(`evalPoly 2x − 4, f(${x})`, evalPoly(c, x), y));
+  const kt = r => r.typ === 'jeden' ? 'x = ' + cis(r.x) : r.typ;
+  over('koreň 2x − 4', kt(korenLin(2, -4)), 'x = 2');
+  over('koreň −x + 3', kt(korenLin(-1, 3)), 'x = 3');
+  over('koreň 0,5x + 1', kt(korenLin(.5, 1)), 'x = −2');
+  over('koreň k = 0, q = 5', kt(korenLin(0, 5)), 'ziadny');
+  over('koreň k = 0, q = 0', kt(korenLin(0, 0)), 'vsetky');
+  const ys = [-3, -2, -1, 0, 1, 2, 3].map(x => evalPoly(c, x));
+  over('prírastky 2x − 4, krok 1', ys.slice(1).map((y, i) => y - ys[i]).join(','), '2,2,2,2,2,2');
+  over('degree [5, 0, 0]', degree([5, 0, 0]), 0);
+  over('degree [0]', degree([0]), -1);
+  over('derivative [1, 2, 3]', derivative([1, 2, 3]).join(','), '2,6');
+  over('polyText [−4, 2]', polyText(c), '2x − 4');
+  over('cis(−1234567,891)', cis(-1234567.891), '−1 234 567,89');
+
+  /* ----- časť 2: kvadratická funkcia ----- */
+  // 1. vrchol, D a korene
+  const vk = (a, b, c) => { const p = [c, b, a], V = vrcholKvad(p), R = korenKvad(p);
+    return `V(${cis(V.x)}; ${cis(V.y)}), D = ${cis(diskriminant(p))}, ` + (R.typ === 'ziadny' ? 'žiadne reálne korene' : R.korene.map(x => cis(x)).join(' a ')); };
+  over('1, −5, 6', vk(1, -5, 6), 'V(2,5; −0,25), D = 1, 2 a 3');
+  over('1, −4, 4', vk(1, -4, 4), 'V(2; 0), D = 0, 2');
+  over('1, 0, 1', vk(1, 0, 1), 'V(0; 1), D = −4, žiadne reálne korene');
+  over('−2, 0, 8', vk(-2, 0, 8), 'V(0; 8), D = 64, −2 a 2');
+  over('2, −4, −6', vk(2, -4, -6), 'V(1; −8), D = 64, −1 a 3');
+  over('1, 2, 0', vk(1, 2, 0), 'V(−1; −1), D = 4, −2 a 0');
+  // 2. prepočet tvarov
+  const W = vseobNaVrchol([-6, -4, 2]), R2 = korenKvad([-6, -4, 2]);
+  over('m, n pre 2, −4, −6', `m = ${cis(W.m)}, n = ${cis(W.n)}`, 'm = 1, n = −8');
+  over('vrcholový tvar', 'y = ' + vrcholText(W.a, W.m, W.n), 'y = 2(x − 1)² − 8');
+  over('späť na všeobecný', polyText(vrcholNaVseob(2, 1, -8)), '2x² − 4x − 6');
+  over('súčinový tvar', sucinText(2, R2), '2(x + 1)(x − 3)');
+  over('Viete x₁ + x₂', cis(R2.x1 + R2.x2), '2');
+  over('Viete x₁ · x₂', cis(R2.x1 * R2.x2), '−3');
+  // 3. a = 0 → lineárna funkcia, bez chyby aj v rozhraní
+  const L = korenKvad([4, -2, 0]);
+  over('a = 0: korene ako lineárna', (L.linearna ? 'lineárna ' : '') + kt(L), 'lineárna x = 2');
+  over('a = 0: vrchol', vrcholKvad([4, -2, 0]), 'null');
+  let chyba = 'ok';
+  const zal = [KV.Z.a, KV.R.a, KV.V.a];
+  try { KV.Z.a = 0; obnovKvZaklad(); KV.R.a = 0; obnovKvKor(); KV.V.a = 0; KV.V.krok = 3; obnovKvVrch(); KV.sceny.forEach(S => { S.hodn = 0; S.hned(); S.hodn = S.v0; }); }
+  catch (e) { chyba = e.message; }
+  [KV.Z.a, KV.R.a, KV.V.a] = zal; KV.V.krok = 0; obnovKvad();
+  over('a = 0 v rozhraní bez chyby', chyba, 'ok');
+  // 4. 500 náhodných parabol
+  let zle = 0; const poc = { 0: 0, 1: 0, 2: 0 };
+  for (let i = 0; i < 500; i++) {
+    let a; do { a = nahoda(-12, 12) / 2; } while (a === 0);
+    const b = nahoda(-12, 12) / 2, c = nahoda(-12, 12) / 2, p = [c, b, a], R = korenKvad(p), D = diskriminant(p), V = vrcholKvad(p), f = x => evalPoly(p, x);
+    if (D >= 0 || jeNula(D)) { if (!(Math.abs(f(R.x1)) <= 1e-9 && Math.abs(f(R.x2)) <= 1e-9)) zle++; }
+    else for (let x = V.x - 10; x <= V.x + 10; x += .01) if (Math.abs(f(x)) < EPS || Math.sign(f(x)) !== Math.sign(a)) { zle++; break; }
+    // počet priesečníkov grafu s osou x: zmeny znamienka na jemnej mriežke + dotyk vo vrchole
+    const r0 = Math.sqrt(Math.max(D, 0)) / Math.abs(a) + 3;
+    let zmeny = 0, pred = f(V.x - r0);
+    for (let x = V.x - r0 + .000937; x <= V.x + r0; x += .001) { const y = f(x); if (y * pred < 0) zmeny++; if (y !== 0) pred = y; }
+    const n = zmeny + (zmeny === 0 && jeNula(f(V.x)) ? 1 : 0), cak = jeNula(D) ? 1 : D > 0 ? 2 : 0;
+    if (n !== cak || R.korene.length !== cak) zle++;
+    poc[cak]++;
+  }
+  over(`500 náhodných parabol (D > 0: ${poc[2]}, D = 0: ${poc[1]}, D < 0: ${poc[0]})`, zle ? `neprešlo (${zle})` : 'prešlo', 'prešlo');
+
+  /* ----- časť 3: korene vyšších stupňov, delenie intervalu, kvíz ----- */
+  // 1. realRoots a kubická funkcia
+  const kor = p => { const R = realRoots(p); return R === null ? 'všetky' : R.length ? R.map(r => cis(r.x) + (r.nas > 1 ? ` (${r.nas}×)` : '')).join(', ') : 'žiadny reálny koreň'; };
+  const K1 = [-6, 11, -6, 1], A1 = analyzaPoly(K1);
+  over('x³ − 6x² + 11x − 6: korene', kor(K1), '1, 2, 3');
+  over('x³ − 6x² + 11x − 6: Δ', cis(diskriminantKub(K1)), '4');
+  over('x³ − 6x² + 11x − 6: inflexný bod', 'x = ' + A1.inflexie.map(i => cis(i.x)).join(), 'x = 2');
+  over('x³ − 6x² + 11x − 6: extrémy', A1.extremy.map(e => `${e.typ} (${cis(e.x)}; ${cis(e.y)})`).join(', '), 'max (1,42; 0,38), min (2,58; −0,38)');
+  over('x³', kor([0, 0, 0, 1]), '0 (3×)');
+  over('x³ − x', kor([0, -1, 0, 1]), '−1, 0, 1');
+  over('x³ + x', kor([0, 1, 0, 1]), '0');
+  over('x³ − 3x + 2', kor([2, -3, 0, 1]) + ' · Δ = ' + cis(diskriminantKub([2, -3, 0, 1])), '−2, 1 (2×) · Δ = 0');
+  over('x⁴ − 5x² + 4', kor([4, 0, -5, 0, 1]), '−2, −1, 1, 2');
+  over('x⁴ + 1', kor([1, 0, 0, 0, 1]), 'žiadny reálny koreň');
+  over('x⁵ − x', kor([0, -1, 0, 0, 0, 1]), '−1, 0, 1');
+  // 2. delenie intervalu
+  const B1 = bisekcia([-2, 0, 0, 1], 1, 2);
+  over('x³ − 2 na [1; 2]: počet krokov', B1.kroky.length, 10);
+  over(`x³ − 2 na [1; 2]: x ≈ ${cis(B1.x, 5)} je v 1,2599 ± 0,001`, Math.abs(B1.x - 1.2599) <= .001, true);
+  const B2 = bisekcia([2, -3, 0, 1], 0, 2);
+  over('x³ − 3x + 2 na [0; 2]', `${B2.stav}, f(0) = ${cis(B2.fl)}, f(2) = ${cis(B2.fr)}`, 'rovnake, f(0) = 2, f(2) = 4');
+  const zalD = [DL.fi, DL.l, DL.r];
+  DL.fi = 1; DL.l = 0; DL.r = 2; delReset();
+  over('x³ − 3x + 2 na [0; 2]: hlásenie v rozhraní', $('#del_box').textContent.includes('Medzi týmito bodmi nemusí byť koreň'), true);
+  [DL.fi, DL.l, DL.r] = zalD; delReset();
+  // 3. 500 náhodných polynómov stupňa 3 až 5 z rôznych koreňov v (−5; 5)
+  let zle3 = 0;
+  for (let i = 0; i < 500; i++) {
+    const st = nahoda(3, 5), kor0 = [];
+    while (kor0.length < st) { const x = -5 + 10 * Math.random(); if (x > -5 && x < 5 && kor0.every(y => Math.abs(y - x) >= .1)) kor0.push(x); }
+    kor0.sort((a, b) => a - b);
+    let p = [(Math.random() < .5 ? -1 : 1) * (.5 + 1.5 * Math.random())];
+    for (const x of kor0) p = polyMul(p, [-x, 1]);
+    const R = realRoots(p);
+    if (!R || R.length !== st || R.some((r, j) => r.nas !== 1 || Math.abs(r.x - kor0[j]) > 1e-6)) zle3++;
+    else if (st === 3 && !(diskriminantKub(p) > 0)) zle3++;          // tri rôzne korene ⇔ Δ > 0
+  }
+  over('500 náhodných polynómov stupňa 3 až 5: korene (tolerancia 1e-6)', zle3 ? `neprešlo (${zle3})` : 'prešlo', 'prešlo');
+  // kubické s viacnásobnými a nereálnymi koreňmi: znamienko Δ ↔ počet rôznych koreňov
+  let zleD = 0; const pocD = { plus: 0, nula: 0, minus: 0 };
+  for (let i = 0; i < 500; i++) {
+    const a = nenula(-3, 3), r = nahoda(-4, 4);
+    let q;
+    if (Math.random() < .6) { const s1 = nahoda(-4, 4), s2 = nahoda(-4, 4); q = polyMul([-s1, 1], [-s2, 1]); }   // aj dvojnásobné a trojnásobné
+    else { const h = nahoda(-3, 3), k = nahoda(1, 4); q = [h * h + k, -2 * h, 1]; }                            // dva nereálne korene
+    const p = polyMul([-r, 1], q).map(v => v * a), D = diskriminantKub(p), R = realRoots(p);
+    if (jeNula(D)) { pocD.nula++; if (!(R.length === 2 || (R.length === 1 && R[0].nas === 3))) zleD++; }
+    else if (D > 0) { pocD.plus++; if (R.length !== 3) zleD++; }
+    else { pocD.minus++; if (R.length !== 1 || R[0].nas !== 1) zleD++; }
+  }
+  over(`500 kubických (Δ > 0: ${pocD.plus}, Δ = 0: ${pocD.nula}, Δ < 0: ${pocD.minus}): Δ ↔ počet koreňov`, zleD ? `neprešlo (${zleD})` : 'prešlo', 'prešlo');
+  // 4. 1000 kvízových otázok
+  let zleQ = 0, opak = 0; const typy = {};
+  for (let i = 0; i < 1000; i++) {
+    const u = 1 + i % 3, zoz = ZOSTAVY_KVIZ[u], typ = zoz[nahoda(0, zoz.length - 1)], q = GEN_KVIZ[typ](u);
+    typy[typ] = (typy[typ] || 0) + 1;
+    if (!q.over()) zleQ++;
+    if (q.moznosti && (new Set(q.moznosti).size !== q.moznosti.length || !(q.spravna >= 0 && q.spravna < q.moznosti.length))) opak++;
+    if (q.cislo && !isFinite(q.spravna)) zleQ++;
+  }
+  over(`1000 kvízových otázok (${Object.entries(typy).map(([k, n]) => k + ' ' + n).join(', ')}): správna odpoveď = výpočet`, zleQ ? `neprešlo (${zleQ})` : 'prešlo', 'prešlo');
+  over('1000 kvízových otázok: možnosti sa neopakujú', opak ? `neprešlo (${opak})` : 'prešlo', 'prešlo');
+  // 5. externý skript
+  const ext = [...document.scripts].filter(s => s.src);
+  over('externé skripty', `${ext.length}, GoatCounter: ${!!ext[0] && ext[0].src.includes('gc.zgo.at')}, posledný v <body>: ${document.body.lastElementChild === ext[0]}`, '1, GoatCounter: true, posledný v <body>: true');
+  console.table(v);
+  return v;
+}
+
+/* =====================================================================
+   ŠTART
+   ===================================================================== */
+let AKT = 'konst';
+const PODKARTA = {};                                      // karty s podkartami: k → () => aktívna podkarta (pre adresu #karta/podkarta)
+function ukazKartu(k) {
+  AKT = k;
+  $$('[data-karta]').forEach(s => { s.hidden = s.id !== k; });
+  $$('#karty button').forEach(b => { const on = b.dataset.k === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  try { history.replaceState(null, '', '#' + k + (PODKARTA[k] ? '/' + PODKARTA[k]() : '')); } catch (e) { /* nič */ }
+  VSETKY_GRAFY.forEach(G => G.kresli());                  // graf na práve zobrazenej karte sa nakreslí
+}
+function obnovVsetko() { obnovKonst(); obnovLin(); obnovKvad(); obnovKub(); obnovDel(); obnovVys(); obnovPor(); }
+function init() {
+  $$('[data-t]').forEach(el => { const v = cesta(TEXTY, el.dataset.t); if (typeof v === 'string') el.innerHTML = v; });
+  const nav = $('#karty'); let i = 1;
+  for (const k in TEXTY.karty) {
+    const b = document.createElement('button'); b.dataset.k = k; b.setAttribute('role', 'tab');
+    b.innerHTML = `<span class="cis">${i}.</span> ` + TEXTY.karty[k];
+    b.onclick = () => ukazKartu(k); nav.appendChild(b); i++;
+  }
+  $('#desMiesta').addEventListener('change', e => { DES = +e.target.value; obnovVsetko(); });
+  initKonst(); initLin(); initKvad(); initKub(); initVys(); initPorov();
+  const h = (location.hash || '').slice(1).split('/')[0];
+  ukazKartu(TEXTY.karty[h] ? h : 'konst');
+  if (/[?&]test\b/.test(location.search)) spustiTesty();
+}
+init();
+</script>
+<script data-goatcounter="https://jasvarc.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
