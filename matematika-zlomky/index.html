@@ -910,7 +910,8 @@ function ukazKartu(id) {
   $$('#karty button').forEach(b => { const on = b.dataset.k === id; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
   HRACI.forEach(h => { h.spina = true; });
   $('#info').hidden = true;
-  try { history.replaceState(null, '', '#' + id); } catch (e) { /* napr. pri otvorení zo súboru */ }
+  // značka v adrese nesmie byť rovnaká ako id sekcie, inak prehliadač pri načítaní odroluje pod karty
+  try { history.replaceState(null, '', '#karta-' + id); } catch (e) { /* napr. pri otvorení zo súboru */ }
 }
 
 /* =====================================================================
@@ -1640,8 +1641,12 @@ function init() {
   $('#poznList').innerHTML = TEXTY.pozn.polozky.map(t => `<li>${formatuj(t)}</li>`).join('');
   $$('.stageCard').forEach(pridajLupu);
   init1(); init2(); init3(); init4(); init5(); initOmyly(); initKviz();
-  const h = (location.hash || '').slice(1);
+  const h = (location.hash || '').replace(/^#(karta-)?/, '');   // prijme #karta-co aj staré #co
   ukazKartu(TEXTY.karty[h] ? h : 'co');
+  // stránka vždy začína hore, aby bolo vidieť karty (aj pri starej adrese s #co)
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  window.scrollTo(0, 0);
+  window.addEventListener('load', () => window.scrollTo(0, 0));
   let posl = performance.now();
   const snimka = now => {   // jedna slučka pre všetky animácie, časovanie podľa skutočného času
     const dt = Math.min(.1, Math.max(0, (now - posl) / 1000)); posl = now;
