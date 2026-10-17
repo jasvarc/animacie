@@ -1647,7 +1647,8 @@ function initMenu() {
     g.innerHTML = `<h3>${s.nazov}</h3><div class="btny"></div>`;
     for (const k in s.karty) {
       const b = document.createElement('button'); b.dataset.k = k; b.textContent = s.karty[k];
-      b.onclick = () => { ukazKartu(k); if (!sirokaObrazovka()) prepniMenu(false); window.scrollTo({ top: 0, behavior: bezPohybu.matches ? 'auto' : 'smooth' }); };
+      // po výbere témy sa menu vždy zavrie, aby bolo vidieť vybranú kartu
+      b.onclick = () => { ukazKartu(k); prepniMenu(false); window.scrollTo({ top: 0, behavior: bezPohybu.matches ? 'auto' : 'smooth' }); };
       $('.btny', g).appendChild(b);
     }
     p.appendChild(g);
@@ -1656,7 +1657,7 @@ function initMenu() {
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#menuPanel').hidden && !sirokaObrazovka()) prepniMenu(false); });
   // na úzkej obrazovke menu pláva nad obsahom – ťuknutie mimo neho ho zavrie
   document.addEventListener('pointerdown', e => { if (!sirokaObrazovka() && !$('#menuPanel').hidden && !e.target.closest('#menuPanel, #menuBtn')) prepniMenu(false); });
-  prepniMenu(sirokaObrazovka());
+  prepniMenu(false);   // po otvorení stránky je menu zatvorené (aj na širokej obrazovke)
 }
 function ukazKartu(k) {
   if (!PORADIE_KARIET.some(x => x.k === k)) k = PORADIE_KARIET[0].k;
