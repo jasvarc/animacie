@@ -1,0 +1,3233 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rímske číslice</title>
+<link rel="icon" href="data:,">
+<script>
+/* =====================================================================
+   TEXTY – všetko, čo dieťa číta, je na jednom mieste.
+   Pravidlá: najviac 12 slov vo vete, najviac 2 vety naraz, bez odborných slov.
+   Jeden znak = „číslica“, celý zápis = „číslo“.
+   {x} – sem program doplní číslo alebo zápis.
+   ===================================================================== */
+const TEXTY = {
+  titul: 'Rímske číslice',
+  podtitul: 'Skladaj čísla z kameňov.',
+  pata: 'Rímske číslice · pre 3. a 4. ročník ZŠ · funguje aj offline',
+
+  /* ----- karty v hornej lište ----- */
+  karty: {
+    znaky: { nazov: 'Znaky I V X' },
+    palice: { nazov: 'Palice a kocky' },
+    lcdm: { nazov: 'Nové znaky L C D M' },
+    pravidla: { nazov: 'Päť pravidiel' },
+    sablona: { nazov: 'Šablóna 1 až 9' },
+    prevod: { nazov: 'Prevod čísel' },
+    citanie: { nazov: 'Čítame rímske čísla' },
+    chyby: { nazov: 'Časté chyby' },
+    hodiny: { nazov: 'Rímske hodiny' },
+    kde: { nazov: 'Kde ich nájdeme' },
+    postav: { nazov: 'Postav číslo' },
+    kviz: { nazov: 'Kvíz' },
+    tlac: { nazov: 'Ťaháčik na tlač' }
+  },
+  kartyAria: 'Témy',
+  menu: { temy: '☰ Témy' },
+
+  /* ----- čítanie nahlas (len ak prehliadač má slovenský hlas) ----- */
+  nahlas: { tlacidlo: 'Čítať nahlas' },
+
+  /* ----- úrovne (zdieľané všetkými kartami) ----- */
+  urovne: {
+    nadpis: 'Úroveň',
+    nazvy: ['Malý', 'Stredný', 'Veľký', 'Majster'],
+    do: 'do {m}'
+  },
+
+  /* ----- spoločné ovládanie krokov ----- */
+  ovl: {
+    rezim: 'Režim prehrávania',
+    poKrokoch: 'Po krokoch',
+    samo: 'Samo',
+    spat: 'Späť',
+    dalej: 'Ďalej',
+    prehraj: 'Prehrať',
+    pauza: 'Pauza',
+    znova: 'Znova',
+    kroky: 'Kroky',
+    krok: 'Krok {i} z {n}',
+    rychlost: 'Rýchlosť',
+    korytnacka: 'pomaly – korytnačka',
+    zajac: 'rýchlo – zajac',
+    predvolby: ['pomaly', 'normálne', 'rýchlo']
+  },
+
+  /* ----- maskot ----- */
+  rimko: {
+    premysla: 'Rimko premýšľa',
+    tesi: 'Rimko sa teší',
+    povzbudzuje: 'Rimko povzbudzuje'
+  },
+
+  zvedave: 'Pre zvedavých',
+
+  /* ----- KARTA: Znaky I V X ----- */
+  znaky: {
+    uvod: 'Ťukni na kameň. Ukážem ti, koľko je.',
+    pomocka: 'pomôcka na zapamätanie',
+    popis: { I: 'jedna palica, jeden prst', V: 'otvorená dlaň, V medzi palcom a prstom', X: 'dve V proti sebe' },
+    aria: 'Číslica {z}, hodnota {n}, {popis}',
+    vyber: {
+      I: 'I je jedna. Ako jeden prst.',
+      V: 'V je päť. Pozri na palec a prst.',
+      X: 'X je desať. Sú to dve V.'
+    },
+    kocky: ['kocka', 'kocky', 'kociek'],
+    hraNadpis: 'Hra: hľadaj znak',
+    hraStart: 'Hrať',
+    otazka: 'Ktorý znak je {n}?',
+    poradie: 'Otázka {i} zo {n}',
+    ok: '✔ Správne! {z} je {n}.',
+    zle: '✘ Ešte nie. Skús iný kameň.',
+    hraUvod: 'Ťukni na správny kameň.',
+    koniec: 'Hotovo! Hneď správne: {s} zo {n}.',
+    hraZnova: 'Hrať znova',
+    znackaOk: 'správne',
+    znackaZle: 'nie',
+    zvedaveText: [
+      'Rímske číslice píšeme vždy veľkými písmenami.',
+      'Nájdeš ich na hodinách aj v knihách.'
+    ]
+  },
+
+  /* ----- KARTA: Palice a kocky (1 až 10) ----- */
+  palice: {
+    kroky: [
+      'Jedna palica je I. To je 1.',
+      'Pridám palicu: II. To je 2.',
+      'Ešte jednu: III. To je 3.',
+      'Štyri palice sa nepíšu. Použijeme V a jednu ubereme.',
+      'Malá I pred V uberá. IV je 4.',
+      'Päť palíc nahradí V. To je 5.',
+      'Palica za V pridáva. VI je 6.',
+      'Ďalšia palica za V. VII je 7.',
+      'Tri palice za V. VIII je 8.',
+      'Malá I pred X uberá. IX je 9.',
+      'X je 10. Si hore, výborne!'
+    ],
+    nepiseme: 'nepíšeme',
+    schodyAria: 'Schody od 1 do 10',
+    zvedaveText: [
+      'Ten istý znak píšeme za sebou najviac trikrát.',
+      'Menší znak vpravo pridáva. Menší znak vľavo uberá.'
+    ]
+  },
+
+  /* ----- KARTA: Prevod (do maxima úrovne) ----- */
+  prevod: {
+    uvod: 'Máme číslo {n}.',
+    rozklad: 'Rozložíme ho: {zoznam}.',
+    spoj: 'Spojíme: {r}.',
+    a: ' a ',
+    // vzory podľa cifry 1 až 9; {h} = hodnota rádu, {r} = jeho zápis
+    jednotky: ['',
+      '{h} je {r}: jedna palica.', '{h} je {r}: dve palice.', '{h} je {r}: tri palice.',
+      '{h} je {r}: päť bez jednej.', '{h} je {r}: jedna päťka.', '{h} je {r}: päť a jedna.',
+      '{h} je {r}: päť a dve.', '{h} je {r}: päť a tri.', '{h} je {r}: desať bez jednej.'],
+    desiatky: ['',
+      '{h} je {r}: jedna desiatka.', '{h} je {r}: dve desiatky.', '{h} je {r}: tri desiatky.',
+      '{h} je {r}: päťdesiat bez desať.', '{h} je {r}: jedna päťdesiatka.', '{h} je {r}: päťdesiat a desať.',
+      '{h} je {r}: päťdesiat a dvakrát desať.', '{h} je {r}: päťdesiat a trikrát desať.', '{h} je {r}: sto bez desať.'],
+    stovky: ['',
+      '{h} je {r}: jedna stovka.', '{h} je {r}: dve stovky.', '{h} je {r}: tri stovky.',
+      '{h} je {r}: päťsto bez sto.', '{h} je {r}: jedna päťstovka.', '{h} je {r}: päťsto a sto.',
+      '{h} je {r}: päťsto a dvesto.', '{h} je {r}: päťsto a tristo.', '{h} je {r}: tisíc bez sto.'],
+    tisice: ['',
+      '{h} je {r}: jedna tisícka.', '{h} je {r}: dve tisícky.', '{h} je {r}: tri tisícky.'],
+    vseobecne: '{h} je {r}.',
+    nazvyRadov: ['jednotky', 'desiatky', 'stovky', 'tisíce'],
+    skratky: ['J', 'D', 'S', 'T'],
+    kolViac: '{rad} o jedna viac',
+    kolMenej: '{rad} o jedna menej',
+    nahodne: 'Náhodné číslo',
+    cislo: 'Vybrané číslo',
+    zvedaveText: [
+      'Najprv píšeme tisíce, potom stovky, desiatky a jednotky.',
+      'Ťukni na číslo a pozri, ako vznikne.'
+    ]
+  },
+
+  /* ----- KARTA: Nové znaky L C D M ----- */
+  lcdm: {
+    slabiky: ['La', 'Co', 'Do', 'Ma'],        // pomôcka LaCo DoMa (prvé písmená dávajú poradie)
+    kroky: [
+      'Zapamätaj si vetu: LaCo DoMa.',
+      'Z La vyskočí L.',
+      'Z Co vyskočí C.',
+      'Z Do vyskočí D.',
+      'Z Ma vyskočí M.',
+      'Laco je doma: L, C, D, M!',
+      'Poradie ide od najmenšej po najväčšiu.'
+    ],
+    sipka: 'od najmenšej po najväčšiu',
+    ukazHodnoty: 'Ukáž hodnoty',
+    hodnotyText: 'L 50, C 100, D 500, M 1000. Stále viac!',
+    tabula: '{z} je {n}.',
+    tabulaAria: 'Tabuľa {z}, ukáž hodnotu',
+    hraNadpis: 'Hra: Poskladaj LaCo DoMa',
+    hraStart: 'Hrať',
+    hraUvod: 'Ťukni alebo potiahni. Od najmenšej po najväčšiu.',
+    okPoradie: '✔ Áno! {z} je {n}.',
+    zlePoradie: '✘ Ešte nie. Hľadaj najmenšiu zo zvyšných.',
+    hotovoPoradie: '✔ Výborne! L, C, D, M. Teraz otázky.',
+    otazka: 'Čo je väčšie, {a} alebo {b}?',
+    poradie: 'Otázka {i} z {n}',
+    okOtazka: '✔ Správne! {z} je {n}.',
+    zleOtazka: '✘ Ešte nie. Skús druhú tabuľu.',
+    koniec: 'Hotovo! Hneď správne: {s} z {n}.',
+    hraZnova: 'Hrať znova',
+    zvedaveText: [
+      'C je z latinského slova centum. To znamená sto.',
+      'M je z latinského slova mille. To znamená tisíc.',
+      'Centimeter je stotina metra. Milimeter je tisícina metra.'
+    ],
+    patky: {
+      nadpis: 'Päťky a desiatky',
+      uvod: 'I, X, C, M sú „desiatkové“. V, L, D sú „päťkové“.',
+      desiatkova: 'desiatková',
+      patkova: 'päťková',
+      polovica: 'polovica z {z}',
+      zaver: 'Päťka je vždy polovica nasledujúcej desiatky.'
+    }
+  },
+
+  /* ----- KARTA: Päť pravidiel (čísla pravidiel 1 až 5 platia v celej aplikácii) ----- */
+  pravidla: {
+    vyber: 'Vyber pravidlo',
+    aria: 'Pravidlo {i}: {t}',
+    verdikt: { ok: '✔ správne', zle: '✘ nesprávne', oprava: '✔ oprava', zaujimavost: '★ zaujímavosť' },
+    od: 'od',
+    alebo: 'alebo',
+    neodcitavaju: '✘ neodčítavajú',
+    // typ: pravidlo | ok | zle | oprava | zaujimavost | dvojice; rovnica sa v testoch prepočíta
+    zoznam: [
+      { nazov: 'Píšeme od najväčšej po najmenšiu a sčítame.', kratko: 'Od najväčšej po najmenšiu', kroky: [
+        { typ: 'pravidlo', t: 'Píšeme od najväčšej po najmenšiu a sčítame.', zapis: 'XVI' },
+        { typ: 'ok', t: '✔ XVI = 10 + 5 + 1 = 16.', zapis: 'XVI', rovnica: '10 + 5 + 1 = 16' },
+        { typ: 'zle', t: '✘ VXI nie je dobre. Znaky nie sú zoradené.', zapis: 'VXI' },
+        { typ: 'oprava', t: 'Oprava: XVI. Najprv X, potom V, potom I.', zle: 'VXI', zapisy: ['XVI'], rovnica: '10 + 5 + 1 = 16' },
+        { typ: 'zaujimavost', t: 'MDCLXVI je 1666. Všetky znaky pekne v poradí!', zapis: 'MDCLXVI', rovnica: '1000 + 500 + 100 + 50 + 10 + 5 + 1 = 1666' }
+      ] },
+      { nazov: 'Rovnaký znak najviac trikrát za sebou.', kratko: 'Najviac trikrát', kroky: [
+        { typ: 'pravidlo', t: 'Rovnaký znak najviac trikrát za sebou.', zapis: 'III' },
+        { typ: 'ok', t: '✔ III je 3. Tri rovnaké znaky smú byť.', zapis: 'III', rovnica: '1 + 1 + 1 = 3' },
+        { typ: 'zle', t: '✘ IIII sa nepíše. Sú tam štyri rovnaké znaky.', zapis: 'IIII' },
+        { typ: 'oprava', t: 'Oprava: 4 je IV. To je 5 − 1.', zle: 'IIII', zapisy: ['IV'], rovnica: '5 − 1 = 4' }
+      ] },
+      { nazov: 'V, L a D sa nepíšu dvakrát za sebou.', kratko: 'V, L, D len raz', kroky: [
+        { typ: 'pravidlo', t: 'V, L a D sa nepíšu dvakrát za sebou.', zapis: 'VLD' },
+        { typ: 'ok', t: '✔ LX je 60. L je tam iba raz.', zapis: 'LX', rovnica: '50 + 10 = 60' },
+        { typ: 'zle', t: '✘ VV sa nepíše. Dve päťky dávajú desať.', zapis: 'VV' },
+        { typ: 'oprava', t: 'Oprava: 10 je X. Jeden znak stačí.', zle: 'VV', zapisy: ['X'], rovnica: '' }
+      ] },
+      { nazov: 'Menšia číslica pred väčšou sa odčíta.', kratko: 'Menšia pred väčšou', kroky: [
+        { typ: 'pravidlo', t: 'Menšia číslica pred väčšou sa odčíta.', zapis: 'IV' },
+        { typ: 'ok', t: '✔ IV = 5 − 1 = 4.', zapis: 'IV', rovnica: '5 − 1 = 4' },
+        { typ: 'ok', t: '✔ XL = 50 − 10 = 40.', zapis: 'XL', rovnica: '50 − 10 = 40' },
+        { typ: 'zle', t: '✘ VI nie je 4. Menšia za väčšou sa pripočíta.', zapis: 'VI', zamer: 4, rovnica: '5 + 1 = 6' },
+        { typ: 'oprava', t: 'Oprava: 4 je IV. Menšia ide pred väčšiu.', zle: 'VI', zapisy: ['IV'], zamer: 4, rovnica: '5 − 1 = 4' }
+      ] },
+      { nazov: 'Odčítať smú len I, X a C, a len od dvoch najbližších väčších: I od V a X, X od L a C, C od D a M.', kratko: 'Kto smie odčítať', kroky: [
+        { typ: 'dvojice', t: 'Odčítať smú len I, X a C.', zvyrazni: 'kto' },
+        { typ: 'dvojice', t: 'Iba od dvoch najbližších väčších znakov.', zvyrazni: 'od' },
+        { typ: 'ok', t: '✔ IX = 10 − 1 = 9.', zapis: 'IX', rovnica: '10 − 1 = 9' },
+        { typ: 'zle', t: '✘ IC sa nepíše. C je od I príliš ďaleko.', zapis: 'IC' },
+        { typ: 'oprava', t: 'Oprava: 99 je XCIX. To je 90 + 9.', zle: 'IC', zapisy: ['XCIX'], rovnica: '90 + 9 = 99' },
+        { typ: 'zle', t: '✘ VX sa nepíše. V nikdy neodčítava.', zapis: 'VX' },
+        { typ: 'oprava', t: 'Oprava: V je 5, X je 10. Podľa toho, čo chceme.', zle: 'VX', zapisy: ['V', 'X'], rovnica: '' }
+      ] }
+    ]
+  },
+
+  /* ----- KARTA: Šablóna 1 až 9 ----- */
+  sablona: {
+    nadpis: 'Rovnaký vzor, iné písmená',
+    uvod: 'Ťukni na číslo hore. Uvidíš rovnaký vzor.',
+    stlpecAria: 'Stĺpec {d}: {zapisy}',
+    vzory: ['', 'jeden znak', 'dva rovnaké znaky', 'tri rovnaké znaky', 'menšia pred päťkou', 'samotná päťka',
+      'päťka a za ňou jedna', 'päťka a za ňou dve', 'päťka a za ňou tri', 'menšia pred desiatkou'],
+    rimko: '{d}: {vzor}. {zapisy}.',
+    legendaMinus: 'menšia pred väčšou',
+    legendaPlus: 'päťka a za ňou 1 až 3',
+    zvedaveText: [
+      'Tisíce majú len M, MM a MMM.',
+      'V tejto animácii končíme pri čísle 3999.'
+    ]
+  },
+
+  /* ----- KARTA: Čítame rímske čísla ----- */
+  citanie: {
+    prazdne: 'Napíš rímske číslo. Ťukaj na kamene.',
+    zapis: 'Napísané číslo',
+    klavesnica: 'Klávesnica',
+    zmaz: 'Zmaž posledný znak',
+    vymaz: 'Vymaž',
+    skus: 'Skúsiť',
+    priklady: ['XXVI', 'XLIX', 'MCMXCIV', 'MMXXVI'],
+    dvojice: 'Hľadáme dvojice, kde menšia stojí pred väčšou.',
+    ziadnaDvojica: 'Hľadáme dvojice, kde menšia stojí pred väčšou. Tu žiadna nie je.',
+    skupiny: 'Rozdelíme na skupiny: {s}.',
+    skupinyKratko: 'Rozdelíme na skupiny.',
+    hodnoty: 'Hodnoty skupín: {s}.',
+    hodnotyKratko: 'Každá skupina má svoju hodnotu.',
+    sucet: 'Spočítame: {n}.',
+    zle: '✘ {z} sa takto nepíše.',
+    nepise: 'Takto sa to nepíše',
+    zleNevieme: '✘ Takto sa to nepíše. Skús to ešte raz.',
+    pravidlo: {
+      2: 'Pozor na pravidlo 2. Rovnaký znak najviac trikrát za sebou.',
+      3: 'Pozor na pravidlo 3. V, L a D sa nepíšu dvakrát.',
+      5: 'Pozor na pravidlo 5. Odčítať smú len I, X a C.'
+    },
+    oprava: '✔ Správne je {r}. To je {n}.',
+    priklad: '✔ Napríklad {zle} opravíme na {dobre}.',
+    dlhe: 'Najviac 15 znakov.'
+  },
+
+  /* ----- KARTA: Časté chyby ----- */
+  chyby: {
+    vyber: 'Vyber chybu',
+    aria: '{zle} namiesto {r}',
+    zle: '✘ {zle} sa takto nepíše. Pozri pravidlo {p}.',
+    zleBez: '✘ {zle} sa takto nepíše.',
+    rozklad: 'Chceli sme číslo {n}. Rozložíme ho: {zoznam}.',
+    rozkladJeden: 'Chceli sme číslo {n}.',
+    spravne: '✔ Správne je {r}. To je {vypocet}.'
+  },
+
+  /* ----- KARTA: Rímske hodiny ----- */
+  hodiny: {
+    rezimAria: 'Čo chceš robiť',
+    rezimy: ['Ťukni na číslicu', 'Koľko je hodín?', 'Nastav ručičku'],
+    uvod: ['Ťukni na číslicu na ciferníku.', 'Kam ukazuje ručička? Vyber číslicu.', 'Potiahni ručičku na inú hodinu.'],
+    cifernik: 'Ciferník s rímskymi číslicami',
+    cislica: 'Číslica {r}',
+    hodnota: '{r} je {n}.',
+    ok: '✔ Správne! Ručička ukazuje na {r}.',
+    zle: '✘ Skoro! Pozri, kam ukazuje ručička.',
+    dalsia: 'Ďalšia otázka',
+    nastavene: 'Ručička ukazuje na {r}. To je {n}.',
+    rucicka: 'Hodinová ručička',
+    spat: 'Posuň ručičku späť',
+    dopredu: 'Posuň ručičku dopredu',
+    poznamka: 'Na niektorých starých hodinách uvidíš IIII. V škole píšeme IV.'
+  },
+
+  /* ----- KARTA: Kde ich nájdeme ----- */
+  kde: {
+    uvod: 'Rímske čísla nájdeš okolo seba. Pozri sa!',
+    miesta: [
+      { obr: 'hodiny', t: 'ciferníky hodín' },
+      { obr: 'kniha', t: 'kapitoly v knihách' },
+      { obr: 'storocie', t: 'storočia' },
+      { obr: 'kral', t: 'panovníci: Karol IV.' },
+      { obr: 'budova', t: 'roky na budovách' }
+    ],
+    rok: 'Dnešný rok',
+    vek: 'Môj vek alebo moja trieda',
+    vekLabel: 'Napíš číslo od 1 do 99',
+    vekZle: 'Napíš číslo od 1 do 99.',
+    storocie: 'Ktoré storočie?',
+    storocieLabel: 'Napíš rok od 1 do 3999',
+    storocieText: '{s}. storočie = {r}. storočie',
+    storocieZle: 'Napíš rok od 1 do 3999.',
+    bodka: 'Pri poradí píšeme bodku: XXI. storočie, Karol IV. Samotné číslo je bez bodky: MMXXVI.',
+    zvedaveText: [
+      'Rok 2000 patrí ešte do 20. storočia.',
+      'Rok 2001 je už prvý rok 21. storočia.'
+    ]
+  },
+
+  /* ----- HRA: Postav číslo ----- */
+  postav: {
+    uvod: 'Ťukaj na kamene a postav číslo.',
+    zadanie: 'Postav číslo',
+    zapis: 'Postavené číslo',
+    kolo: 'Kolo {i} z {n}',
+    hviezdyAria: 'Hviezdičky: {s}',
+    zmaz: 'Zmaž posledný znak',
+    vymaz: 'Vymaž',
+    hotovo: 'Hotovo',
+    prazdne: 'Najprv ťukni na kamene.',
+    ok: '✔ Výborne! {r} je {n}.',
+    nap1: 'Skoro! Rozlož číslo na rády.',
+    nap2Ine: 'Ešte raz! {r} je {m}. My chceme {n}.',
+    nap2Nevieme: 'Ešte raz! Takto sa to nepíše.',
+    nap3: 'Nevadí! Chceš vidieť riešenie?',
+    ukazRiesenie: 'Ukáž riešenie',
+    dalsie: 'Ďalšie kolo',
+    vysledok: 'Pozri výsledok',
+    koniec: 'Máš {s} z {n} hviezdičiek. Skvelá práca, každé kolo ťa posunulo!',
+    hrajZnova: 'Hrať znova'
+  },
+
+  /* ----- KARTA: Ťaháčik na tlač ----- */
+  tlac: {
+    uvod: 'Ťaháčik sa zmestí na jeden papier A4.',
+    tlacidlo: 'Vytlačiť',
+    nadpis: 'Rímske číslice – ťaháčik',
+    znaky: 'Znaky a hodnoty',
+    legenda: 'plný rámik = desiatkový znak, prerušovaný rámik = päťkový znak',
+    laco: 'LaCo DoMa',
+    lacoText: 'poradie od najmenšej po najväčšiu',
+    pravidla: 'Päť pravidiel',
+    sablona: 'Šablóna 1 až 9',
+    priklady: 'Príklady',
+    cislo: 'číslo',
+    zapis: 'zápis'
+  },
+
+  /* ----- KARTA: Kvíz ----- */
+  kviz: {
+    uvod: 'Vyber správnu odpoveď.',
+    kolo: 'Otázka {i} z {n}',
+    hviezdyAria: 'Hviezdičky: {s}',
+    a: 'Ktorý zápis je správny pre číslo {n}?',
+    b: 'Aké číslo je napísané?',
+    c: 'Ktoré číslo je väčšie?',
+    d: 'Oprav chybu. Ktorý zápis je správny?',
+    e: 'Koľko je hodín?',
+    f: '{z} je koľko?',
+    ok: '✔ Správne! Máš hviezdičku.',
+    zle: 'Skoro! Pozri sa ešte raz.',
+    dalsia: 'Ďalšia otázka',
+    vysledok: 'Pozri výsledok',
+    koniec: 'Máš {s} z {n} hviezdičiek. Skvelá práca, každá otázka ťa niečo naučila!',
+    hrajZnova: 'Hrať znova',
+    c1: '{a} je {x}. {b} je {y}.',
+    c2: 'Väčšie je {v}.',
+    e1: 'Ručička ukazuje na {n}.',
+    e2: '{n} je {r}.',
+    f1: '{z} je {n}.'
+  }
+};
+</script>
+
+<style>
+/* ===== Paleta – rovnaká ako v predošlých animáciách (nočná obloha + zlatá) ===== */
+:root{
+  --bg:#04060c;--panel:rgba(12,16,28,.86);--line:rgba(140,160,215,.22);
+  --text:#e2e8f5;--muted:#a3adc6;--gold:#f3b453;--gold2:#ffd88a;--blue:#6fb4ff;--red:#ff7a6b;--green:#7fdc8f;--violet:#b9a3ff;
+  /* kamenné dlaždice */
+  --kamen1:#f1ebdd;--kamen2:#cbbfa6;--kamenHrana:#8f826a;--kamenText:#3a3022;
+  --serif:Georgia,"Times New Roman",Times,"Liberation Serif","DejaVu Serif",serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--text);background:var(--bg);
+  background-image:radial-gradient(ellipse at 50% -10%,#14204a 0%,#070b18 50%,#04060c 100%);background-attachment:fixed;
+  font:22px/1.45 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:16px}
+h1{margin:0;font-size:32px;line-height:1.15;color:var(--gold)}
+.sub{color:var(--muted);margin:4px 0 0}
+.skryte{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.rimske{font-family:var(--serif);font-weight:700;letter-spacing:.02em}
+
+/* ===== Tlačidlá: aspoň 56 × 56 px, medzery aspoň 12 px ===== */
+button{font:inherit;font-size:22px;color:var(--text);background:rgba(255,255,255,.08);border:2px solid var(--line);
+  border-radius:16px;padding:8px 18px;min-height:56px;min-width:56px;cursor:pointer;touch-action:manipulation;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,border-color .15s}
+button:hover{background:rgba(255,255,255,.14);border-color:rgba(160,180,230,.45)}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:4px solid var(--gold2);outline-offset:3px}
+button[aria-pressed="true"]{background:rgba(243,180,83,.22);border-color:var(--gold);color:var(--gold2)}
+button.primary{background:linear-gradient(135deg,#f3b453,#d9772f);color:#1a0e02;border-color:transparent;font-weight:700}
+button.primary:hover{filter:brightness(1.08)}
+button:disabled{cursor:default;opacity:.4}
+button svg{width:26px;height:26px;flex:none}
+
+/* ===== Hlavička a karty ===== */
+header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+header .logo{width:64px;height:64px;flex:none}
+.karty{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.karty button{flex-direction:column;gap:4px;padding:8px 6px;min-height:96px;line-height:1.15;text-align:center;border-radius:18px}
+.karty button svg{width:52px;height:34px}
+.karty button[aria-selected="true"]{background:rgba(243,180,83,.22);border-color:var(--gold);color:var(--gold2)}
+@media (max-width:480px){.karty button{font-size:20px}}
+.karta{background:var(--panel);border:1px solid var(--line);border-radius:22px;box-shadow:0 12px 40px rgba(0,0,0,.45);padding:12px;min-width:0}
+@media (min-width:600px){.karta{padding:20px}}
+footer{color:var(--muted);text-align:center;margin:18px 0 8px}
+
+/* ===== Rimko a bublina ===== */
+.rimko{display:flex;align-items:flex-end;gap:12px;margin-bottom:16px}
+.rimkoPostava{width:84px;flex:none}
+.rimkoPostava svg{display:block;width:84px;height:92px}
+.rimkoSvg .v-premysla,.rimkoSvg .v-tesi,.rimkoSvg .v-povzbudzuje{display:none}
+.rimkoSvg.vyraz-premysla .v-premysla,.rimkoSvg.vyraz-tesi .v-tesi,.rimkoSvg.vyraz-povzbudzuje .v-povzbudzuje{display:inline}
+.bublina{position:relative;flex:1;min-width:0;min-height:92px;display:flex;align-items:center;
+  background:#fdf8ec;color:#2a2318;border-radius:22px;padding:12px 18px;font-size:23px;line-height:1.35;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.bublina::before{content:"";position:absolute;left:-12px;bottom:18px;border:10px solid transparent;border-right:14px solid #fdf8ec;border-left:0}
+
+/* ===== Kamenné dlaždice ===== */
+.kamenObal{display:inline-flex;flex-direction:column;align-items:center;gap:4px;position:relative}
+.kamen{display:inline-flex;align-items:center;justify-content:center;min-width:56px;height:72px;padding:0 6px;border-radius:14px;
+  background:linear-gradient(160deg,var(--kamen1),var(--kamen2));color:var(--kamenText);font-size:46px;line-height:1;
+  border:1px solid rgba(255,255,255,.55);box-shadow:0 4px 0 var(--kamenHrana),0 9px 16px rgba(0,0,0,.4)}
+.kamenObal.maly .kamen{height:56px;font-size:34px}
+.hodnota{font-size:22px;font-weight:700;color:var(--muted);min-height:30px}
+.hodnota.minus{color:var(--red)}
+.kamenObal.preskrtnuty .kamen{opacity:.75}
+.kamenObal.maly .krizik{top:0;font-size:38px;line-height:56px}
+.krizik{position:absolute;top:6px;left:0;right:0;text-align:center;font-size:48px;line-height:60px;color:var(--red);opacity:.6;pointer-events:none}
+.kamene{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:12px}
+/* spojené číslo: dlaždice sa zasunú k sebe do jednej dosky */
+.doska{display:inline-flex;align-items:stretch;border-radius:14px;box-shadow:0 4px 0 var(--kamenHrana),0 9px 16px rgba(0,0,0,.4)}
+.doska .kamen{min-width:0;padding:0 .1em;border-radius:0;box-shadow:none;border-left-width:0;border-right-width:0}
+.doska .kamenObal:first-child .kamen{border-radius:14px 0 0 14px;padding-left:.35em;border-left-width:1px}
+.doska .kamenObal:last-child .kamen{border-radius:0 14px 14px 0;padding-right:.35em;border-right-width:1px}
+.doska .kamenObal:only-child .kamen{border-radius:14px}
+
+/* ===== Kocky a tyče ===== */
+.kocky{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.riadokKociek{display:flex;gap:6px}
+.kocka{display:block;width:24px;height:24px;border-radius:5px;background:linear-gradient(145deg,#9fd0ff,#4f8fd8);
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 2px 4px rgba(0,0,0,.35)}
+.kocka.ubrata{background:transparent;border:3px dashed var(--red);box-shadow:none;position:relative}
+.kocka.ubrata::after{content:"−";position:absolute;inset:-3px;display:grid;place-items:center;color:var(--red);font-weight:800;font-size:20px;line-height:1}
+.tyce{display:flex;gap:8px;align-items:flex-end}
+.tyc{display:flex;flex-direction:column;gap:2px;padding:3px;border-radius:7px;background:rgba(127,220,143,.18);border:2px solid var(--green)}
+.tyc i{display:block;width:16px;height:9px;border-radius:2px;background:linear-gradient(90deg,#9be8a8,#4fae62)}
+
+/* ===== Spoločné ovládanie krokov ===== */
+.ovladanie{display:flex;flex-direction:column;gap:12px;margin-top:18px}
+.ovladanie .riadok{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center}
+.bodky{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.bodka{width:56px;height:56px;padding:0;border:none;background:transparent;border-radius:50%}
+.bodka:hover{background:rgba(255,255,255,.08)}
+.bodka span{display:block;width:20px;height:20px;border-radius:50%;border:3px solid var(--muted)}
+.bodka.hotova span{background:var(--muted)}
+.bodka[aria-current="step"] span{width:30px;height:30px;background:var(--gold);border-color:var(--gold2);box-shadow:0 0 12px rgba(243,180,83,.7)}
+.rychlost{display:flex;flex-direction:column;gap:12px;align-items:center}
+.posuvnik{width:100%;max-width:440px;display:flex;align-items:center;gap:12px}
+.zviera{flex:none;width:52px;height:40px}
+.zviera svg{width:52px;height:40px;display:block}
+input[type=range]{flex:1;min-width:0;height:56px;accent-color:var(--gold);cursor:pointer;margin:0}
+
+/* ===== Scéna ===== */
+.scena{position:relative;min-height:120px}
+.zvedave{margin-top:18px;border-top:1px solid var(--line);padding-top:6px}
+.zvedave summary{min-height:56px;display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--gold2);font-weight:700;list-style:none}
+.zvedave summary::-webkit-details-marker{display:none}
+.zvedave summary::before{content:"+";display:grid;place-items:center;width:36px;height:36px;border-radius:50%;border:2px solid var(--gold);flex:none}
+.zvedave[open] summary::before{content:"−"}
+.zvedave p{margin:6px 0 10px}
+
+/* ----- karta Znaky ----- */
+.stitokPomocka{display:inline-flex;white-space:nowrap;font-size:20px;align-items:center;gap:8px;padding:4px 14px 4px 8px;border-radius:999px;background:rgba(243,180,83,.14);border:1px dashed var(--gold);color:var(--gold2);margin:0 auto 14px}
+.stitokPomocka svg{width:28px;height:28px}
+.stredom{text-align:center}
+.dlazdice{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:520px;margin:0 auto}
+.dlazdica{flex-direction:column;gap:6px;padding:10px 4px 8px;border-radius:20px;color:var(--kamenText);
+  background:linear-gradient(160deg,var(--kamen1),var(--kamen2));border:1px solid rgba(255,255,255,.6);
+  box-shadow:0 5px 0 var(--kamenHrana),0 10px 20px rgba(0,0,0,.45)}
+.dlazdica:hover{background:linear-gradient(160deg,#fff7e8,#d6cab2)}
+.dlazdica[aria-pressed="true"]{background:linear-gradient(160deg,#fff4d6,#e9c983);border-color:var(--gold2);color:var(--kamenText)}
+.dlazdica .znak{font-family:var(--serif);font-weight:700;font-size:64px;line-height:1}
+.dlazdica .obrazok svg{width:72px;height:72px;display:block}
+.dlazdica .hodnotaDl{font-size:30px;font-weight:800;line-height:1}
+.kockyZnaku{min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;margin:18px 0 6px}
+.popisKociek{font-weight:700;color:var(--gold2)}
+.hra{margin-top:16px;padding:14px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid var(--line);text-align:center}
+.hra h3{margin:0 0 10px;font-size:24px;color:var(--gold2)}
+.otazka{font-size:32px;font-weight:800;margin:0 0 4px}
+.poradie{color:var(--muted);margin:0 0 12px}
+.odpovede{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
+.odpoved{position:relative;width:76px;height:80px;padding:0;border-radius:18px;font-family:var(--serif);font-weight:700;font-size:50px;
+  color:var(--kamenText);background:linear-gradient(160deg,var(--kamen1),var(--kamen2));border:1px solid rgba(255,255,255,.6);box-shadow:0 5px 0 var(--kamenHrana)}
+.odpoved:hover{background:linear-gradient(160deg,#fff7e8,#d6cab2)}
+.odpoved:disabled{opacity:1}
+.odpoved .znacka{position:absolute;right:-10px;top:-12px;min-width:34px;height:34px;border-radius:17px;font:800 22px/34px system-ui,sans-serif;padding:0 6px}
+.odpoved.ok{outline:4px solid var(--green)}
+.odpoved.ok .znacka{background:var(--green);color:#0b2a12}
+.odpoved.zle{opacity:.55}
+.odpoved.zle .znacka{background:var(--red);color:#2a0b07}
+
+/* ----- karta Palice a kocky ----- */
+.stavba{display:flex;flex-direction:column;align-items:center;gap:10px;min-height:250px}
+.rovnica{font-size:28px;font-weight:800;color:var(--gold2);min-height:40px}
+.stitok{font-weight:800;padding:2px 12px;border-radius:12px}
+.stitok.zle{color:var(--red);border:2px solid var(--red)}
+.schody{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));column-gap:8px;row-gap:14px;align-items:end;margin-top:18px}
+.stlpec{display:flex;flex-direction:column;min-width:0}
+.miestoRimka{height:48px;display:flex;justify-content:center;align-items:flex-end}
+.miestoRimka svg{width:44px;height:44px;display:block}
+.schod{height:calc(58px + var(--kr) * 12px);display:flex;flex-direction:column;justify-content:space-between;align-items:center;
+  padding:4px 2px;border-radius:10px 10px 4px 4px;background:linear-gradient(#3c4562,#262d44);border:2px solid var(--line);color:var(--muted)}
+.schod .rim{font-family:var(--serif);font-weight:700;font-size:19px;line-height:1.2;white-space:nowrap}
+.schod .arab{font-size:22px;font-weight:800;line-height:1.1}
+.stlpec.hotovy .schod{background:linear-gradient(160deg,var(--kamen1),var(--kamen2));color:var(--kamenText);border-color:rgba(255,255,255,.5)}
+.stlpec.aktualny .schod{border:3px solid var(--gold2);box-shadow:0 0 16px rgba(243,180,83,.65)}
+@media (min-width:720px){
+  .schody{grid-template-columns:repeat(10,minmax(0,1fr))}
+  .schod{height:calc(58px + var(--k) * 10px)}
+}
+
+/* ----- karta Prevod ----- */
+.hornyRiadok{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:12px;min-height:84px;margin-bottom:12px}
+.velkeCislo{display:inline-block;font-size:56px;font-weight:800;line-height:1;color:var(--gold2);font-variant-numeric:tabular-nums}
+.rovnaSa{display:inline-block;font-size:44px;font-weight:800;color:var(--muted)}
+.cele{display:flex;justify-content:center;align-items:flex-end;gap:18px;flex-wrap:wrap;padding:14px;border-radius:18px;border:2px dashed var(--line)}
+.skupiny{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:12px}
+.skupina{display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px;border-radius:18px;min-width:150px;background:rgba(255,255,255,.04)}
+.skupina.rad1{border:2px solid rgba(127,220,143,.55)}
+.skupina.rad0{border:2px dashed rgba(111,180,255,.65)}
+.skupina.aktivna{border-color:var(--gold2);box-shadow:0 0 18px rgba(243,180,83,.4)}
+.hlavicka{display:inline-flex;align-items:center;gap:8px}
+.hlavicka svg{width:30px;height:30px}
+.hlavicka .cislo{font-size:34px;font-weight:800}
+.hlavicka .nazovRadu{color:var(--muted);font-size:22px}
+.vypocet{display:inline-block;font-size:24px;font-weight:800;color:var(--gold2)}
+.tabulka{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-top:8px}
+.tabulka button{justify-content:space-between;padding:6px 12px}
+.tabulka .rimske{font-size:22px}
+/* dlhé spojené čísla (napr. MMMDCCCLXXXVIII) – písmo sa zmenší podľa šírky zápisu --w (v em) */
+.doska .kamen{font-size:min(46px, calc((100vw - 80px) / var(--w, 4)))}
+@media (min-width:1000px){.doska .kamen{font-size:min(46px, calc(860px / var(--w, 4)))}}
+/* stovky = štvorce 10 × 10, tisíce = veľké kocky */
+.stvorce,.tisice{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.stvorce .riadokKociek,.tisice .riadokKociek{gap:6px}
+.stvorec{display:block;width:34px;height:34px;border-radius:4px;border:2px solid var(--violet);
+  background-color:rgba(185,163,255,.25);background-image:linear-gradient(rgba(185,163,255,.55) 1px,transparent 1px),linear-gradient(90deg,rgba(185,163,255,.55) 1px,transparent 1px);background-size:3px 3px}
+.tisic{display:block;width:44px;height:44px}
+.tisic svg{width:44px;height:44px;display:block}
+.skupina.rad2{border:5px double rgba(185,163,255,.7)}
+.skupina.rad3{border:3px dotted var(--gold)}
+/* výber úrovne */
+.urovne{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.urovne button{flex-direction:column;gap:0;padding:6px 4px;line-height:1.15}
+.urDo{font-size:20px;color:var(--muted)}
+button[aria-pressed="true"] .urDo{color:var(--gold2)}
+@media (max-width:560px){.urovne{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* kolieska ako na počítadle kilometrov */
+.vstupKoliesok{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:12px;margin-bottom:16px}
+.kolieska{display:flex;gap:12px;padding:10px;border-radius:18px;background:#0b0f1c;border:2px solid var(--line)}
+.koliesko{display:flex;flex-direction:column;align-items:center;gap:6px;width:60px}
+.kolSkratka{display:inline-flex;align-items:center;gap:2px;font-weight:800;color:var(--muted)}
+.kolSkratka svg{width:20px;height:20px}
+.kolTl{width:60px;padding:0;font-size:22px}
+.okienko{width:60px;height:64px;overflow:hidden;border-radius:10px;display:grid;place-items:center;
+  background:linear-gradient(#e9e4d6,#fff 45%,#fff 55%,#d6cfbd);color:#1d1a14;box-shadow:inset 0 3px 6px rgba(0,0,0,.35)}
+.cifra{display:block;font-size:44px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.koliesko.nula .cifra{color:#a59f92}
+.koliesko.vypnute{opacity:.35}
+
+/* ----- karta Nové znaky L C D M ----- */
+.veta{display:flex;justify-content:center;gap:22px;flex-wrap:wrap;margin-bottom:14px}
+.slovo{display:inline-flex;font-size:44px;font-weight:800;letter-spacing:.02em}
+.slabika{display:inline-flex;padding:0 2px;border-radius:10px}
+.slabika.aktivna{background:rgba(243,180,83,.18)}
+.prve{display:inline-block;font-family:var(--serif);color:var(--gold2)}
+.prve.stopa{opacity:.3}
+.tabule{display:grid;grid-template-columns:.82fr .94fr 1.06fr 1.18fr;gap:12px;align-items:end;max-width:560px;margin:0 auto}
+.stlpecTabule{display:flex;flex-direction:column;align-items:stretch;min-width:0}
+.miestoPismena{height:50px;display:flex;justify-content:center;align-items:flex-end}
+.vyskocene{display:inline-grid;place-items:center;width:42px;height:42px;border-radius:50%;background:var(--gold);color:#1a0e02;font:700 28px/1 var(--serif)}
+.tabula{width:100%;padding:0;border-radius:16px;color:var(--kamenText);background:linear-gradient(160deg,var(--kamen1),var(--kamen2));
+  border:1px solid rgba(255,255,255,.6);box-shadow:0 5px 0 var(--kamenHrana),0 10px 20px rgba(0,0,0,.45)}
+.tabula:hover{background:linear-gradient(160deg,#fff7e8,#d6cab2)}
+.tabula .rimske{line-height:1}
+.tabula.t0{height:92px;font-size:40px}.tabula.t1{height:108px;font-size:46px}.tabula.t2{height:124px;font-size:52px}.tabula.t3{height:140px;font-size:58px}
+.tabula.svieti{background:linear-gradient(160deg,#fff4d6,#e9c983);border-color:var(--gold2);box-shadow:0 5px 0 var(--kamenHrana),0 0 22px rgba(243,180,83,.75)}
+.hodnotaTabule{min-height:40px;text-align:center;font-size:26px;font-weight:800;color:var(--gold2);padding-top:6px}
+.sipkaPoradia{display:flex;flex-direction:column;align-items:center;gap:2px;max-width:560px;margin:8px auto 0;color:var(--gold2);font-weight:700;text-align:center}
+.sipkaPoradia svg{width:100%;height:24px}
+.tlacidloHodnoty{display:flex;justify-content:center;margin-top:12px}
+.sloty{display:flex;gap:12px;justify-content:center;margin:0 0 16px}
+.slot{position:relative;width:60px;height:66px;border:3px dashed var(--line);border-radius:16px;display:grid;place-items:center}
+.slotCislo{position:absolute;color:var(--muted);font-weight:800}
+.odpoved.mala{width:60px;height:66px;font-size:40px}
+.slot .odpoved{position:relative;z-index:1}
+.tahatelna{touch-action:none}
+.tahatelna.tahany{z-index:5;box-shadow:0 12px 26px rgba(0,0,0,.6)}
+.rebrik{display:flex;flex-direction:column;gap:12px;margin:10px 0}
+.priecka{display:flex;align-items:center;gap:12px;padding:6px 10px;border-radius:14px}
+.priecka.desiatkova{background:rgba(111,180,255,.10);border:2px solid rgba(111,180,255,.5)}
+.priecka.patkova{background:rgba(243,180,83,.08);border:2px dashed rgba(243,180,83,.6);margin-left:28px}
+.tvar{flex:none;display:grid;place-items:center;width:56px;height:56px;color:var(--kamenText);font:700 32px/1 var(--serif);background:linear-gradient(160deg,var(--kamen1),var(--kamen2))}
+.desiatkova .tvar{border-radius:10px}
+.patkova .tvar{clip-path:polygon(50% 0,100% 38%,82% 100%,18% 100%,0 38%);padding-top:8px}
+.priecka .hodn{font-weight:800;font-size:26px;min-width:62px}
+.priecka .druh{display:flex;flex-direction:column;line-height:1.25;color:var(--muted)}
+
+/* ----- karta Päť pravidiel ----- */
+.vyberPravidla{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-bottom:14px}
+.vyberPravidla button{width:64px;font-size:28px;font-weight:800}
+.hlavickaPravidla{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;text-align:center}
+.cisloPravidla{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--gold);color:#1a0e02;font-weight:800}
+.kratkoPravidla{font-weight:800;color:var(--gold2)}
+.prikladPravidla{display:flex;flex-direction:column;align-items:center;gap:12px;min-height:220px}
+.opravaRiadok{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:12px}
+.sipkaOpravy{font-size:36px;color:var(--gold2)}
+.alebo{color:var(--muted);font-weight:700}
+.verdikt{display:inline-block;font-weight:800;padding:4px 14px;border-radius:14px;border:2px solid}
+.verdikt.ok,.verdikt.oprava{color:var(--green)}
+.verdikt.zle{color:var(--red);border-style:dashed}
+.verdikt.zaujimavost{color:var(--gold2)}
+.dvojice{display:flex;flex-direction:column;gap:12px;align-items:center}
+.dvojica{display:flex;align-items:center;gap:12px}
+.dvojica .od{color:var(--muted);font-weight:700}
+.dvojice .zvyraznene .kamen{outline:4px solid var(--gold2);outline-offset:2px}
+.dvojica.nie .kamen{opacity:.55}
+
+/* ----- karta Šablóna 1 až 9 ----- */
+.sablona h3{margin:0 0 12px;font-size:32px;line-height:1.15;color:var(--gold2);text-align:center}
+.mriezka{display:grid;grid-template-columns:120px repeat(9,minmax(0,1fr));gap:6px;align-items:stretch}
+.mriezka .roh{grid-row:1;grid-column:1}
+.mriezka .radH{grid-row:calc(var(--r) + 1);grid-column:1;display:flex;align-items:center;gap:6px;color:var(--muted);font-weight:700}
+.mriezka .radH svg{width:24px;height:24px;flex:none}
+.mriezka .stlpH{grid-row:1;grid-column:calc(var(--c) + 1);position:relative;padding:0;font-weight:800;font-size:26px}
+.mriezka .bunka{grid-row:calc(var(--r) + 1);grid-column:calc(var(--c) + 1);display:grid;place-items:center;min-height:56px;border-radius:10px;
+  background:rgba(255,255,255,.05);font:700 20px/1 var(--serif);cursor:pointer;white-space:nowrap}
+.mriezka .bunka.prazdna{color:var(--muted);font:16px system-ui,sans-serif;cursor:default}
+.mriezka .vybrany{background:rgba(243,180,83,.25);color:var(--gold2)}
+.mriezka .stlpH.vybrany{border-color:var(--gold)}
+.znackaVzoru{position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;font:800 18px/22px system-ui,sans-serif;text-align:center}
+.znackaVzoru.minus{background:var(--red);color:#2a0b07}
+.znackaVzoru.plus{background:var(--green);color:#0b2a12}
+.znackaVzoru.vRiadku{position:static;display:inline-block;flex:none}
+.legenda{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 18px;color:var(--muted);margin:12px 0 0}
+.legenda span{display:inline-flex;align-items:center;gap:6px}
+@media (max-width:719px){
+  /* na úzkej obrazovke sú riadky a stĺpce vymenené: riadok = cifra, stĺpec = rád */
+  .mriezka{grid-template-columns:60px repeat(4,minmax(0,1fr))}
+  .mriezka .radH{grid-row:1;grid-column:calc(var(--r) + 1);justify-content:center}
+  .mriezka .radH .nazovPlny{display:none}
+  .mriezka .stlpH{grid-row:calc(var(--c) + 1);grid-column:1}
+  .mriezka .bunka{grid-row:calc(var(--c) + 1);grid-column:calc(var(--r) + 1);font-size:17px}
+}
+@media (min-width:720px){.mriezka .radH .skratka{display:none}}
+.vzorDetail{margin-top:18px;padding:14px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid var(--line);min-height:120px}
+.vzorHlavicka{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:800;color:var(--gold2);margin-bottom:12px;text-align:center}
+.vzorCislo{font-size:34px}
+.vzorRiadok{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;justify-content:center}
+.vzorPopis{display:inline-flex;align-items:center;gap:6px;min-width:96px;color:var(--muted);font-weight:700}
+.vzorPopis svg{width:24px;height:24px}
+.vzorRiadok .kamene{min-width:128px;justify-content:flex-start}
+.vymena{display:flex;justify-content:center;gap:10px;margin:6px 0;color:var(--muted);font-size:20px}
+.vymena span{padding:0 8px;border-radius:10px;border:1px dashed var(--line);font-family:var(--serif);font-weight:700}
+
+/* ----- menu kariet: na telefóne sa zbalí za tlačidlo „Témy“ ----- */
+.menuKariet{display:none;width:100%;margin-bottom:12px;justify-content:space-between;text-align:left}
+.menuKariet .aktualnaKarta{color:var(--gold2);font-weight:700}
+@media (max-width:719px){
+  .menuKariet{display:flex}
+  .karty:not(.otvorene){display:none}
+}
+@media (min-width:720px){.karty{grid-template-columns:repeat(auto-fill,minmax(118px,1fr))}}
+.rimkoStlpec{display:flex;flex-direction:column;align-items:center;gap:8px;flex:none}
+.reproduktor{width:56px;padding:0}
+
+/* ----- klávesnica rímskych znakov ----- */
+.zapisVstup{min-height:84px;display:flex;align-items:center;justify-content:center;padding:8px 14px;margin:0 auto 14px;border-radius:18px;
+  background:#fdf8ec;color:var(--kamenText);font:700 46px/1.1 var(--serif);letter-spacing:.04em;max-width:560px;word-break:break-all;text-align:center}
+.zapisVstup.prazdny{color:#a59f92}
+.klavesnica{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-bottom:12px}
+.klavesnica .odpoved{width:64px;height:66px;font-size:40px}
+.skusit{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:12px;margin:6px 0 14px}
+.skusit button{font-family:var(--serif);font-weight:700}
+.scenaStred{display:flex;flex-direction:column;align-items:center;gap:14px;min-height:200px}
+.scenaStred > *{max-width:100%}
+.skupinyCitania{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:4px}
+.skupinyCitania.delene{gap:12px}
+.skupinaCit{display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px;border-radius:14px;border:2px dashed transparent}
+.skupinyCitania.delene .skupinaCit{border-color:rgba(160,180,230,.45)}
+.skupinaCit .kamene{gap:4px;flex-wrap:nowrap}
+.vDvojici .kamen{outline:4px solid var(--gold2);outline-offset:2px}
+.hodnotaSk{display:inline-block;font-weight:800;font-size:26px;color:var(--gold2)}
+
+/* ----- hra Postav číslo a kvíz ----- */
+.hraStav{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--muted);font-weight:700;margin-bottom:8px}
+.hviezdy{display:inline-block;color:var(--gold2);font-size:26px;font-weight:800}
+.zadanie{text-align:center;margin:4px 0 12px}
+.zadanie .velkeCislo{font-size:64px}
+.napoveda{min-height:40px;text-align:center;font-weight:800;color:var(--gold2);margin:8px 0}
+.akcie{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:12px}
+.pohar{display:block;width:120px;height:120px;margin:0 auto 8px}
+.konfety{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:50}
+.riesenie{margin-top:18px;padding-top:12px;border-top:2px dashed var(--line)}
+.kvizOtazka{font-size:28px;font-weight:800;text-align:center;margin:6px 0 12px}
+.kvizZobraz{display:flex;justify-content:center;margin-bottom:8px}
+.kvizZobraz .cifernik{width:210px}
+.kvizZle{flex-direction:column;align-items:center;gap:10px}
+.moznosti{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:460px;margin:14px auto 0}
+.moznosti button{min-height:64px;font-size:28px;position:relative;padding:6px 8px;word-break:break-all}
+.moznosti button.rimske{font-family:var(--serif)}
+.moznosti .ok{outline:4px solid var(--green)}
+.moznosti .zle{opacity:.55}
+.moznosti button:disabled{opacity:1}
+.moznosti button.zle:disabled{opacity:.55}
+.moznosti .znacka{position:absolute;right:-8px;top:-10px;min-width:32px;height:32px;border-radius:16px;font:800 20px/32px system-ui,sans-serif}
+.moznosti .ok .znacka{background:var(--green);color:#0b2a12}
+.moznosti .zle .znacka{background:var(--red);color:#2a0b07}
+
+/* ----- karta Rímske hodiny ----- */
+.rezimy{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-bottom:14px}
+.cifernikObal{width:min(100%,380px);margin:0 auto;touch-action:none}
+.cifernik{display:block;width:100%;height:auto}
+.cifernik text{font-family:var(--serif);font-weight:700;fill:#3a3022}
+.cifernik .cislicaH{cursor:pointer;outline:none}
+.cifernik .cislicaH circle{fill:transparent}
+.cifernik .cislicaH:hover circle,.cifernik .cislicaH:focus-visible circle{fill:rgba(243,180,83,.25);stroke:#b07a1f;stroke-width:3}
+.cifernik .cislicaH.vybrana circle{fill:rgba(243,180,83,.45)}
+.cifernik .rucicka{cursor:grab;outline:none}
+.cifernik .rucicka:focus-visible path{stroke:#d9772f}
+.vysledokHodin{text-align:center;font-size:36px;font-weight:800;color:var(--gold2);min-height:56px;margin-top:8px}
+.poznamka{color:var(--muted);text-align:center;margin:12px 0 0}
+
+/* ----- karta Kde ich nájdeme ----- */
+.miesta{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:8px}
+.miesto{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--line);text-align:center}
+.miesto svg{width:72px;height:72px}
+.nastroj{margin-top:14px;padding:14px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid var(--line);text-align:center}
+.nastroj h3{margin:0 0 10px;font-size:24px;color:var(--gold2)}
+.nastroj label{display:block;margin-bottom:8px;color:var(--muted)}
+.nastroj input{font:inherit;font-size:32px;font-weight:800;width:150px;min-height:56px;text-align:center;border-radius:14px;border:2px solid var(--line);background:#0b0f1c;color:var(--text)}
+.vysledokNastroja{font-size:30px;font-weight:800;color:var(--gold2);min-height:44px;margin-top:10px}
+.vysledokNastroja .rimske{font-family:var(--serif)}
+.poznamkaBodka{margin-top:14px;padding:12px 14px;border-radius:14px;border:2px dashed var(--gold);color:var(--gold2)}
+
+/* ----- karta Časté chyby ----- */
+.vyberChyby{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-bottom:14px}
+.vyberChyby button{font-family:var(--serif);font-weight:700}
+
+/* ----- karta Ťaháčik na tlač (náhľad je zmenšený list A4) ----- */
+.nahladListu{position:relative;width:100%;overflow:hidden;margin:14px 0 0;border-radius:6px;background:#fff}
+.list{position:absolute;left:0;top:0;width:186mm;padding:0;background:#fff;color:#000;font:12.5pt/1.35 Georgia,"Times New Roman",serif;transform-origin:top left}
+.list h2{font-size:21pt;margin:0 0 3mm;text-align:center}
+.list h3{font-size:14.5pt;margin:4mm 0 2mm;border-bottom:1px solid #000}
+.list p{margin:0 0 2mm}
+.listStlpce{display:grid;grid-template-columns:1fr 1.25fr;gap:6mm}
+.znakyTlac{display:flex;gap:1.5mm;flex-wrap:wrap}
+.znakTlac{width:12.5mm;text-align:center;border:1.5px solid #000;border-radius:1mm;padding:.8mm 0;font-size:11pt}
+.znakTlac.p{border-style:dashed}
+.znakTlac b{display:block;font-size:19pt}
+.legendaTlac{font-size:10.5pt}
+.list table{border-collapse:collapse;width:100%}
+.list td,.list th{border:1px solid #000;padding:1.2mm .8mm;text-align:center;font-size:12pt}
+.list th{font-weight:700}
+.list ol{margin:0;padding-left:5mm}
+.list li{margin-bottom:2.5mm}
+.list .pr{display:block;font-weight:700}
+@media print{
+  @page{size:A4 portrait;margin:12mm}
+  html,body{background:#fff!important;color:#000}
+  .wrap{max-width:none;padding:0}
+  .wrap > header,#karty,.menuKariet,footer,#testy,.karta:not(#karta-tlac),.konfety{display:none!important}
+  #karta-tlac,#karta-tlac[hidden]{display:block!important;background:none;border:0;box-shadow:none;padding:0}
+  #karta-tlac > :not(.nahladListu){display:none!important}
+  .nahladListu{height:auto!important;overflow:visible;margin:0}
+  .list{position:static;transform:none!important}
+}
+
+/* ----- výsledky testov (?test) ----- */
+#testy{white-space:pre-wrap;font:15px/1.4 ui-monospace,Consolas,monospace;background:#0b1020;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo" id="logo" aria-hidden="true"></div>
+    <div><h1 id="titul"></h1><p class="sub" id="podtitul"></p></div>
+  </header>
+  <nav class="karty" id="karty" role="tablist"></nav>
+  <main id="obsah"></main>
+  <footer id="pata"></footer>
+</div>
+<noscript><p style="text-align:center">Animácia potrebuje zapnutý JavaScript.</p></noscript>
+
+<script>
+'use strict';
+const T = TEXTY;
+
+/* =====================================================================
+   NASTAVENIA
+   ===================================================================== */
+const NASTAVENIE = {
+  urovne: [39, 100, 1000, 3999],   // maximá úrovní Malý, Stredný, Veľký, Majster
+  // maximum úrovne – najväčšie číslo, ktoré rozhranie práve ponúkne
+  get maximum() { return this.urovne[STAV.uroven]; },
+  trvaniePrechodu: 400    // dĺžka prechodu medzi krokmi v ms pri rýchlosti 1×
+};
+const STAV = { rychlost: 1, karta: null, vynutPohyb: false, uroven: 0 };
+const PORADIE_KARIET = ['znaky', 'palice', 'lcdm', 'pravidla', 'sablona', 'prevod',
+  'citanie', 'chyby', 'hodiny', 'kde', 'postav', 'kviz', 'tlac'];
+
+/* =====================================================================
+   JADRO – rímske čísla (vie celý rozsah 1 až 3999)
+   ===================================================================== */
+const HODNOTY = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+// znaky pre jednotlivé rády: [jedna, päť, desať] – jednotky, desiatky, stovky, tisíce
+const ZNAKY_RADOV = [['I', 'V', 'X'], ['X', 'L', 'C'], ['C', 'D', 'M'], ['M', '', '']];
+// vzor zápisu cifier 1 až 9: a = „jedna“, b = „päť“, c = „desať“ daného rádu
+const VZOR = ['', 'a', 'aa', 'aaa', 'ab', 'b', 'ba', 'baa', 'baaa', 'ac'];
+
+function overCislo(n) {
+  if (!Number.isInteger(n) || n < 1 || n > 3999) throw new RangeError('Číslo musí byť celé od 1 do 3999: ' + n);
+}
+// zápis jednej cifry v danom ráde (0 = jednotky, 1 = desiatky, …)
+function zapisRadu(cifra, rad) {
+  const [a, b, c] = ZNAKY_RADOV[rad];
+  return VZOR[cifra].replace(/[abc]/g, z => ({ a, b, c })[z]);
+}
+function toRoman(n) {
+  overCislo(n);
+  let s = '';
+  for (let rad = 3; rad >= 0; rad--) s += zapisRadu(Math.floor(n / 10 ** rad) % 10, rad);
+  return s;
+}
+// rozklad na rády bez nulových rádov: 26 → [20, 6], 30 → [30]
+function decompose(n) {
+  overCislo(n);
+  const rady = [];
+  for (let rad = 3; rad >= 0; rad--) {
+    const c = Math.floor(n / 10 ** rad) % 10;
+    if (c) rady.push(c * 10 ** rad);
+  }
+  return rady;
+}
+// informácie o jednom ráde, napr. 9 → {rad 0, cifra 9, zapis 'IX', odcitanie true}
+function infoRadu(h) {
+  const rad = String(h).length - 1;
+  const cifra = h / 10 ** rad;
+  const zapis = zapisRadu(cifra, rad);
+  return { h, rad, cifra, zapis, hodnoty: [...zapis].map(z => HODNOTY[z]), odcitanie: cifra === 4 || cifra === 9 };
+}
+// krátky výpočet pod dlaždicami: „5 − 1 = 4“, „5 + 1 = 6“; pre jeden znak prázdny
+function vypocet(h) {
+  const r = infoRadu(h);
+  if (r.odcitanie) return `${r.hodnoty[1]} − ${r.hodnoty[0]} = ${h}`;
+  if (r.hodnoty.length > 1) return r.hodnoty.join(' + ') + ' = ' + h;
+  return '';
+}
+// šablóna: zápis jednotiek preložený do iného rádu (I→X→C→M, V→L→D, X→C→M)
+function vymenZnaky(zapisJednotiek, rad) {
+  const [a, b, c] = ZNAKY_RADOV[rad];
+  return zapisJednotiek.replace(/[IVX]/g, z => ({ I: a, V: b, X: c })[z]);
+}
+// hodnoty znakov so znamienkom: menšia pred väčšou je záporná (napr. IV → [−1, 5])
+function znamienkaZapisu(zapis) {
+  return [...zapis].map((z, j) => (HODNOTY[z] < (HODNOTY[zapis[j + 1]] || 0) ? -HODNOTY[z] : HODNOTY[z]));
+}
+
+/* ----- úrovne – zdieľané všetkými kartami ----- */
+const posluchaciUrovne = new Set();
+function nastavUroven(i) {
+  STAV.uroven = Math.max(0, Math.min(NASTAVENIE.urovne.length - 1, i));
+  for (const f of posluchaciUrovne) f(STAV.uroven);
+}
+// koliesko počítadla: pridá alebo uberie jednu jednotku rádu a oreže na 1 až maximum
+function posunKoliesko(n, rad, smer, max) {
+  return Math.max(1, Math.min(max, n + smer * 10 ** rad));
+}
+
+/* ----- čítanie rímskych čísel ----- */
+// šesť povolených dvojíc „menšia pred väčšou“
+const DVOJICE = ['IV', 'IX', 'XL', 'XC', 'CD', 'CM'];
+// zoznam častých chýb (karta „Časté chyby“); opravu ponúkame len pre ne
+const CASTE_CHYBY = ['IIII', 'VIIII', 'XXXX', 'IC', 'IL', 'MIM'];
+// zľava doprava: povolená dvojica je jedna skupina, inak jeden znak (M | CM | XC | IV)
+function skupinyZapisu(s) {
+  const g = [];
+  for (let i = 0; i < s.length;) {
+    if (DVOJICE.includes(s.slice(i, i + 2))) { g.push(s.slice(i, i + 2)); i += 2; } else { g.push(s[i]); i++; }
+  }
+  return g;
+}
+function hodnotaSkupiny(g) { return g.length === 2 ? HODNOTY[g[1]] - HODNOTY[g[0]] : HODNOTY[g]; }
+// čítanie zľava doprava, menšia pred väčšou sa odčíta – aj pri nesprávnom zápise (čo sme asi chceli)
+function citajZlava(s) { return znamienkaZapisu(s).reduce((a, b) => a + b, 0); }
+// ktoré pravidlá z karty „Päť pravidiel“ zápis porušuje (2, 3, 5)
+function porusenePravidla(s) {
+  const p = new Set();
+  if (/([IVXLCDM])\1\1\1/.test(s)) p.add(2);
+  if (/VV|LL|DD/.test(s)) p.add(3);
+  for (let i = 0; i + 1 < s.length; i++) {
+    if (HODNOTY[s[i]] >= HODNOTY[s[i + 1]]) continue;
+    if (!DVOJICE.includes(s[i] + s[i + 1])) p.add(5);                       // IC, IL, XM, VX …
+    else if (i > 0 && HODNOTY[s[i - 1]] <= HODNOTY[s[i]]) p.add(5);          // IIX: odčítajú sa dva znaky
+  }
+  return [...p].sort();
+}
+// fromRoman: {ok: true, hodnota} alebo {ok: false, chyba, pravidlo, sprava, oprava?}
+function fromRoman(text) {
+  const s = String(text == null ? '' : text).toUpperCase().replace(/\s+/g, '');
+  if (!s) return { ok: false, text: s, chyba: 'prazdne', pravidlo: null, sprava: T.citanie.nepise };
+  if (/[^IVXLCDM]/.test(s)) return { ok: false, text: s, chyba: 'znaky', pravidlo: null, sprava: T.citanie.nepise };
+  const n = citajZlava(s);
+  if (n >= 1 && n <= 3999 && toRoman(n) === s) return { ok: true, text: s, hodnota: n };
+  const p = porusenePravidla(s);
+  const vysledok = p.length === 1
+    ? { ok: false, text: s, chyba: 'pravidlo', pravidlo: p[0], sprava: null }
+    : { ok: false, text: s, chyba: 'nepise', pravidlo: null, sprava: T.citanie.nepise };
+  if (CASTE_CHYBY.includes(s)) { vysledok.zamer = n; vysledok.oprava = toRoman(n); }
+  return vysledok;
+}
+// storočie: zaokrúhlenie hore z roku / 100 (rok 2000 je ešte 20. storočie)
+function storocie(rok) { return Math.ceil(rok / 100); }
+// uhol hodinovej ručičky v stupňoch (12 hore = 0°)
+function hodinyUhol(hh) { return (hh % 12) * 30; }
+
+/* =====================================================================
+   POMOCNÉ FUNKCIE
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const fmt = (s, o) => s.replace(/\{(\w+)\}/g, (m, k) => (k in o ? o[k] : m));
+const fmtDes = v => String(v).replace('.', ',');
+// vytvorenie prvku: h('div', {class: 'x', onclick: f}, deti…)
+function h(tag, vlastnosti, ...deti) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(vlastnosti || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'html') e.innerHTML = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const d of deti.flat()) if (d != null && d !== false) e.append(d.nodeType ? d : document.createTextNode(String(d)));
+  return e;
+}
+function tvarSlova(n, [jeden, dva, vela]) { return n === 1 ? jeden : n >= 2 && n <= 4 ? dva : vela; }
+function zoznamSlovami(cisla) {
+  return cisla.length < 2 ? String(cisla[0]) : cisla.slice(0, -1).join(', ') + T.prevod.a + cisla[cisla.length - 1];
+}
+
+/* =====================================================================
+   ANIMÁCIE – requestAnimationFrame, časovanie podľa skutočného času
+   ===================================================================== */
+const ease = {
+  inOut: p => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2),
+  out: p => 1 - (1 - p) ** 3,
+  // jemný odskok na konci
+  back: p => { const c1 = 1.5, c3 = c1 + 1; return 1 + c3 * (p - 1) ** 3 + c1 * (p - 1) ** 2; }
+};
+const BEZIACE = new Set();
+let pocetSpustenychAnimacii = 0;
+function smieHybat() {
+  if (STAV.vynutPohyb) return true;
+  return !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+const trvanie = () => NASTAVENIE.trvaniePrechodu / STAV.rychlost;
+
+// tween(ms, krok(p 0..1), hotovo) – vráti objekt s dokonci()
+function tween(ms, krok, hotovo) {
+  pocetSpustenychAnimacii++;
+  const a = { hotova: false, t0: null };
+  a.dokonci = () => {
+    if (a.hotova) return;
+    a.hotova = true; BEZIACE.delete(a);
+    krok(1); if (hotovo) hotovo();
+  };
+  BEZIACE.add(a);
+  krok(0);
+  const tik = cas => {
+    if (a.hotova) return;
+    if (a.t0 === null) a.t0 = cas;
+    const p = Math.min(1, (cas - a.t0) / ms);
+    if (p >= 1) a.dokonci(); else { krok(p); requestAnimationFrame(tik); }
+  };
+  requestAnimationFrame(tik);
+  return a;
+}
+function dokonciVsetky() { for (const a of [...BEZIACE]) a.dokonci(); }
+
+// dočasne mení style prvku; na konci vráti presne pôvodný atribút style
+function animujStyl(e, ms, fn) {
+  const povodny = e.getAttribute('style');
+  return tween(ms, p => {
+    const s = fn(p);
+    e.style.transform = s.transform || '';
+    if (s.opacity != null) e.style.opacity = s.opacity;
+  }, () => obnovStyl(e, povodny));
+}
+// Chromium zapisuje atribút style lenivo – najprv ho prečítame, až potom odstránime
+function obnovStyl(e, povodny) {
+  e.getAttribute('style');
+  if (povodny === null) e.removeAttribute('style'); else e.setAttribute('style', povodny);
+}
+function odskok(e) {
+  if (!smieHybat()) return;
+  animujStyl(e, 380 / STAV.rychlost, p => ({ transform: `translateY(${(-8 * Math.sin(Math.PI * p)).toFixed(2)}px)` }));
+}
+
+/* Prekreslenie scény: nový obsah sa vždy postaví celý (čistá funkcia kroku).
+   Ak sa animuje, prvky s rovnakým data-k sa plynulo presunú z pôvodného miesta
+   a nové prvky jemne vyskočia. data-k dávame len „listom“ (nie vnoreným prvkom). */
+function prekresli(scena, novy, animovat) {
+  dokonciVsetky();
+  const pohyb = animovat && smieHybat() && scena.offsetParent !== null;
+  const stare = new Map();
+  if (pohyb) for (const e of $$('[data-k]', scena)) stare.set(e.dataset.k, e.getBoundingClientRect());
+  scena.replaceChildren(novy);
+  if (!pohyb) return;
+  const ms = trvanie();
+  for (const e of $$('[data-k]', scena)) {
+    const r1 = e.getBoundingClientRect(), r0 = stare.get(e.dataset.k);
+    if (r0) {
+      const dx = r0.left - r1.left, dy = r0.top - r1.top;
+      if (Math.abs(dx) + Math.abs(dy) < 0.5) continue;
+      animujStyl(e, ms, p => { const q = 1 - ease.inOut(p); return { transform: `translate(${(dx * q).toFixed(2)}px,${(dy * q).toFixed(2)}px)` }; });
+    } else {
+      animujStyl(e, ms, p => ({ transform: `scale(${(0.3 + 0.7 * ease.back(p)).toFixed(3)})`, opacity: Math.min(1, p * 2.5).toFixed(3) }));
+    }
+  }
+}
+
+/* =====================================================================
+   OBRÁZKY (SVG) – všetko nakreslené tu
+   ===================================================================== */
+const IKONY = {
+  spat: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 4 L6 12 L17 20 Z" fill="currentColor"/></svg>',
+  dalej: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 L18 12 L7 20 Z" fill="currentColor"/></svg>',
+  prehraj: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 L19 12 L7 20 Z" fill="currentColor"/></svg>',
+  pauza: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="4.5" height="16" rx="1.5" fill="currentColor"/><rect x="13.5" y="4" width="4.5" height="16" rx="1.5" fill="currentColor"/></svg>',
+  znova: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13a7 7 0 1 1-2.2-6.1" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/><path d="M19.5 3.5v5.5h-5.5" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  kocka: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h14l-2-4H8z" fill="#cfe6ff"/><rect x="4" y="8" width="14" height="13" rx="2" fill="#4f8fd8"/><path d="M4 8l4-4h12l-2 4z" fill="#9fd0ff"/><path d="M18 8l2-4v13l-2 4z" fill="#2f6db5"/></svg>',
+  tyc: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="1" width="8" height="22" rx="2" fill="#4fae62"/><g stroke="#0f3a1a" stroke-width="1.2"><path d="M8 5.4h8M8 9.8h8M8 14.2h8M8 18.6h8"/></g></svg>',
+  kocky: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="15" width="12" height="12" rx="2" fill="#4f8fd8"/><rect x="17" y="15" width="12" height="12" rx="2" fill="#6fa8ea"/><rect x="10" y="3" width="12" height="12" rx="2" fill="#9fd0ff"/><circle cx="16" cy="9" r="1.8" fill="#1a3a66"/><circle cx="9" cy="21" r="1.8" fill="#fff"/><circle cx="23" cy="21" r="1.8" fill="#fff"/></svg>',
+  // korytnačka (pomaly) a zajac (rýchlo)
+  korytnacka: '<svg viewBox="0 0 52 40" role="img" aria-label="{a}"><ellipse cx="22" cy="30" rx="16" ry="3" fill="rgba(0,0,0,.3)"/><rect x="10" y="24" width="6" height="8" rx="3" fill="#7fbf6a"/><rect x="28" y="24" width="6" height="8" rx="3" fill="#7fbf6a"/><circle cx="41" cy="20" r="6" fill="#8fd07a"/><circle cx="43" cy="18.5" r="1.4" fill="#10220c"/><path d="M6 26 Q8 8 22 8 Q36 8 38 26 Z" fill="#3f8f4a"/><path d="M12 24 L17 14 L27 14 L32 24 M17 14 L22 9 L27 14" fill="none" stroke="#a6dd8c" stroke-width="2"/><path d="M6 25 L2 27" stroke="#7fbf6a" stroke-width="3" stroke-linecap="round"/></svg>',
+  zajac: '<svg viewBox="0 0 52 40" role="img" aria-label="{a}"><ellipse cx="24" cy="35" rx="18" ry="3" fill="rgba(0,0,0,.3)"/><ellipse cx="21" cy="26" rx="13" ry="8.5" fill="#d8cdbd"/><circle cx="8" cy="23" r="4" fill="#fff"/><circle cx="35" cy="18" r="7" fill="#e4dacb"/><ellipse cx="33" cy="6" rx="2.8" ry="8" fill="#e4dacb" transform="rotate(-18 33 6)"/><ellipse cx="38.5" cy="6.5" rx="2.8" ry="8" fill="#e4dacb" transform="rotate(12 38.5 6.5)"/><ellipse cx="38.5" cy="6.5" rx="1.2" ry="5.5" fill="#f2a9a0" transform="rotate(12 38.5 6.5)"/><circle cx="37.5" cy="17" r="1.5" fill="#1d150c"/><circle cx="41.5" cy="20" r="1.3" fill="#e88"/><path d="M26 32 L32 34 M14 32 L8 34" stroke="#c4b8a6" stroke-width="3.5" stroke-linecap="round"/></svg>',
+  kocka6: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" fill="#fdf8ec" stroke="#3a3022" stroke-width="1.5"/><g fill="#3a3022"><circle cx="8" cy="8" r="1.7"/><circle cx="16" cy="8" r="1.7"/><circle cx="8" cy="12" r="1.7"/><circle cx="16" cy="12" r="1.7"/><circle cx="8" cy="16" r="1.7"/><circle cx="16" cy="16" r="1.7"/></g></svg>',
+  ziarovka: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-4 12.7V18h8v-3.3A7 7 0 0 0 12 2z" fill="#ffd88a"/><rect x="8.5" y="19" width="7" height="3" rx="1.2" fill="#a3adc6"/><path d="M10 11l2 2 2-2" stroke="#b07a1f" stroke-width="1.5" fill="none"/></svg>',
+  // stovka = štvorec 10 × 10, tisícka = veľká kocka
+  stvorec: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" fill="#b9a3ff"/><g stroke="#4a3a8a" stroke-width="1"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></g></svg>',
+  tisic: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l6-5h12l-6 5z" fill="#ffd88a"/><path d="M15 8l6-5v13l-6 5z" fill="#b07a1f"/><rect x="3" y="8" width="12" height="13" fill="#f3b453"/><g stroke="#7a4f12" stroke-width=".8" fill="none"><path d="M3 12.3h12M3 16.6h12M7 8v13M11 8v13"/></g></svg>',
+  sipka: '<svg viewBox="0 0 300 24" preserveAspectRatio="none" aria-hidden="true"><path d="M6 12 H282" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M272 3 L294 12 L272 21 Z" fill="currentColor"/></svg>',
+  reproduktor: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  tlac: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3" width="12" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><rect x="3" y="9" width="18" height="8" rx="2" fill="currentColor"/><rect x="7" y="14" width="10" height="7" rx="1" fill="#fff" stroke="currentColor" stroke-width="2"/></svg>',
+  pohar: '<svg viewBox="0 0 120 120" class="pohar" aria-hidden="true"><path d="M34 14h52v18c0 20-11 34-26 36-15-2-26-16-26-36z" fill="#f3b453" stroke="#b07a1f" stroke-width="3"/><path d="M34 22H18c0 16 8 26 20 28M86 22h16c0 16-8 26-20 28" fill="none" stroke="#b07a1f" stroke-width="5"/><rect x="54" y="66" width="12" height="18" fill="#d9a03a"/><rect x="38" y="84" width="44" height="12" rx="3" fill="#b07a1f"/><rect x="30" y="96" width="60" height="12" rx="3" fill="#8f826a"/><path d="M60 26l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z" fill="#fff6d8"/></svg>'
+};
+// malé obrázky pre kartu „Kde ich nájdeme“
+const OBRAZKY_KDE = {
+  hodiny: '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="32" fill="#f4eedf" stroke="#8f826a" stroke-width="4"/><g font-family="Georgia,serif" font-weight="700" font-size="11" fill="#3a3022" text-anchor="middle"><text x="36" y="17">XII</text><text x="59" y="40">III</text><text x="36" y="63">VI</text><text x="13" y="40">IX</text></g><path d="M36 36V20M36 36l10 6" stroke="#3a3022" stroke-width="3" stroke-linecap="round"/></svg>',
+  kniha: '<svg viewBox="0 0 72 72" aria-hidden="true"><path d="M6 16c10-4 20-4 30 2v42c-10-6-20-6-30-2z" fill="#f4eedf" stroke="#8f826a" stroke-width="2"/><path d="M66 16c-10-4-20-4-30 2v42c10-6 20-6 30-2z" fill="#fffaf0" stroke="#8f826a" stroke-width="2"/><text x="51" y="36" font-family="Georgia,serif" font-weight="700" font-size="14" fill="#3a3022" text-anchor="middle">IV</text><path d="M12 28h18M12 34h18M12 40h14M42 44h18M42 50h14" stroke="#b9ad94" stroke-width="2"/></svg>',
+  storocie: '<svg viewBox="0 0 72 72" aria-hidden="true"><rect x="10" y="16" width="52" height="40" rx="4" fill="#f4eedf" stroke="#8f826a" stroke-width="2"/><circle cx="10" cy="36" r="6" fill="#d9c9a5" stroke="#8f826a" stroke-width="2"/><circle cx="62" cy="36" r="6" fill="#d9c9a5" stroke="#8f826a" stroke-width="2"/><text x="36" y="42" font-family="Georgia,serif" font-weight="700" font-size="16" fill="#3a3022" text-anchor="middle">XXI.</text></svg>',
+  kral: '<svg viewBox="0 0 72 72" aria-hidden="true"><path d="M12 44l4-26 12 14 8-18 8 18 12-14 4 26z" fill="#f3b453" stroke="#b07a1f" stroke-width="2.5"/><rect x="12" y="44" width="48" height="10" rx="2" fill="#d9a03a" stroke="#b07a1f" stroke-width="2"/><circle cx="36" cy="49" r="3" fill="#ff7a6b"/><text x="36" y="68" font-family="Georgia,serif" font-weight="700" font-size="12" fill="#e2e8f5" text-anchor="middle">IV.</text></svg>',
+  budova: '<svg viewBox="0 0 72 72" aria-hidden="true"><path d="M6 24L36 6l30 18z" fill="#e6dcc6" stroke="#8f826a" stroke-width="2"/><rect x="8" y="24" width="56" height="10" fill="#f4eedf" stroke="#8f826a" stroke-width="2"/><text x="36" y="32.5" font-family="Georgia,serif" font-weight="700" font-size="8.5" fill="#3a3022" text-anchor="middle">MDCCCXX</text><g fill="#e6dcc6" stroke="#8f826a" stroke-width="1.5"><rect x="12" y="36" width="7" height="26"/><rect x="26" y="36" width="7" height="26"/><rect x="40" y="36" width="7" height="26"/><rect x="54" y="36" width="7" height="26"/></g><rect x="6" y="62" width="60" height="6" fill="#cbbfa6" stroke="#8f826a" stroke-width="1.5"/></svg>'
+};
+// ikony kariet
+const IKONY_KARIET = {
+  znaky: '<svg viewBox="0 0 52 34" aria-hidden="true"><g font-family="Georgia,serif" font-weight="700" font-size="14" text-anchor="middle" fill="#3a3022"><rect x="1" y="7" width="15" height="20" rx="4" fill="#e6dcc6"/><text x="8.5" y="22">I</text><rect x="18.5" y="7" width="15" height="20" rx="4" fill="#e6dcc6"/><text x="26" y="22">V</text><rect x="36" y="7" width="15" height="20" rx="4" fill="#e6dcc6"/><text x="43.5" y="22">X</text></g></svg>',
+  palice: '<svg viewBox="0 0 52 34" aria-hidden="true"><path d="M3 31 H13 V25 H21 V19 H29 V13 H37 V7 H49 V31 Z" fill="#e6dcc6"/><circle cx="43" cy="4" r="3.4" fill="#f5cfa6"/><path d="M39.5 2.5 Q43 -1 46.5 2.5" stroke="#5aa84e" stroke-width="2" fill="none"/></svg>',
+  lcdm: '<svg viewBox="0 0 52 34" aria-hidden="true"><g font-family="Georgia,serif" font-weight="700" text-anchor="middle" fill="#3a3022"><rect x="1" y="18" width="10" height="14" rx="3" fill="#e6dcc6"/><text x="6" y="29" font-size="9">L</text><rect x="13" y="14" width="11" height="18" rx="3" fill="#e6dcc6"/><text x="18.5" y="27" font-size="10">C</text><rect x="26" y="9" width="11" height="23" rx="3" fill="#e6dcc6"/><text x="31.5" y="25" font-size="11">D</text><rect x="39" y="3" width="12" height="29" rx="3" fill="#e6dcc6"/><text x="45" y="23" font-size="12">M</text></g></svg>',
+  pravidla: '<svg viewBox="0 0 52 34" aria-hidden="true"><rect x="10" y="2" width="32" height="30" rx="4" fill="#e6dcc6"/><path d="M15 10l3 3 5-6" stroke="#2f8f44" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M26 10h11M26 20h11M26 27h8" stroke="#8f826a" stroke-width="2.2" stroke-linecap="round"/><path d="M15 17l6 6M21 17l-6 6" stroke="#c4473a" stroke-width="2.6" stroke-linecap="round"/></svg>',
+  sablona: '<svg viewBox="0 0 52 34" aria-hidden="true"><g fill="#e6dcc6"><rect x="6" y="2" width="12" height="9" rx="2"/><rect x="20" y="2" width="12" height="9" rx="2"/><rect x="34" y="2" width="12" height="9" rx="2"/><rect x="6" y="13" width="12" height="9" rx="2"/><rect x="20" y="13" width="12" height="9" rx="2" fill="#f3b453"/><rect x="34" y="13" width="12" height="9" rx="2"/><rect x="6" y="24" width="12" height="9" rx="2"/><rect x="20" y="24" width="12" height="9" rx="2" fill="#f3b453"/><rect x="34" y="24" width="12" height="9" rx="2"/></g></svg>',
+  prevod: '<svg viewBox="0 0 52 34" aria-hidden="true"><rect x="2" y="5" width="6" height="24" rx="1.5" fill="#4fae62"/><rect x="10" y="21" width="8" height="8" rx="1.5" fill="#4f8fd8"/><path d="M21 17 H31 M27 12 L32 17 L27 22" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="34" y="6" width="16" height="22" rx="4" fill="#e6dcc6"/><text x="42" y="23" font-family="Georgia,serif" font-weight="700" font-size="15" text-anchor="middle" fill="#3a3022">X</text></svg>',
+  citanie: '<svg viewBox="0 0 52 34" aria-hidden="true"><rect x="2" y="6" width="30" height="22" rx="4" fill="#e6dcc6"/><text x="17" y="23" font-family="Georgia,serif" font-weight="700" font-size="13" text-anchor="middle" fill="#3a3022">XIV</text><circle cx="40" cy="14" r="8" fill="none" stroke="currentColor" stroke-width="3"/><path d="M45 20l5 6" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></svg>',
+  chyby: '<svg viewBox="0 0 52 34" aria-hidden="true"><text x="13" y="22" font-family="Georgia,serif" font-weight="700" font-size="12" text-anchor="middle" fill="#a3adc6">IIII</text><path d="M3 10l20 16M23 10L3 26" stroke="#ff7a6b" stroke-width="2.5"/><path d="M26 17h6M29 13l4 4-4 4" stroke="currentColor" stroke-width="2.4" fill="none"/><rect x="35" y="7" width="16" height="20" rx="4" fill="#e6dcc6"/><text x="43" y="22" font-family="Georgia,serif" font-weight="700" font-size="11" text-anchor="middle" fill="#3a3022">IV</text></svg>',
+  hodiny: '<svg viewBox="0 0 52 34" aria-hidden="true"><circle cx="26" cy="17" r="15" fill="#f4eedf" stroke="#8f826a" stroke-width="2.5"/><g font-family="Georgia,serif" font-weight="700" font-size="6" fill="#3a3022" text-anchor="middle"><text x="26" y="8.5">XII</text><text x="37" y="19">III</text><text x="26" y="30">VI</text><text x="15" y="19">IX</text></g><path d="M26 17V9M26 17l6 3" stroke="#3a3022" stroke-width="2" stroke-linecap="round"/></svg>',
+  kde: '<svg viewBox="0 0 52 34" aria-hidden="true"><path d="M8 13L26 3l18 10z" fill="#e6dcc6"/><rect x="9" y="13" width="34" height="6" fill="#f4eedf"/><text x="26" y="18" font-family="Georgia,serif" font-weight="700" font-size="5.5" fill="#3a3022" text-anchor="middle">MDCCCXX</text><g fill="#e6dcc6"><rect x="12" y="20" width="4" height="11"/><rect x="20" y="20" width="4" height="11"/><rect x="28" y="20" width="4" height="11"/><rect x="36" y="20" width="4" height="11"/></g></svg>',
+  postav: '<svg viewBox="0 0 52 34" aria-hidden="true"><g font-family="Georgia,serif" font-weight="700" font-size="11" text-anchor="middle" fill="#3a3022"><rect x="2" y="16" width="14" height="16" rx="3" fill="#e6dcc6"/><text x="9" y="28">X</text><rect x="19" y="16" width="14" height="16" rx="3" fill="#e6dcc6"/><text x="26" y="28">V</text><rect x="36" y="16" width="14" height="16" rx="3" fill="#e6dcc6"/><text x="43" y="28">I</text></g><path d="M26 2l2.4 4.8 5.3.8-3.8 3.7.9 5.2-4.8-2.5-4.8 2.5.9-5.2-3.8-3.7 5.3-.8z" fill="#f3b453"/></svg>',
+  kviz: '<svg viewBox="0 0 52 34" aria-hidden="true"><rect x="6" y="3" width="40" height="28" rx="6" fill="#e6dcc6"/><text x="26" y="25" font-family="Georgia,serif" font-weight="700" font-size="22" text-anchor="middle" fill="#3a3022">?</text><path d="M44 2l1.8 3.6 4 .6-2.9 2.8.7 3.9-3.6-1.9-3.6 1.9.7-3.9-2.9-2.8 4-.6z" fill="#f3b453"/></svg>',
+  tlac: '<svg viewBox="0 0 52 34" aria-hidden="true"><rect x="16" y="2" width="20" height="10" rx="1.5" fill="#fff"/><rect x="8" y="10" width="36" height="14" rx="3" fill="#a3adc6"/><rect x="15" y="18" width="22" height="14" rx="1.5" fill="#fff"/><path d="M19 23h14M19 27h10" stroke="#3a3022" stroke-width="1.6"/></svg>'
+};
+// pomôcky na zapamätanie: I = palica (prst), V = dlaň, X = dve V proti sebe
+const OBRAZKY = {
+  I: '<svg viewBox="0 0 80 80" aria-hidden="true"><ellipse cx="40" cy="74" rx="14" ry="3" fill="rgba(0,0,0,.18)"/><rect x="33" y="8" width="14" height="64" rx="7" fill="#b07a45"/><rect x="36" y="12" width="4" height="54" rx="2" fill="#d39a5e"/><path d="M33 30 h14 M33 50 h14" stroke="#8a5a2e" stroke-width="2"/></svg>',
+  V: '<svg viewBox="0 0 80 80" aria-hidden="true"><g fill="#f5cfa6" stroke="#c9946a" stroke-width="1.5"><rect x="35" y="7" width="9" height="40" rx="4.5"/><rect x="44" y="5" width="9" height="42" rx="4.5"/><rect x="53" y="9" width="9" height="38" rx="4.5"/><rect x="62" y="16" width="8" height="32" rx="4"/><rect x="34" y="38" width="36" height="34" rx="12"/><rect x="11" y="34" width="10" height="34" rx="5" transform="rotate(-38 16 60)"/></g><path d="M9 33 L33 58 L39 9" fill="none" stroke="#d9772f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  X: '<svg viewBox="0 0 80 80" aria-hidden="true"><path d="M12 8 L40 40 L68 8" fill="none" stroke="#d9772f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 72 L40 40 L68 72" fill="none" stroke="#3f7fc4" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><text x="40" y="18" font-family="Georgia,serif" font-weight="700" font-size="13" text-anchor="middle" fill="#d9772f">V</text><text x="40" y="70" font-family="Georgia,serif" font-weight="700" font-size="13" text-anchor="middle" fill="#3f7fc4" transform="rotate(180 40 65.5)">V</text></svg>'
+};
+
+/* ----- maskot Rimko (vlastná postavička) ----- */
+function venecSVG() {
+  // vavrínové listy po oblúku nad hlavou, dve vetvičky
+  let s = '';
+  const cx = 60, cy = 58, R = 35;
+  for (const strana of [-1, 1]) {
+    for (let k = 0; k < 6; k++) {
+      const st = -90 + strana * (12 + k * 15);
+      const u = st * Math.PI / 180;
+      const x = (cx + R * Math.cos(u)).toFixed(1), y = (cy + R * Math.sin(u)).toFixed(1);
+      const rot = (st + 90 + strana * 28).toFixed(1);
+      s += `<ellipse cx="${x}" cy="${y}" rx="8.5" ry="4" fill="${k % 2 ? '#4f9e46' : '#76c463'}" transform="rotate(${rot} ${x} ${y})"/>`;
+    }
+  }
+  return s;
+}
+function rimkoSVG(lenHlava) {
+  const hlava = `
+    <circle cx="25" cy="62" r="7" fill="#f0c49a" stroke="#d9a878" stroke-width="2"/>
+    <circle cx="95" cy="62" r="7" fill="#f0c49a" stroke="#d9a878" stroke-width="2"/>
+    <circle cx="60" cy="60" r="34" fill="#f5cfa6" stroke="#d9a878" stroke-width="2"/>
+    <path d="M29 50 C32 32 48 25 60 25 C72 25 88 32 91 50 C81 41 71 38 60 38 C49 38 39 41 29 50Z" fill="#7a4a2a"/>
+    ${venecSVG()}
+    <circle cx="41" cy="71" r="6" fill="#f59a8a" opacity=".55"/><circle cx="79" cy="71" r="6" fill="#f59a8a" opacity=".55"/>`;
+  if (lenHlava) {
+    return `<svg viewBox="14 14 92 92" aria-hidden="true">${hlava}
+      <circle cx="47" cy="58" r="4.5" fill="#2a2018"/><circle cx="73" cy="58" r="4.5" fill="#2a2018"/>
+      <path d="M48 73 Q60 84 72 73" stroke="#7a3a2a" stroke-width="3.5" fill="none" stroke-linecap="round"/></svg>`;
+  }
+  return `<svg viewBox="0 0 120 132" class="rimkoSvg vyraz-premysla" role="img" aria-label="${T.rimko.premysla}">
+    <path d="M24 132 C26 104 42 95 60 95 C78 95 94 104 96 132 Z" fill="#f6f1e6" stroke="#cbbf9f" stroke-width="2"/>
+    <path d="M40 101 C56 109 70 119 82 132" stroke="#d9772f" stroke-width="7" fill="none" stroke-linecap="round"/>
+    ${hlava}
+    <g class="v-premysla">
+      <path d="M38 45 Q45 39 53 43" stroke="#5a3a22" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M68 47 Q75 45 82 47" stroke="#5a3a22" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="46" cy="57" r="5.5" fill="#fff"/><circle cx="48.5" cy="54.5" r="3" fill="#2a2018"/>
+      <circle cx="74" cy="57" r="5.5" fill="#fff"/><circle cx="76.5" cy="54.5" r="3" fill="#2a2018"/>
+      <path d="M51 77 Q59 82 69 75" stroke="#7a3a2a" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <circle cx="98" cy="30" r="3" fill="#ffd88a"/><circle cx="106" cy="20" r="4.5" fill="#ffd88a"/>
+    </g>
+    <g class="v-tesi">
+      <path d="M40 58 Q46 50 52 58" stroke="#2a2018" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <path d="M68 58 Q74 50 80 58" stroke="#2a2018" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <path d="M45 70 Q60 94 75 70 Z" fill="#7a2a22"/>
+      <path d="M52 81 Q60 88 68 81 Q60 77 52 81Z" fill="#f08a7a"/>
+      <path d="M32 108 L14 86" stroke="#f5cfa6" stroke-width="9" stroke-linecap="round"/>
+      <path d="M88 108 L106 86" stroke="#f5cfa6" stroke-width="9" stroke-linecap="round"/>
+      <circle cx="13" cy="84" r="6.5" fill="#f5cfa6" stroke="#d9a878" stroke-width="2"/>
+      <circle cx="107" cy="84" r="6.5" fill="#f5cfa6" stroke="#d9a878" stroke-width="2"/>
+    </g>
+    <g class="v-povzbudzuje">
+      <path d="M38 47 Q45 42 53 45" stroke="#5a3a22" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M67 45 Q75 42 82 47" stroke="#5a3a22" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="46" cy="58" r="4.8" fill="#2a2018"/><circle cx="47.6" cy="56.4" r="1.5" fill="#fff"/>
+      <circle cx="74" cy="58" r="4.8" fill="#2a2018"/><circle cx="75.6" cy="56.4" r="1.5" fill="#fff"/>
+      <path d="M46 72 Q60 86 74 72" stroke="#7a3a2a" stroke-width="3.8" fill="none" stroke-linecap="round"/>
+      <path d="M90 112 L100 98" stroke="#f5cfa6" stroke-width="9" stroke-linecap="round"/>
+      <rect x="94" y="90" width="17" height="15" rx="5" fill="#f5cfa6" stroke="#d9a878" stroke-width="2"/>
+      <rect x="98" y="76" width="7" height="17" rx="3.5" fill="#f5cfa6" stroke="#d9a878" stroke-width="2"/>
+    </g>
+  </svg>`;
+}
+// Rimko s bublinou: povedz(text, výraz) – výrazy: premysla, tesi, povzbudzuje
+function vytvorRimka(miesto) {
+  const postava = h('div', { class: 'rimkoPostava', html: rimkoSVG(false) });
+  const bublina = h('div', { class: 'bublina', 'aria-live': 'polite' });
+  // reproduktor: zobrazí sa len vtedy, keď prehliadač má slovenský hlas
+  const repro = h('button', { type: 'button', class: 'reproduktor', 'aria-label': T.nahlas.tlacidlo, 'aria-pressed': 'false', hidden: true,
+    onclick: () => { NAHLAS.zapnute = !NAHLAS.zapnute; synchronizujNahlas(); if (NAHLAS.zapnute) precitaj(text); else zastavCitanie(); } },
+  h('span', { html: IKONY.reproduktor, style: 'display:contents' }));
+  NAHLAS.tlacidla.add(repro);
+  synchronizujNahlas();
+  miesto.append(h('div', { class: 'rimko' }, h('div', { class: 'rimkoStlpec' }, postava, repro), bublina));
+  const svg = postava.firstElementChild;
+  let text = '', vyraz = '';
+  return {
+    povedz(t, v = 'premysla', skok = true) {
+      text = t; vyraz = v;
+      bublina.textContent = t;
+      svg.setAttribute('class', 'rimkoSvg vyraz-' + v);
+      svg.setAttribute('aria-label', T.rimko[v]);
+      if (skok) odskok(postava);
+      if (NAHLAS.zapnute && miesto.offsetParent !== null) precitaj(t);
+    },
+    text: () => text,
+    vyraz: () => vyraz
+  };
+}
+
+/* ----- voliteľné čítanie nahlas cez vstavané speechSynthesis (predvolene vypnuté) ----- */
+const NAHLAS = { zapnute: false, hlas: null, tlacidla: new Set() };
+// slovenský hlas z daného syntetizátora, inak null; nikdy nevyhodí chybu
+function slovenskyHlas(ss) {
+  try {
+    if (!ss || typeof ss.getVoices !== 'function') return null;
+    return (ss.getVoices() || []).find(v => /^sk/i.test(String(v && v.lang))) || null;
+  } catch (_) { return null; }
+}
+function synchronizujNahlas() {
+  for (const b of NAHLAS.tlacidla) {
+    b.hidden = !NAHLAS.hlas;
+    b.setAttribute('aria-pressed', String(NAHLAS.zapnute && !!NAHLAS.hlas));
+  }
+}
+function obnovHlas() {
+  try { NAHLAS.hlas = slovenskyHlas(window.speechSynthesis); } catch (_) { NAHLAS.hlas = null; }
+  if (!NAHLAS.hlas) NAHLAS.zapnute = false;
+  synchronizujNahlas();
+}
+function precitaj(text) {
+  try {
+    if (!NAHLAS.zapnute || !NAHLAS.hlas || !text) return;
+    const u = new SpeechSynthesisUtterance(String(text).replace(/[✔✘★]/g, ''));
+    u.voice = NAHLAS.hlas; u.lang = NAHLAS.hlas.lang; u.rate = 0.9;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch (_) { /* tichý návrat */ }
+}
+function zastavCitanie() { try { window.speechSynthesis.cancel(); } catch (_) { /* tichý návrat */ } }
+
+/* ----- stavebné kamene scén ----- */
+// dlaždica so znakom; hodnota sa ukáže pod ňou (záporná = odoberáme)
+function kamenEl(z, { kluc, maly = false, hodnota = null, preskrtnuty = false } = {}) {
+  const obal = h('span', { class: 'kamenObal' + (maly ? ' maly' : '') + (preskrtnuty ? ' preskrtnuty' : ''), 'data-k': kluc });
+  obal.append(h('span', { class: 'kamen rimske' }, z));
+  if (hodnota != null) obal.append(h('span', { class: 'hodnota' + (String(hodnota).startsWith('−') ? ' minus' : '') }, hodnota));
+  if (preskrtnuty) obal.append(h('span', { class: 'krizik', 'aria-hidden': 'true' }, '✘'));
+  return obal;
+}
+// kocky po 5 v rade; posledných „ubrat“ kociek je vyznačených ako odobraté
+function kockyEl(n, { kluc = 'k', ubrat = 0 } = {}) {
+  const box = h('div', { class: 'kocky', 'aria-hidden': 'true' });
+  for (let start = 0; start < n; start += 5) {
+    const riadok = h('div', { class: 'riadokKociek' });
+    for (let j = start; j < Math.min(n, start + 5); j++) {
+      riadok.append(h('span', { class: 'kocka' + (j >= n - ubrat ? ' ubrata' : ''), 'data-k': kluc + j }));
+    }
+    box.append(riadok);
+  }
+  return box;
+}
+// tyč desiatky = 10 dielikov
+function tycEl(kluc) {
+  const t = h('span', { class: 'tyc', 'data-k': kluc });
+  for (let j = 0; j < 10; j++) t.append(h('i'));
+  return t;
+}
+// názorné bloky pre jeden rád: desiatky = tyče, jednotky = kocky
+function blokyEl(hv) {
+  const r = infoRadu(hv);
+  if (r.rad === 0) return kockyEl(r.cifra, { kluc: `b${hv}-` });
+  if (r.rad === 1) {
+    const box = h('div', { class: 'tyce', 'aria-hidden': 'true' });
+    for (let j = 0; j < r.cifra; j++) box.append(tycEl(`b${hv}-${j}`));
+    return box;
+  }
+  // stovky = štvorce 10 × 10, tisíce = veľké kocky; po 5 v rade
+  const box = h('div', { class: r.rad === 2 ? 'stvorce' : 'tisice', 'aria-hidden': 'true' });
+  for (let start = 0; start < r.cifra; start += 5) {
+    const riadok = h('div', { class: 'riadokKociek' });
+    for (let j = start; j < Math.min(r.cifra, start + 5); j++) {
+      riadok.append(r.rad === 2 ? h('span', { class: 'stvorec', 'data-k': `b${hv}-${j}` })
+        : h('span', { class: 'tisic', 'data-k': `b${hv}-${j}`, html: IKONY.tisic }));
+    }
+    box.append(riadok);
+  }
+  return box;
+}
+// dlaždice zápisu jedného rádu (napr. 9 → malá I s −1 a X s 10)
+function kameneRadu(hv, sHodnotou = true) {
+  const r = infoRadu(hv);
+  const box = h('div', { class: 'kamene' });
+  [...r.zapis].forEach((z, j) => {
+    const minus = r.odcitanie && j === 0;
+    box.append(kamenEl(z, { kluc: `t${hv}-${j}`, maly: minus, hodnota: sHodnotou ? (minus ? '−' : '') + HODNOTY[z] : null }));
+  });
+  return box;
+}
+
+/* =====================================================================
+   SPOLOČNÉ OVLÁDANIE (jeden komponent pre všetky karty)
+   ===================================================================== */
+const posluchaciRychlosti = new Set();
+function nastavRychlost(v) {
+  STAV.rychlost = Math.max(0.5, Math.min(2, +v || 1));
+  for (const f of posluchaciRychlosti) f(STAV.rychlost);
+}
+function ikona(meno) { return h('span', { class: 'ik', html: IKONY[meno], style: 'display:contents' }); }
+
+function vytvorOvladanie(koren, api) {
+  const o = T.ovl;
+  const bKroky = h('button', { type: 'button', 'aria-pressed': 'true', onclick: () => api.rezim('kroky') }, o.poKrokoch);
+  const bSamo = h('button', { type: 'button', 'aria-pressed': 'false', onclick: () => api.rezim('samo') }, o.samo);
+  const bSpat = h('button', { type: 'button', onclick: api.spat }, ikona('spat'), o.spat);
+  const bDalej = h('button', { type: 'button', class: 'primary', onclick: api.dalej }, o.dalej, ikona('dalej'));
+  const bHraj = h('button', { type: 'button', class: 'primary', onclick: api.prehrajPauza });
+  const bZnova = h('button', { type: 'button', onclick: api.znova }, ikona('znova'), o.znova);
+  const bodky = h('div', { class: 'bodky', role: 'group', 'aria-label': o.kroky });
+  const range = h('input', { type: 'range', min: '0.5', max: '2', step: '0.1', value: STAV.rychlost, 'aria-label': o.rychlost,
+    oninput: e => nastavRychlost(e.target.value) });
+  const HODN = [0.5, 1, 2];
+  const predvolby = HODN.map((v, i) => h('button', { type: 'button', 'aria-label': `${o.predvolby[i]} ${fmtDes(v)}×`,
+    onclick: () => nastavRychlost(v) }, fmtDes(v) + '×'));
+  const rychlost = h('div', { class: 'rychlost', role: 'group', 'aria-label': o.rychlost },
+    h('div', { class: 'posuvnik' },
+      h('span', { class: 'zviera', html: fmt(IKONY.korytnacka, { a: o.korytnacka }) }), range,
+      h('span', { class: 'zviera', html: fmt(IKONY.zajac, { a: o.zajac }) })),
+    h('div', { class: 'riadok' }, predvolby));
+  koren.append(
+    h('div', { class: 'riadok', role: 'group', 'aria-label': o.rezim }, bKroky, bSamo),
+    h('div', { class: 'riadok' }, bSpat, bHraj, bDalej, bZnova),
+    bodky, rychlost);
+
+  const synchronizuj = v => {
+    range.value = v;
+    predvolby.forEach((b, i) => b.setAttribute('aria-pressed', String(Math.abs(HODN[i] - v) < 1e-9)));
+  };
+  posluchaciRychlosti.add(synchronizuj);
+  synchronizuj(STAV.rychlost);
+
+  let pocetBodiek = -1;
+  return {
+    aktualizuj({ index, pocet, hra, rezim }) {
+      if (pocet !== pocetBodiek) {
+        pocetBodiek = pocet;
+        bodky.replaceChildren(...Array.from({ length: pocet }, (_, i) =>
+          h('button', { type: 'button', class: 'bodka', 'aria-label': fmt(o.krok, { i: i + 1, n: pocet }), onclick: () => api.skoc(i) }, h('span'))));
+      }
+      $$('.bodka', bodky).forEach((b, i) => {
+        b.classList.toggle('hotova', i < index);
+        if (i === index) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
+      });
+      const samo = rezim === 'samo';
+      bKroky.setAttribute('aria-pressed', String(!samo));
+      bSamo.setAttribute('aria-pressed', String(samo));
+      bSpat.hidden = samo; bDalej.hidden = samo; bHraj.hidden = !samo; rychlost.hidden = !samo;
+      bSpat.disabled = index <= 0;
+      bDalej.disabled = index >= pocet - 1;
+      bHraj.replaceChildren(ikona(hra ? 'pauza' : 'prehraj'), hra ? o.pauza : o.prehraj);
+    }
+  };
+}
+
+/* =====================================================================
+   ENGINE KROKOV – scenár = pole {text, data, vyraz}; render(i) je čistá funkcia
+   ===================================================================== */
+function vytvorPrehravac({ sekcia, kresli }) {
+  const rimko = vytvorRimka($('.rimkoMiesto', sekcia));
+  const scena = $('.scena', sekcia);
+  let kroky = [], index = 0, rezim = 'kroky', hra = false, casovac = 0;
+
+  const ovl = vytvorOvladanie($('.ovladanie', sekcia), {
+    spat: () => { zastav(); if (index > 0) render(index - 1, true); },
+    dalej: () => { zastav(); if (index < kroky.length - 1) render(index + 1, true); },
+    prehrajPauza: () => (hra ? zastav() : spusti()),
+    znova: () => { zastav(); render(0, false); if (rezim === 'samo') spusti(); },
+    skoc: i => { zastav(); render(i, false); },
+    rezim: r => { rezim = r; if (r === 'samo') spusti(); else zastav(); aktualizujOvl(); }
+  });
+  function aktualizujOvl() { ovl.aktualizuj({ index, pocet: kroky.length, hra, rezim }); }
+
+  // vykreslí krok i; animuje len pri pohybe o jeden krok
+  function render(i, animovat) {
+    index = Math.max(0, Math.min(kroky.length - 1, i));
+    const k = kroky[index];
+    prekresli(scena, kresli(k, index, kroky), animovat);
+    rimko.povedz(k.text, k.vyraz || 'premysla', animovat);
+    aktualizujOvl();
+  }
+  // režim „Samo“: čakanie úmerné rýchlosti a dĺžke textu
+  function cakanie() { return trvanie() + (1100 + 55 * kroky[index].text.length) / STAV.rychlost; }
+  function naplanuj() {
+    clearTimeout(casovac);
+    casovac = setTimeout(() => {
+      if (!hra) return;
+      if (index < kroky.length - 1) render(index + 1, true);
+      if (index >= kroky.length - 1) zastav(); else naplanuj();
+    }, cakanie());
+  }
+  function spusti() {
+    if (index >= kroky.length - 1) render(0, false);
+    hra = true; aktualizujOvl(); naplanuj();
+  }
+  function zastav() { hra = false; clearTimeout(casovac); aktualizujOvl(); }
+
+  return {
+    rimko, scena,
+    nastavKroky(nove) { zastav(); kroky = nove; render(0, false); },
+    render, zastav,
+    // prekreslí len scénu aktuálneho kroku (keď sa zmení stav mimo scenára, napr. odkryté hodnoty)
+    obnov: animovat => prekresli(scena, kresli(kroky[index], index, kroky), animovat),
+    dalej: () => { if (index < kroky.length - 1) render(index + 1, true); },
+    spat: () => { if (index > 0) render(index - 1, true); },
+    index: () => index,
+    pocet: () => kroky.length,
+    kroky: () => kroky,
+    // serializovaný stav na porovnanie v testoch
+    stav: () => JSON.stringify({
+      i: index, text: rimko.text(), vyraz: rimko.vyraz(), scena: scena.innerHTML,
+      bodky: $$('.bodka', sekcia).map(b => b.className + '|' + (b.getAttribute('aria-current') || '')).join(',')
+    })
+  };
+}
+
+/* =====================================================================
+   KOSTRA KARIET A NAVIGÁCIA
+   ===================================================================== */
+const KARTY = {};   // id → { sekcia, prehravac? }
+function kostraKarty(id) {
+  return h('section', { class: 'karta', id: 'karta-' + id, role: 'tabpanel', 'aria-labelledby': 'tab-' + id, hidden: true },
+    h('h2', { class: 'skryte' }, T.karty[id].nazov),
+    h('div', { class: 'rimkoMiesto' }));
+}
+function zvedaveEl(texty, ...navyse) {
+  return h('details', { class: 'zvedave' }, h('summary', {}, T.zvedave), texty.map(t => h('p', {}, t)), navyse);
+}
+function ukazKartu(id, zapisHash = true) {
+  if (!KARTY[id]) id = PORADIE_KARIET[0];
+  if (STAV.karta && STAV.karta !== id && KARTY[STAV.karta].prehravac) KARTY[STAV.karta].prehravac.zastav();
+  const zmena = STAV.karta !== id;
+  STAV.karta = id;
+  for (const k of PORADIE_KARIET) {
+    KARTY[k].sekcia.hidden = k !== id;
+    const tab = $('#tab-' + k);
+    tab.setAttribute('aria-selected', String(k === id));
+    tab.tabIndex = k === id ? 0 : -1;
+  }
+  // menu na telefóne: ukáže názov karty a po výbere sa zavrie
+  const menu = $('.menuKariet');
+  if (menu) {
+    $('.aktualnaKarta', menu).textContent = T.karty[id].nazov;
+    menu.setAttribute('aria-expanded', 'false');
+    $('#karty').classList.remove('otvorene');
+  }
+  if (KARTY[id].priZobrazeni) KARTY[id].priZobrazeni();
+  // plynulý prechod medzi kartami
+  if (zmena && smieHybat()) {
+    const s = KARTY[id].sekcia;
+    animujStyl(s, 260 / STAV.rychlost, p => ({ transform: `translateY(${(14 * (1 - ease.out(p))).toFixed(1)}px)`, opacity: Math.min(1, 0.2 + p).toFixed(2) }));
+  }
+  if (zapisHash && location.hash !== '#/' + id) history.replaceState(null, '', '#/' + id);
+}
+
+/* =====================================================================
+   KARTA 1: Znaky I V X
+   ===================================================================== */
+function postavZnaky() {
+  const t = T.znaky;
+  const sekcia = kostraKarty('znaky');
+  const rimko = vytvorRimka($('.rimkoMiesto', sekcia));
+  const dlazdice = h('div', { class: 'dlazdice' });
+  const kockyBox = h('div', { class: 'kockyZnaku', 'aria-live': 'polite' });
+  const tlacidla = {};
+  const mierka = { I: 1, V: 1, X: 1 };
+
+  // zväčšenie vybranej dlaždice (jemný odskok)
+  function zvacsi(z, ciel) {
+    const b = tlacidla[z], od = mierka[z];
+    mierka[z] = ciel;
+    if (!smieHybat()) { b.style.transform = ciel === 1 ? '' : `scale(${ciel})`; return; }
+    tween(320 / STAV.rychlost, p => {
+      const s = od + (ciel - od) * ease.back(p);
+      b.style.transform = `scale(${s.toFixed(3)})`;
+    }, () => { if (ciel === 1) b.style.transform = ''; });
+  }
+  // kocky vyskakujú jedna po druhej
+  function vyskocKocky() {
+    const kocky = $$('.kocka', kockyBox);
+    if (!smieHybat()) return;
+    const ms = (260 + 45 * kocky.length) / STAV.rychlost, krok = 1 / (kocky.length + 4);
+    tween(ms, p => kocky.forEach((k, j) => {
+      const q = Math.max(0, Math.min(1, (p - j * krok) / (5 * krok)));
+      k.style.transform = `scale(${(ease.back(q)).toFixed(3)})`;
+      k.style.opacity = Math.min(1, q * 3).toFixed(2);
+    }), () => kocky.forEach(k => obnovStyl(k, null)));
+  }
+  function vyber(z) {
+    for (const k of Object.keys(tlacidla)) {
+      tlacidla[k].setAttribute('aria-pressed', String(k === z));
+      zvacsi(k, k === z ? 1.08 : 1);
+    }
+    rimko.povedz(t.vyber[z], 'tesi');
+    const n = HODNOTY[z];
+    kockyBox.replaceChildren(kockyEl(n, { kluc: 'z' }), h('div', { class: 'popisKociek' }, `${n} ${tvarSlova(n, t.kocky)}`));
+    vyskocKocky();
+  }
+  for (const z of ['I', 'V', 'X']) {
+    const b = h('button', { type: 'button', class: 'dlazdica', 'aria-pressed': 'false',
+      'aria-label': fmt(t.aria, { z, n: HODNOTY[z], popis: t.popis[z] }), onclick: () => vyber(z) },
+      h('span', { class: 'znak', 'aria-hidden': 'true' }, z),
+      h('span', { class: 'obrazok', html: OBRAZKY[z] }),
+      h('span', { class: 'hodnotaDl', 'aria-hidden': 'true' }, HODNOTY[z]));
+    tlacidla[z] = b;
+    dlazdice.append(b);
+  }
+
+  /* ----- mini hra „Ktorý znak je 5?“ ----- */
+  const HRA_HODNOTY = [1, 1, 5, 5, 10, 10];
+  const hra = { otazky: [], i: 0, prvy: true, spravne: 0, casovac: 0 };
+  const hraObsah = h('div', { class: 'hraObsah' });
+  function zamiesaj() {
+    // náhodné poradie, rovnaká hodnota nesmie ísť dvakrát za sebou
+    let a;
+    do {
+      a = HRA_HODNOTY.slice();
+      for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    } while (a.some((v, i) => i > 0 && v === a[i - 1]));
+    return a;
+  }
+  function startHry() {
+    clearTimeout(hra.casovac);
+    Object.assign(hra, { otazky: zamiesaj(), i: 0, spravne: 0 });
+    ukazOtazku();
+  }
+  function ukazOtazku() {
+    hra.prvy = true;
+    const n = hra.otazky[hra.i];
+    const odpovede = h('div', { class: 'odpovede' });
+    for (const z of ['I', 'V', 'X']) {
+      const b = h('button', { type: 'button', class: 'odpoved', 'aria-label': z, onclick: () => odpovedz(b, z) }, z, h('span', { class: 'znacka', hidden: true }));
+      odpovede.append(b);
+    }
+    hraObsah.replaceChildren(
+      h('p', { class: 'otazka' }, fmt(t.otazka, { n })),
+      h('p', { class: 'poradie' }, fmt(t.poradie, { i: hra.i + 1, n: hra.otazky.length })),
+      odpovede);
+    rimko.povedz(t.hraUvod, 'premysla');
+    $('.odpoved', odpovede).focus({ preventScroll: true });
+  }
+  function odpovedz(b, z) {
+    const n = hra.otazky[hra.i];
+    const znacka = $('.znacka', b);
+    znacka.hidden = false;
+    if (HODNOTY[z] === n) {
+      if (hra.prvy) hra.spravne++;
+      b.classList.add('ok'); znacka.textContent = '✔';
+      b.setAttribute('aria-label', `${z}, ${t.znackaOk}`);
+      $$('.odpoved', hraObsah).forEach(x => { x.disabled = true; });
+      rimko.povedz(fmt(t.ok, { z, n }), 'tesi');
+      odskok(b);
+      hra.casovac = setTimeout(() => {
+        hra.i++;
+        if (hra.i < hra.otazky.length) ukazOtazku(); else koniecHry();
+      }, 1500 / STAV.rychlost);
+    } else {
+      hra.prvy = false;
+      b.classList.add('zle'); znacka.textContent = '✘';
+      b.setAttribute('aria-label', `${z}, ${t.znackaZle}`);
+      b.disabled = true;
+      rimko.povedz(t.zle, 'povzbudzuje');
+    }
+  }
+  function koniecHry() {
+    const s = fmt(t.koniec, { s: hra.spravne, n: hra.otazky.length });
+    hraObsah.replaceChildren(h('p', { class: 'otazka' }, '✔ ' + s),
+      h('button', { type: 'button', class: 'primary', onclick: startHry }, ikona('znova'), t.hraZnova));
+    rimko.povedz(s, 'tesi');
+  }
+  hraObsah.append(h('button', { type: 'button', class: 'primary', onclick: startHry }, ikona('prehraj'), t.hraStart));
+
+  sekcia.append(
+    h('div', { class: 'stredom' }, h('span', { class: 'stitokPomocka', html: IKONY.ziarovka }, t.pomocka)),
+    dlazdice, kockyBox,
+    h('div', { class: 'hra' }, h('h3', {}, t.hraNadpis), hraObsah),
+    zvedaveEl(t.zvedaveText));
+  rimko.povedz(t.uvod, 'premysla', false);
+  KARTY.znaky = { sekcia, vyber, startHry };
+  return sekcia;
+}
+
+/* =====================================================================
+   KARTA 2: Palice a kocky (1 až 10)
+   ===================================================================== */
+function krokyPalice() {
+  const t = T.palice.kroky;
+  const data = [{ n: 1 }, { n: 2 }, { n: 3 }, { n: 4, typ: 'nepiseme' }, { n: 4 }, { n: 5 }, { n: 6 }, { n: 7 }, { n: 8 }, { n: 9 }, { n: 10 }];
+  return data.map((d, i) => ({ text: t[i], data: { typ: 'zapis', ...d }, vyraz: i === data.length - 1 ? 'tesi' : 'premysla' }));
+}
+function kresliPalice(krok) {
+  const { n, typ } = krok.data;
+  const f = document.createDocumentFragment();
+  const stavba = h('div', { class: 'stavba' });
+  const kamene = h('div', { class: 'kamene' });
+  if (typ === 'nepiseme') {
+    for (let j = 1; j <= 4; j++) kamene.append(kamenEl('I', { kluc: 'I' + j, preskrtnuty: true, hodnota: 1 }));
+    stavba.append(kamene, h('div', { class: 'rovnica' }, h('span', { class: 'stitok zle', 'data-k': 'nep' }, '✘ ' + T.palice.nepiseme)), kockyEl(4));
+  } else {
+    const r = infoRadu(n), pocty = {};
+    [...r.zapis].forEach((z, j) => {
+      pocty[z] = (pocty[z] || 0) + 1;
+      const minus = r.odcitanie && j === 0;
+      kamene.append(kamenEl(z, { kluc: z + pocty[z], maly: minus, hodnota: (minus ? '−' : '') + HODNOTY[z] }));
+    });
+    const v = vypocet(n);
+    stavba.append(kamene,
+      h('div', { class: 'rovnica' }, v ? h('span', { 'data-k': 'rov' + n, style: 'display:inline-block' }, v) : null),
+      r.odcitanie ? kockyEl(n + 1, { ubrat: 1 }) : kockyEl(n));
+  }
+  // schody 1 až 10, Rimko stojí na aktuálnom schode
+  const schody = h('div', { class: 'schody', role: 'img', 'aria-label': T.palice.schodyAria });
+  for (let k = 1; k <= 10; k++) {
+    const dosiahnuty = k < n || (k === n && typ !== 'nepiseme');
+    schody.append(h('div', { class: 'stlpec' + (dosiahnuty ? ' hotovy' : '') + (k === n ? ' aktualny' : ''), style: `--k:${k};--kr:${(k - 1) % 5 + 1}` },
+      h('div', { class: 'miestoRimka' }, k === n ? h('span', { 'data-k': 'rimko', style: 'display:block', html: rimkoSVG(true) }) : null),
+      h('div', { class: 'schod' }, h('span', { class: 'rim' }, dosiahnuty ? toRoman(k) : '?'), h('span', { class: 'arab' }, k))));
+  }
+  f.append(stavba, schody);
+  return f;
+}
+function postavPalice() {
+  const sekcia = kostraKarty('palice');
+  sekcia.append(h('div', { class: 'scena' }), h('div', { class: 'ovladanie' }), zvedaveEl(T.palice.zvedaveText));
+  KARTY.palice = { sekcia };
+  return sekcia;
+}
+
+/* =====================================================================
+   KARTA 3: Prevod do maxima úrovne
+   ===================================================================== */
+function textRadu(hv) {
+  const p = T.prevod, r = infoRadu(hv);
+  const vzory = [p.jednotky, p.desiatky, p.stovky, p.tisice][r.rad] || [];
+  return fmt(vzory[r.cifra] || p.vseobecne, { h: hv, r: r.zapis });
+}
+// scenár: úvod, rozklad (ak sú aspoň 2 rády), po kroku na rád, spojenie (ak sú aspoň 2 rády)
+function krokyPrevodu(n) {
+  const p = T.prevod, rady = decompose(n), viac = rady.length > 1;
+  const kroky = [{ text: fmt(p.uvod, { n }), data: { typ: 'uvod', n, rady } }];
+  if (viac) kroky.push({ text: fmt(p.rozklad, { zoznam: zoznamSlovami(rady) }), data: { typ: 'rozklad', n, rady } });
+  rady.forEach((hv, k) => kroky.push({ text: textRadu(hv), data: { typ: 'rad', n, rady, hotovo: k + 1 }, vyraz: !viac ? 'tesi' : 'premysla' }));
+  if (viac) kroky.push({ text: fmt(p.spoj, { r: toRoman(n) }), data: { typ: 'spoj', n, rady }, vyraz: 'tesi' });
+  return kroky;
+}
+function ikonaRadu(rad) { return h('span', { html: IKONY[['kocka', 'tyc', 'stvorec', 'tisic'][rad]], style: 'display:contents' }); }
+// približná šírka zápisu v em (patkové písmo + okraje dlaždíc), aby sa doska zmestila na riadok
+function sirkaZapisu(zapis) {
+  const W = { M: 0.95, D: 0.78, C: 0.72, L: 0.66, X: 0.76, V: 0.76, I: 0.42 };
+  return [...zapis].reduce((s, z) => s + W[z] + 0.22, 0.5);
+}
+function kresliPrevod(krok) {
+  const { typ, n, rady, hotovo = 0 } = krok.data;
+  const f = document.createDocumentFragment();
+  const horny = h('div', { class: 'hornyRiadok' }, h('span', { class: 'velkeCislo', 'data-k': 'n' }, n));
+  f.append(horny);
+  if (typ === 'uvod') {
+    f.append(h('div', { class: 'cele' }, rady.map(blokyEl)));
+    return f;
+  }
+  if (typ === 'spoj') {
+    const doska = h('span', { class: 'doska', role: 'img', 'aria-label': toRoman(n), style: `--w:${sirkaZapisu(toRoman(n)).toFixed(2)}` });
+    for (const hv of rady) [...infoRadu(hv).zapis].forEach((z, j) => doska.append(kamenEl(z, { kluc: `t${hv}-${j}` })));
+    horny.append(h('span', { class: 'rovnaSa', 'data-k': 'rovna' }, '='), doska);
+  }
+  const skupiny = h('div', { class: 'skupiny' });
+  rady.forEach((hv, k) => {
+    const r = infoRadu(hv);
+    const sk = h('div', { class: `skupina rad${r.rad}` + (typ === 'rad' && k === hotovo - 1 ? ' aktivna' : '') },
+      h('div', { class: 'hlavicka', 'data-k': 'l' + hv }, ikonaRadu(r.rad), h('span', { class: 'cislo' }, hv), h('span', { class: 'nazovRadu' }, T.prevod.nazvyRadov[r.rad])),
+      blokyEl(hv));
+    if (typ === 'rad' && k < hotovo) {
+      sk.append(kameneRadu(hv));
+      const v = vypocet(hv);
+      if (v) sk.append(h('span', { class: 'vypocet', 'data-k': 'v' + hv }, v));
+    }
+    skupiny.append(sk);
+  });
+  f.append(skupiny);
+  return f;
+}
+function postavPrevod() {
+  const p = T.prevod;
+  const sekcia = kostraKarty('prevod');
+  let cislo = 26, prehravac = null;
+  // štyri kolieska ako na počítadle kilometrov: tisíce, stovky, desiatky, jednotky
+  const kolieska = h('div', { class: 'kolieska', role: 'group', 'aria-label': p.cislo });
+  const kol = [];
+  for (let rad = 3; rad >= 0; rad--) {
+    const cifra = h('span', { class: 'cifra' }, '0');
+    const hore = h('button', { type: 'button', class: 'kolTl', 'aria-label': fmt(p.kolViac, { rad: p.nazvyRadov[rad] }), onclick: () => posun(rad, 1) }, '▲');
+    const dole = h('button', { type: 'button', class: 'kolTl', 'aria-label': fmt(p.kolMenej, { rad: p.nazvyRadov[rad] }), onclick: () => posun(rad, -1) }, '▼');
+    const el = h('div', { class: 'koliesko' },
+      h('span', { class: 'kolSkratka', title: p.nazvyRadov[rad] }, ikonaRadu(rad), p.skratky[rad]),
+      hore, h('div', { class: 'okienko', 'aria-hidden': 'true' }, cifra), dole);
+    kol[rad] = { el, cifra, hore, dole };
+    kolieska.append(el);
+  }
+  const vystup = h('output', { class: 'skryte', 'aria-live': 'polite' });
+  const bNahodne = h('button', { type: 'button', onclick: () => {
+    const max = NASTAVENIE.maximum;
+    let m; do { m = 1 + Math.floor(Math.random() * max); } while (m === cislo && max > 1);
+    nastavCislo(m);
+  } }, ikona('kocka6'), p.nahodne);
+  function posun(rad, smer) { nastavCislo(posunKoliesko(cislo, rad, smer, NASTAVENIE.maximum), smer); }
+  function aktualizujKolieska(smer) {
+    const max = NASTAVENIE.maximum, s = String(cislo).padStart(4, '0');
+    for (let rad = 0; rad < 4; rad++) {
+      const k = kol[rad], d = s[3 - rad], aktivne = 10 ** rad <= max;
+      const zmena = k.cifra.textContent !== d;
+      k.cifra.textContent = d;
+      k.el.classList.toggle('vypnute', !aktivne);
+      k.el.classList.toggle('nula', cislo < 10 ** rad);   // úvodná nula
+      k.hore.disabled = !aktivne || cislo >= max;
+      k.dole.disabled = !aktivne || cislo <= 1 || cislo < 10 ** rad;
+      // koliesko sa pootočí
+      if (zmena && smer && smieHybat()) {
+        animujStyl(k.cifra, 240 / STAV.rychlost, q => ({ transform: `translateY(${(-smer * 30 * (1 - ease.out(q))).toFixed(1)}px)`, opacity: Math.min(1, 0.2 + q).toFixed(2) }));
+      }
+    }
+    vystup.textContent = cislo;
+  }
+  // tabuľka čísel (v rozbaľovači) – najviac do 100
+  const tabulka = h('div', { class: 'tabulka' });
+  function postavTabulku() {
+    tabulka.replaceChildren();
+    for (let k = 1; k <= Math.min(100, NASTAVENIE.maximum); k++) {
+      tabulka.append(h('button', { type: 'button', 'aria-label': `${k} = ${toRoman(k)}`, onclick: () => { nastavCislo(k); sekcia.scrollIntoView({ block: 'start' }); } },
+        h('span', {}, k), h('span', { class: 'rimske' }, toRoman(k))));
+    }
+  }
+  sekcia.append(vytvorVyberUrovne(),
+    h('div', { class: 'vstupKoliesok' }, kolieska, vystup, bNahodne),
+    h('div', { class: 'scena' }), h('div', { class: 'ovladanie' }), zvedaveEl(p.zvedaveText, tabulka));
+  function nastavCislo(m, smer = 0) {
+    cislo = Math.max(1, Math.min(NASTAVENIE.maximum, m));
+    aktualizujKolieska(smer);
+    if (prehravac) prehravac.nastavKroky(krokyPrevodu(cislo));
+  }
+  // pri zmene úrovne sa číslo oreže na nové maximum
+  posluchaciUrovne.add(() => { postavTabulku(); nastavCislo(cislo); });
+  postavTabulku();
+  KARTY.prevod = { sekcia, nastavCislo, posun, cislo: () => cislo, kolieska: kol, init(pr) { prehravac = pr; nastavCislo(cislo); } };
+  return sekcia;
+}
+// výber úrovne Malý / Stredný / Veľký / Majster (stav je spoločný pre všetky karty)
+function vytvorVyberUrovne() {
+  const u = T.urovne;
+  const box = h('div', { class: 'urovne', role: 'group', 'aria-label': u.nadpis });
+  const tl = NASTAVENIE.urovne.map((m, i) => h('button', { type: 'button', 'aria-pressed': 'false', onclick: () => nastavUroven(i) },
+    h('span', {}, u.nazvy[i]), h('span', { class: 'urDo' }, fmt(u.do, { m }))));
+  box.append(...tl);
+  const sync = () => tl.forEach((b, i) => b.setAttribute('aria-pressed', String(i === STAV.uroven)));
+  posluchaciUrovne.add(sync);
+  sync();
+  return box;
+}
+
+/* =====================================================================
+   KARTA: Nové znaky L C D M
+   ===================================================================== */
+// dáta pomôcky LaCo DoMa: prvé písmeno slabiky = znak, poradie = od najmenšej hodnoty
+const LACO = T.lcdm.slabiky.map(s => ({ slabika: s, znak: s[0], hodnota: HODNOTY[s[0]] }));
+const lcdmStav = { ukazane: new Set() };   // tabule, ktoré už ukazujú hodnotu
+function krokyLcdm() {
+  return T.lcdm.kroky.map((text, i) => ({ text, data: { pocet: Math.min(i, LACO.length), sipka: i > LACO.length }, vyraz: i > LACO.length ? 'tesi' : 'premysla' }));
+}
+function kresliLcdm(krok) {
+  const { pocet, sipka } = krok.data;
+  const f = document.createDocumentFragment();
+  // veta LaCo DoMa; vyskočené písmeno sa presunie nad svoju tabuľu
+  const veta = h('div', { class: 'veta', role: 'img', 'aria-label': 'LaCo DoMa' });
+  for (let w = 0; w < LACO.length; w += 2) {
+    const slovo = h('span', { class: 'slovo' });
+    for (const [j, L] of LACO.slice(w, w + 2).entries()) {
+      const i = w + j, von = i < pocet;
+      slovo.append(h('span', { class: 'slabika' + (i === pocet - 1 && !sipka ? ' aktivna' : '') },
+        von ? h('span', { class: 'prve stopa' }, L.znak) : h('span', { class: 'prve', 'data-k': 'p' + L.znak }, L.znak),
+        L.slabika.slice(1)));
+    }
+    veta.append(slovo);
+  }
+  const tabule = h('div', { class: 'tabule' });
+  LACO.forEach((L, j) => {
+    const svieti = j < pocet;
+    tabule.append(h('div', { class: 'stlpecTabule' },
+      h('div', { class: 'miestoPismena' }, svieti ? h('span', { class: 'vyskocene', 'data-k': 'p' + L.znak }, L.znak) : null),
+      h('button', { type: 'button', class: 'tabula t' + j + (svieti ? ' svieti' : ''), 'data-z': L.znak, 'aria-label': fmt(T.lcdm.tabulaAria, { z: L.znak }) },
+        h('span', { class: 'rimske' }, L.znak)),
+      h('div', { class: 'hodnotaTabule' }, lcdmStav.ukazane.has(L.znak) ? h('span', { 'data-k': 'h' + L.znak, style: 'display:inline-block' }, L.hodnota) : null)));
+  });
+  f.append(veta, tabule);
+  if (sipka) f.append(h('div', { class: 'sipkaPoradia', 'data-k': 'sipka' }, h('span', { html: IKONY.sipka, style: 'display:contents' }), T.lcdm.sipka));
+  return f;
+}
+// hra: zoraď tabule od najmenšej po najväčšiu, potom 5 otázok „Čo je väčšie?“
+function vytvorHruLcdm(rimko) {
+  const t = T.lcdm;
+  const hra = { umiestnene: 0, otazky: [], i: 0, prvy: true, spravne: 0, casovac: 0 };
+  const obsah = h('div', { class: 'hraObsah' });
+  const zamiesaj = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  function start() {
+    clearTimeout(hra.casovac);
+    hra.umiestnene = 0;
+    const sloty = h('div', { class: 'sloty' });
+    LACO.forEach((L, j) => sloty.append(h('div', { class: 'slot' }, h('span', { class: 'slotCislo', 'aria-hidden': 'true' }, j + 1 + '.'))));
+    let poradie;
+    do { poradie = zamiesaj(LACO); } while (poradie.every((L, j) => L === LACO[j]));
+    const zasobnik = h('div', { class: 'odpovede zasobnik' });
+    for (const L of poradie) {
+      const b = h('button', { type: 'button', class: 'odpoved mala tahatelna', 'aria-label': L.znak }, L.znak, h('span', { class: 'znacka', hidden: true }));
+      b.addEventListener('click', () => { if (b._potlac) { b._potlac = false; return; } vloz(b, L); });
+      pridajTahanie(b, sloty, () => vloz(b, L));
+      zasobnik.append(b);
+    }
+    obsah.replaceChildren(sloty, zasobnik, h('div', { class: 'sipkaPoradia' }, h('span', { html: IKONY.sipka, style: 'display:contents' }), t.sipka));
+    rimko.povedz(t.hraUvod, 'premysla');
+  }
+  function vloz(b, L) {
+    if (b.disabled) return;
+    const zn = $('.znacka', b);
+    if (L.znak !== LACO[hra.umiestnene].znak) {
+      b.classList.add('zle'); zn.hidden = false; zn.textContent = '✘';
+      rimko.povedz(t.zlePoradie, 'povzbudzuje');
+      clearTimeout(b._t);
+      b._t = setTimeout(() => { b.classList.remove('zle'); zn.hidden = true; }, 1100);
+      return;
+    }
+    const slot = $$('.slot', obsah)[hra.umiestnene];
+    const r0 = b.getBoundingClientRect();
+    clearTimeout(b._t);
+    b.classList.remove('zle', 'tahatelna');
+    slot.append(b);
+    b.disabled = true; b.classList.add('ok'); zn.hidden = false; zn.textContent = '✔';
+    b.setAttribute('aria-label', `${L.znak}, ${T.znaky.znackaOk}`);
+    if (smieHybat()) {
+      const r1 = b.getBoundingClientRect(), dx = r0.left - r1.left, dy = r0.top - r1.top;
+      animujStyl(b, 380 / STAV.rychlost, p => { const q = 1 - ease.inOut(p); return { transform: `translate(${(dx * q).toFixed(1)}px,${(dy * q).toFixed(1)}px)` }; });
+    }
+    hra.umiestnene++;
+    const dalsi = $('.zasobnik .odpoved:not(:disabled)', obsah);
+    if (dalsi) dalsi.focus({ preventScroll: true });
+    if (hra.umiestnene === LACO.length) {
+      rimko.povedz(t.hotovoPoradie, 'tesi');
+      hra.casovac = setTimeout(startOtazok, 1800 / STAV.rychlost);
+    } else rimko.povedz(fmt(t.okPoradie, { z: L.znak, n: L.hodnota }), 'tesi');
+  }
+  function startOtazok() {
+    const pary = [];
+    for (let i = 0; i < LACO.length; i++) for (let j = i + 1; j < LACO.length; j++) pary.push(Math.random() < 0.5 ? [LACO[i], LACO[j]] : [LACO[j], LACO[i]]);
+    Object.assign(hra, { otazky: zamiesaj(pary).slice(0, 5), i: 0, spravne: 0 });
+    ukazOtazku();
+  }
+  function ukazOtazku() {
+    hra.prvy = true;
+    const [a, b] = hra.otazky[hra.i];
+    const odpovede = h('div', { class: 'odpovede' });
+    for (const L of [a, b]) {
+      const tl = h('button', { type: 'button', class: 'odpoved', 'aria-label': L.znak, onclick: () => odpovedz(tl, L, a, b) }, L.znak, h('span', { class: 'znacka', hidden: true }));
+      odpovede.append(tl);
+    }
+    obsah.replaceChildren(h('p', { class: 'otazka' }, fmt(t.otazka, { a: a.znak, b: b.znak })),
+      h('p', { class: 'poradie' }, fmt(t.poradie, { i: hra.i + 1, n: hra.otazky.length })), odpovede);
+    $('.odpoved', odpovede).focus({ preventScroll: true });
+  }
+  function odpovedz(tl, L, a, b) {
+    const zn = $('.znacka', tl);
+    zn.hidden = false;
+    if (L.hodnota === Math.max(a.hodnota, b.hodnota)) {
+      if (hra.prvy) hra.spravne++;
+      tl.classList.add('ok'); zn.textContent = '✔';
+      $$('.odpoved', obsah).forEach(x => { x.disabled = true; });
+      rimko.povedz(fmt(t.okOtazka, { z: L.znak, n: L.hodnota }), 'tesi');
+      hra.casovac = setTimeout(() => { hra.i++; if (hra.i < hra.otazky.length) ukazOtazku(); else koniec(); }, 1500 / STAV.rychlost);
+    } else {
+      hra.prvy = false;
+      tl.classList.add('zle'); zn.textContent = '✘'; tl.disabled = true;
+      rimko.povedz(t.zleOtazka, 'povzbudzuje');
+    }
+  }
+  function koniec() {
+    const s = fmt(t.koniec, { s: hra.spravne, n: hra.otazky.length });
+    obsah.replaceChildren(h('p', { class: 'otazka' }, '✔ ' + s), h('button', { type: 'button', class: 'primary', onclick: start }, ikona('znova'), t.hraZnova));
+    rimko.povedz(s, 'tesi');
+  }
+  obsah.append(h('button', { type: 'button', class: 'primary', onclick: start }, ikona('prehraj'), t.hraStart));
+  return { el: h('div', { class: 'hra' }, h('h3', {}, t.hraNadpis), obsah), start, vloz: (z) => { const b = $$('.zasobnik .odpoved', obsah).find(x => x.textContent.startsWith(z)); if (b) vloz(b, LACO.find(L => L.znak === z)); } };
+}
+// ťahanie prstom alebo myšou; pustenie nad cieľom = to isté ako ťuknutie
+function pridajTahanie(b, ciel, naPustenie) {
+  let start = null, tahame = false;
+  b.addEventListener('pointerdown', e => {
+    if (b.disabled || e.button > 0) return;
+    start = { x: e.clientX, y: e.clientY }; tahame = false;
+    try { b.setPointerCapture(e.pointerId); } catch (_) { /* nevadí */ }
+  });
+  b.addEventListener('pointermove', e => {
+    if (!start) return;
+    const dx = e.clientX - start.x, dy = e.clientY - start.y;
+    if (!tahame && Math.hypot(dx, dy) > 8) { tahame = true; b.classList.add('tahany'); }
+    if (tahame) b.style.transform = `translate(${dx}px,${dy}px)`;
+  });
+  const koniec = (e, zrusene) => {
+    if (!start) return;
+    const bolo = tahame, dx = e.clientX - start.x, dy = e.clientY - start.y;
+    start = null; tahame = false;
+    b.classList.remove('tahany');
+    if (!bolo) return;
+    b._potlac = true;   // nasledujúci „click“ po ťahaní ignorujeme
+    setTimeout(() => { b._potlac = false; }, 0);
+    obnovStyl(b, null);
+    const r = ciel.getBoundingClientRect();
+    if (!zrusene && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top - 20 && e.clientY <= r.bottom + 20) naPustenie();
+    else if (smieHybat()) animujStyl(b, 250 / STAV.rychlost, p => ({ transform: `translate(${(dx * (1 - ease.out(p))).toFixed(1)}px,${(dy * (1 - ease.out(p))).toFixed(1)}px)` }));
+  };
+  b.addEventListener('pointerup', e => koniec(e, false));
+  b.addEventListener('pointercancel', e => koniec(e, true));
+}
+// rebrík I V X L C D M: „desiatkové“ (štvorec) a „päťkové“ (päťuholník) znaky
+function rebrikEl() {
+  const t = T.lcdm.patky;
+  const rebrik = h('div', { class: 'rebrik' });
+  for (const z of ['M', 'D', 'C', 'L', 'X', 'V', 'I']) {
+    const patkova = String(HODNOTY[z])[0] === '5';
+    const vyssia = Object.keys(HODNOTY).find(k => HODNOTY[k] === HODNOTY[z] * 2);
+    rebrik.append(h('div', { class: 'priecka ' + (patkova ? 'patkova' : 'desiatkova') },
+      h('span', { class: 'tvar', 'aria-hidden': 'true' }, z),
+      h('span', { class: 'hodn' }, HODNOTY[z]),
+      h('span', { class: 'druh' }, h('span', {}, patkova ? t.patkova : t.desiatkova), patkova ? h('span', {}, fmt(t.polovica, { z: vyssia }).replace(/ (\S+)$/, ' $1')) : null)));
+  }
+  return h('details', { class: 'zvedave' }, h('summary', {}, t.nadpis), h('p', {}, t.uvod), rebrik, h('p', {}, t.zaver));
+}
+function postavLcdm() {
+  const sekcia = kostraKarty('lcdm');
+  const bHodnoty = h('button', { type: 'button', class: 'primary' }, T.lcdm.ukazHodnoty);
+  sekcia.append(h('div', { class: 'scena' }), h('div', { class: 'tlacidloHodnoty' }, bHodnoty), h('div', { class: 'ovladanie' }));
+  KARTY.lcdm = { sekcia, bHodnoty };
+  return sekcia;
+}
+function initLcdm(p) {
+  const k = KARTY.lcdm, sekcia = k.sekcia;
+  let casovace = [];
+  // prekreslí scénu a vráti fokus na tabuľu, ktorá ho mala
+  const obnov = animovat => {
+    const z = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.z : null;
+    p.obnov(animovat);
+    if (z) { const b = $(`.tabula[data-z="${z}"]`, p.scena); if (b) b.focus({ preventScroll: true }); }
+  };
+  p.scena.addEventListener('click', e => {
+    const b = e.target.closest('.tabula');
+    if (!b) return;
+    const z = b.dataset.z;
+    lcdmStav.ukazane.add(z);
+    obnov(true);
+    p.rimko.povedz(fmt(T.lcdm.tabula, { z, n: HODNOTY[z] }), 'tesi');
+  });
+  k.bHodnoty.addEventListener('click', () => {
+    casovace.forEach(clearTimeout);
+    lcdmStav.ukazane.clear();
+    obnov(false);
+    casovace = LACO.map((L, j) => setTimeout(() => {
+      lcdmStav.ukazane.add(L.znak);
+      obnov(true);
+      if (j === LACO.length - 1) p.rimko.povedz(T.lcdm.hodnotyText, 'tesi');
+    }, (j * 550 + 100) / STAV.rychlost));
+  });
+  const hra = vytvorHruLcdm(p.rimko);
+  sekcia.append(hra.el, rebrikEl(), zvedaveEl(T.lcdm.zvedaveText));
+  k.hra = hra;
+  k.obnov = obnov;
+  p.nastavKroky(krokyLcdm());
+}
+
+/* =====================================================================
+   KARTA: Päť pravidiel
+   ===================================================================== */
+// čísla pravidiel 1 až 5 sú jednotné v celej aplikácii (čítanie, hra Postav číslo, časté chyby, ťaháčik)
+const PRAVIDLA = T.pravidla.zoznam.map((P, i) => ({ cislo: i + 1, ...P }));
+function krokyPravidla(i) {
+  const vyrazy = { ok: 'tesi', oprava: 'tesi', zaujimavost: 'tesi', zle: 'povzbudzuje' };
+  return PRAVIDLA[i].kroky.map(k => ({ text: k.t, data: { ...k, pravidlo: i }, vyraz: vyrazy[k.typ] || 'premysla' }));
+}
+// dlaždice ľubovoľného zápisu (aj nesprávneho); menšia pred väčšou je malá s mínusom
+function kameneZapisu(zapis, pred, { preskrtnute = false, male = false, hodnoty = true } = {}) {
+  const v = znamienkaZapisu(zapis);
+  const box = h('div', { class: 'kamene' });
+  [...zapis].forEach((z, j) => box.append(kamenEl(z, {
+    kluc: pred + j + z, maly: male || v[j] < 0, preskrtnuty: preskrtnute,
+    hodnota: hodnoty ? (v[j] < 0 ? '−' : '') + HODNOTY[z] : null })));
+  return box;
+}
+// nesprávny zápis (prečiarknutý) ➜ správny zápis, prípadne viac možností „alebo“
+function opravaEl(zle, dobre) {
+  const riadok = h('div', { class: 'opravaRiadok' }, kameneZapisu(zle, 'p', { preskrtnute: true, male: true, hodnoty: false }),
+    h('span', { class: 'sipkaOpravy', 'aria-hidden': 'true' }, '➜'));
+  [].concat(dobre).forEach((z, i) => {
+    if (i) riadok.append(h('span', { class: 'alebo' }, T.pravidla.alebo));
+    riadok.append(kameneZapisu(z, 'o' + i));
+  });
+  return riadok;
+}
+function verdiktEl(typ) { return h('span', { class: 'verdikt ' + typ, 'data-k': 'ver' + typ }, T.pravidla.verdikt[typ]); }
+function kresliPravidlo(krok) {
+  const d = krok.data, P = PRAVIDLA[d.pravidlo], t = T.pravidla;
+  const f = document.createDocumentFragment();
+  f.append(h('div', { class: 'hlavickaPravidla' }, h('span', { class: 'cisloPravidla' }, P.cislo), h('span', { class: 'kratkoPravidla' }, P.kratko)));
+  const priklad = h('div', { class: 'prikladPravidla' });
+  const rovnica = () => (d.rovnica ? h('div', { class: 'rovnica' }, h('span', { 'data-k': 'rov' + d.rovnica, style: 'display:inline-block' }, d.rovnica)) : null);
+  const verdikt = verdiktEl;
+  if (d.typ === 'dvojice') {
+    // kto smie odčítať a od koho
+    const box = h('div', { class: 'dvojice' });
+    for (const [kto, od] of [['I', 'VX'], ['X', 'LC'], ['C', 'DM']]) {
+      box.append(h('div', { class: 'dvojica' },
+        h('span', { class: d.zvyrazni === 'kto' ? 'zvyraznene' : '' }, kamenEl(kto, { kluc: 'd' + kto, maly: true })),
+        h('span', { class: 'od' }, t.od),
+        h('span', { class: 'kamene' + (d.zvyrazni === 'od' ? ' zvyraznene' : '') }, [...od].map(z => kamenEl(z, { kluc: 'd' + kto + z, maly: true })))));
+    }
+    box.append(h('div', { class: 'dvojica nie' }, h('span', { class: 'kamene' }, ['V', 'L', 'D'].map(z => kamenEl(z, { kluc: 'n' + z, maly: true }))),
+      h('span', { class: 'verdikt zle' }, t.neodcitavaju)));
+    priklad.append(box);
+  } else if (d.typ === 'oprava') {
+    priklad.append(opravaEl(d.zle, d.zapisy), rovnica(), verdikt('oprava'));
+  } else {
+    priklad.append(kameneZapisu(d.zapis, 'p', { preskrtnute: d.typ === 'zle' }), rovnica());
+    if (d.typ !== 'pravidlo') priklad.append(verdikt(d.typ));
+  }
+  f.append(priklad);
+  return f;
+}
+function postavPravidla() {
+  const sekcia = kostraKarty('pravidla');
+  const vyber = h('div', { class: 'vyberPravidla', role: 'group', 'aria-label': T.pravidla.vyber });
+  const tl = PRAVIDLA.map((P, i) => h('button', { type: 'button', 'aria-pressed': String(i === 0), 'aria-label': fmt(T.pravidla.aria, { i: P.cislo, t: P.nazov }),
+    onclick: () => zvol(i) }, String(P.cislo)));
+  vyber.append(...tl);
+  sekcia.append(vyber, h('div', { class: 'scena' }), h('div', { class: 'ovladanie' }));
+  let prehravac = null, aktualne = 0;
+  function zvol(i) {
+    aktualne = i;
+    tl.forEach((b, j) => b.setAttribute('aria-pressed', String(j === i)));
+    if (prehravac) prehravac.nastavKroky(krokyPravidla(i));
+  }
+  KARTY.pravidla = { sekcia, zvol, aktualne: () => aktualne, init(pr) { prehravac = pr; zvol(0); } };
+  return sekcia;
+}
+
+/* =====================================================================
+   KARTA: Šablóna 1 až 9
+   ===================================================================== */
+// zápis v šablóne: rád 0 až 3, cifra 1 až 9; tisíce len 1 až 3 (maximum 3999)
+function zapisSablony(rad, d) { return rad === 3 && d > 3 ? null : toRoman(d * 10 ** rad); }
+function znackaVzoru(d, vRiadku) {
+  const typ = d === 4 || d === 9 ? 'minus' : d >= 6 && d <= 8 ? 'plus' : null;
+  return typ ? h('span', { class: 'znackaVzoru ' + typ + (vRiadku ? ' vRiadku' : ''), 'aria-hidden': 'true' }, typ === 'minus' ? '−' : '+') : null;
+}
+function postavSablona() {
+  const t = T.sablona, p = T.prevod;
+  const sekcia = kostraKarty('sablona');
+  sekcia.classList.add('sablona');
+  const rimko = vytvorRimka($('.rimkoMiesto', sekcia));
+  const mriezka = h('div', { class: 'mriezka' }, h('span', { class: 'roh' }));
+  const hlavicky = [];
+  for (let rad = 0; rad < 4; rad++) {
+    mriezka.append(h('span', { class: 'radH', style: `--r:${rad + 1}`, 'aria-hidden': 'true' }, ikonaRadu(rad),
+      h('span', { class: 'nazovPlny' }, p.nazvyRadov[rad]), h('span', { class: 'skratka' }, p.skratky[rad])));
+  }
+  for (let d = 1; d <= 9; d++) {
+    const zapisy = [0, 1, 2, 3].map(r => zapisSablony(r, d)).filter(Boolean);
+    const b = h('button', { type: 'button', class: 'stlpH', style: `--c:${d}`, 'aria-pressed': 'false',
+      'aria-label': fmt(t.stlpecAria, { d, zapisy: zapisy.join(', ') }), onclick: () => vyber(d, true) }, String(d), znackaVzoru(d));
+    hlavicky[d] = b;
+    mriezka.append(b);
+    for (let rad = 0; rad < 4; rad++) {
+      const z = zapisSablony(rad, d);
+      mriezka.append(h('span', { class: 'bunka' + (z ? '' : ' prazdna'), style: `--r:${rad + 1};--c:${d}`, 'data-d': d, 'aria-hidden': 'true',
+        onclick: z ? () => vyber(d, true) : null }, z || '—'));
+    }
+  }
+  const detail = h('div', { class: 'vzorDetail', 'aria-live': 'polite' });
+  function vyber(d, animovat) {
+    dokonciVsetky();
+    hlavicky.forEach((b, j) => b && b.setAttribute('aria-pressed', String(j === d)));
+    $$('.stlpH, .bunka', mriezka).forEach(e => e.classList.toggle('vybrany', +(e.dataset.d || e.style.getPropertyValue('--c')) === d));
+    const riadky = [];
+    detail.replaceChildren(h('div', { class: 'vzorHlavicka' }, h('span', { class: 'vzorCislo' }, d), znackaVzoru(d, true), h('span', {}, t.vzory[d])));
+    for (let rad = 0; rad < 4; rad++) {
+      const z = zapisSablony(rad, d);
+      if (!z) continue;
+      if (rad > 0) {
+        // výmena znakov oproti riadku nad ním
+        const pred = zapisSablony(rad - 1, d);
+        const mapa = [...new Set(pred)].map(c => `${c}→${ZNAKY_RADOV[rad][ZNAKY_RADOV[rad - 1].indexOf(c)]}`);
+        detail.append(h('div', { class: 'vymena', 'data-r': rad, 'aria-hidden': 'true' }, mapa.map(m => h('span', {}, m))));
+      }
+      const riadok = h('div', { class: 'vzorRiadok', 'data-r': rad },
+        h('span', { class: 'vzorPopis' }, ikonaRadu(rad), d * 10 ** rad),
+        h('div', { class: 'kamene' }, [...z].map(c => h('span', { class: 'kamen rimske' }, c))));
+      riadky.push(riadok);
+      detail.append(riadok);
+    }
+    const zapisy = riadky.map(r => $$('.kamen', r).map(k => k.textContent).join(''));
+    rimko.povedz(fmt(t.rimko, { d, vzor: t.vzory[d], zapisy: zapisy.join(', ') }), 'tesi', animovat);
+    if (animovat) animujVzor(riadky);
+  }
+  // riadky sa objavujú postupne; znaky „zídu“ z riadku nad nimi a vymenia sa
+  function animujVzor(riadky) {
+    if (!smieHybat()) return;
+    const n = riadky.length, plan = [];
+    const popisy = $$('.vymena, .vzorPopis', detail);
+    riadky.forEach((ri, r) => {
+      const kamene = $$('.kamen', ri), pred = r ? $$('.kamen', riadky[r - 1]) : null;
+      kamene.forEach((k, j) => {
+        const r1 = k.getBoundingClientRect(), z = pred && pred[Math.min(j, pred.length - 1)];
+        const r0 = z ? z.getBoundingClientRect() : r1;
+        plan.push({ k, r, novy: k.textContent, stary: z ? z.textContent : k.textContent, dx: r0.left - r1.left, dy: r0.top - r1.top });
+      });
+    });
+    tween(n * 700 / STAV.rychlost, p => {
+      const cas = p * n;
+      for (const x of plan) {
+        const q = Math.max(0, Math.min(1, cas - x.r));
+        if (x.r === 0) {
+          x.k.style.transform = `scale(${(0.3 + 0.7 * ease.back(q)).toFixed(3)})`;
+          x.k.style.opacity = Math.min(1, q * 3).toFixed(2);
+        } else {
+          const m = ease.inOut(Math.min(1, q / 0.6));
+          const otoc = q > 0.55 && q < 0.85 ? Math.abs(Math.cos(Math.PI * (q - 0.55) / 0.3)) : 1;
+          x.k.textContent = q < 0.7 ? x.stary : x.novy;
+          x.k.style.transform = `translate(${(x.dx * (1 - m)).toFixed(1)}px,${(x.dy * (1 - m)).toFixed(1)}px) scaleX(${otoc.toFixed(3)})`;
+          x.k.style.opacity = q > 0 ? '1' : '0';
+        }
+      }
+      for (const e of popisy) {
+        const r = +e.closest('[data-r]').dataset.r;
+        e.style.opacity = Math.max(0, Math.min(1, (cas - r) * 3)).toFixed(2);
+      }
+    }, () => {
+      plan.forEach(x => { x.k.textContent = x.novy; obnovStyl(x.k, null); });
+      popisy.forEach(e => obnovStyl(e, null));
+    });
+  }
+  const legenda = h('p', { class: 'legenda' },
+    h('span', {}, znackaVzoru(4, true), t.legendaMinus), h('span', {}, znackaVzoru(6, true), t.legendaPlus));
+  sekcia.append(h('h3', {}, t.nadpis), mriezka, legenda, detail, zvedaveEl(t.zvedaveText));
+  rimko.povedz(t.uvod, 'premysla', false);
+  KARTY.sablona = { sekcia, vyber };
+  return sekcia;
+}
+
+/* =====================================================================
+   SPOLOČNÉ PRVKY ČASTI 3: klávesnica, ciferník, konfety
+   ===================================================================== */
+// znaky, ktoré úroveň potrebuje (do 39 stačí I V X, do 100 aj L C, inak všetky)
+function znakyPreUroven(max) { return Object.keys(HODNOTY).filter(z => HODNOTY[z] <= max); }
+// klávesnica: kamene so znakmi + ⌫ + Vymaž; stav zápisu drží volajúci
+function klavesnicaEl(znaky, { pridaj, zmaz, vymaz, t }) {
+  return h('div', { class: 'klavesnica', role: 'group', 'aria-label': T.citanie.klavesnica },
+    znaky.map(z => h('button', { type: 'button', class: 'odpoved', 'aria-label': z, onclick: () => pridaj(z) }, z)),
+    h('button', { type: 'button', 'aria-label': t.zmaz, onclick: zmaz }, '⌫'),
+    h('button', { type: 'button', onclick: vymaz }, t.vymaz));
+}
+function displejEl(t) { return h('div', { class: 'zapisVstup prazdny', role: 'status', 'aria-label': t.zapis }, '…'); }
+function ukazNaDispleji(el, v) { el.textContent = v || '…'; el.classList.toggle('prazdny', !v); }
+// ciferník s rímskymi číslicami I až XII a hodinovou ručičkou
+function cifernikSVG(hodina, { interaktivny = false } = {}) {
+  let s = `<svg viewBox="0 0 300 300" class="cifernik" role="img" aria-label="${T.hodiny.cifernik}">
+    <circle cx="150" cy="150" r="144" fill="#f4eedf" stroke="#8f826a" stroke-width="8"/>`;
+  for (let k = 0; k < 60; k++) {
+    const u = k * 6 * Math.PI / 180, dlha = k % 5 === 0;
+    const r1 = dlha ? 126 : 132, r2 = 138;
+    s += `<line x1="${(150 + r1 * Math.sin(u)).toFixed(1)}" y1="${(150 - r1 * Math.cos(u)).toFixed(1)}" x2="${(150 + r2 * Math.sin(u)).toFixed(1)}" y2="${(150 - r2 * Math.cos(u)).toFixed(1)}" stroke="#8f826a" stroke-width="${dlha ? 3 : 1.2}"/>`;
+  }
+  for (let k = 1; k <= 12; k++) {
+    const u = k * 30 * Math.PI / 180, x = (150 + 100 * Math.sin(u)).toFixed(1), y = (150 - 100 * Math.cos(u)).toFixed(1);
+    const text = `<text x="${x}" y="${(+y + 8).toFixed(1)}" font-size="${toRoman(k).length > 3 ? 21 : 24}" text-anchor="middle">${toRoman(k)}</text>`;
+    s += interaktivny
+      ? `<g class="cislicaH" data-h="${k}" tabindex="0" role="button" aria-label="${fmt(T.hodiny.cislica, { r: toRoman(k) })}"><circle cx="${x}" cy="${y}" r="28"/>${text}</g>`
+      : text;
+  }
+  s += `<g class="rucicka" transform="rotate(${hodinyUhol(hodina)} 150 150)"><path d="M150 168 L150 82" stroke="#3a3022" stroke-width="10" stroke-linecap="round"/><path d="M150 66 L140 88 L160 88 Z" fill="#3a3022"/></g>
+    <circle cx="150" cy="150" r="9" fill="#d9772f"/></svg>`;
+  return s;
+}
+// konfety pri úspechu (canvas); pri prefers-reduced-motion sa nespustia
+function konfety() {
+  if (!smieHybat()) return;
+  try {
+    const c = h('canvas', { class: 'konfety', 'aria-hidden': 'true' });
+    document.body.append(c);
+    const w = (c.width = innerWidth), v = (c.height = innerHeight), ctx = c.getContext('2d');
+    if (!ctx) { c.remove(); return; }
+    const farby = ['#f3b453', '#ffd88a', '#7fdc8f', '#6fb4ff', '#b9a3ff', '#ff7a6b'];
+    const kusy = Array.from({ length: 90 }, () => ({
+      x: w / 2 + (Math.random() - 0.5) * w * 0.4, y: v * 0.4, vx: (Math.random() - 0.5) * 9, vy: -4 - Math.random() * 10,
+      r: Math.random() * 6.3, vr: (Math.random() - 0.5) * 0.3, f: farby[Math.floor(Math.random() * farby.length)], s: 6 + Math.random() * 6 }));
+    tween(1600, p => {
+      const t = p * 96;   // „snímky“ pri 60 fps – poloha závisí len od skutočného času
+      ctx.clearRect(0, 0, w, v);
+      ctx.globalAlpha = p > 0.7 ? (1 - p) / 0.3 : 1;
+      for (const k of kusy) {
+        ctx.save();
+        ctx.translate(k.x + k.vx * t, k.y + k.vy * t + 0.18 * t * t);
+        ctx.rotate(k.r + k.vr * t);
+        ctx.fillStyle = k.f;
+        ctx.fillRect(-k.s / 2, -k.s / 4, k.s, k.s / 2);
+        ctx.restore();
+      }
+    }, () => c.remove());
+  } catch (_) { /* bez konfiet */ }
+}
+// hviezdička pri správnej odpovedi jemne odskočí
+function vyskocHviezdu(el) {
+  if (!smieHybat()) return;
+  animujStyl(el, 500 / STAV.rychlost, p => ({ transform: `scale(${(1 + 0.6 * Math.sin(Math.PI * p)).toFixed(3)})` }));
+}
+const zamiesajR = (a, rng = Math.random) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+/* =====================================================================
+   KARTA: Čítame rímske čísla
+   ===================================================================== */
+function krokyCitania(vstup) {
+  const t = T.citanie;
+  if (!vstup) return [{ text: t.prazdne, data: { typ: 'prazdne' } }];
+  const r = fromRoman(vstup), s = r.text;
+  if (r.ok) {
+    const skupiny = skupinyZapisu(s), hodnoty = skupiny.map(hodnotaSkupiny), d = { zapis: s, skupiny, hodnoty, n: r.hodnota };
+    const kratko = skupiny.length > 4;
+    return [
+      { text: skupiny.some(g => g.length === 2) ? t.dvojice : t.ziadnaDvojica, data: { ...d, typ: 'dvojice' } },
+      { text: kratko ? t.skupinyKratko : fmt(t.skupiny, { s: skupiny.join(' | ') }), data: { ...d, typ: 'skupiny' } },
+      { text: kratko ? t.hodnotyKratko : fmt(t.hodnoty, { s: hodnoty.join(', ') }), data: { ...d, typ: 'hodnoty' } },
+      { text: fmt(t.sucet, { n: r.hodnota }), data: { ...d, typ: 'sucet' }, vyraz: 'tesi' }
+    ];
+  }
+  // neplatný zápis: láskavo povieme pravidlo a ukážeme nesprávny príklad s opravou
+  if (!r.pravidlo && !r.oprava) return [{ text: t.zleNevieme, data: { typ: 'zle', zapis: s }, vyraz: 'povzbudzuje' }];
+  const kroky = [{ text: fmt(t.zle, { z: s }), data: { typ: 'zle', zapis: s }, vyraz: 'povzbudzuje' }];
+  if (r.pravidlo) kroky.push({ text: t.pravidlo[r.pravidlo], data: { typ: 'pravidlo', zapis: s, pravidlo: r.pravidlo } });
+  if (r.oprava) kroky.push({ text: fmt(t.oprava, { r: r.oprava, n: r.zamer }), data: { typ: 'oprava', zle: s, dobre: [r.oprava] }, vyraz: 'tesi' });
+  else {
+    const pr = PRAVIDLA[r.pravidlo - 1].kroky.find(k => k.typ === 'oprava');
+    kroky.push({ text: fmt(t.priklad, { zle: pr.zle, dobre: pr.zapisy.join(' ' + T.pravidla.alebo + ' ') }), data: { typ: 'oprava', zle: pr.zle, dobre: pr.zapisy }, vyraz: 'tesi' });
+  }
+  return kroky;
+}
+function kresliCitanie(krok) {
+  const d = krok.data;
+  const f = h('div', { class: 'scenaStred' });
+  if (d.typ === 'prazdne') { f.append(h('div', { class: 'zapisVstup prazdny', 'aria-hidden': 'true' }, '?')); return f; }
+  if (d.typ === 'zle') { f.append(kameneZapisu(d.zapis, 'p', { preskrtnute: true, male: true, hodnoty: false }), verdiktEl('zle')); return f; }
+  if (d.typ === 'pravidlo') {
+    const P = PRAVIDLA[d.pravidlo - 1];
+    f.append(h('div', { class: 'hlavickaPravidla' }, h('span', { class: 'cisloPravidla' }, P.cislo), h('span', { class: 'kratkoPravidla' }, P.kratko)),
+      kameneZapisu(d.zapis, 'p', { preskrtnute: true, male: true, hodnoty: false }));
+    return f;
+  }
+  if (d.typ === 'oprava') { f.append(opravaEl(d.zle, d.dobre), verdiktEl('oprava')); return f; }
+  // platný zápis: dvojice → skupiny → hodnoty → súčet
+  const box = h('div', { class: 'skupinyCitania' + (d.typ === 'dvojice' ? '' : ' delene') });
+  let i = 0;
+  d.skupiny.forEach((g, j) => {
+    const sk = h('div', { class: 'skupinaCit' + (g.length === 2 && d.typ === 'dvojice' ? ' vDvojici' : '') },
+      h('div', { class: 'kamene' }, [...g].map(z => kamenEl(z, { kluc: 'c' + i++, maly: true }))));
+    if (d.typ === 'hodnoty' || d.typ === 'sucet') sk.append(h('span', { class: 'hodnotaSk', 'data-k': 'hg' + j }, d.hodnoty[j]));
+    box.append(sk);
+  });
+  f.append(box);
+  if (d.typ === 'sucet') f.append(h('div', { class: 'rovnica' }, h('span', { 'data-k': 'sum', style: 'display:inline-block' }, d.hodnoty.join(' + ') + ' = ' + d.n)));
+  return f;
+}
+function postavCitanie() {
+  const t = T.citanie, sekcia = kostraKarty('citanie');
+  let vstup = '', prehravac = null;
+  const displej = displejEl(t);
+  const pridaj = z => { if (vstup.length < 15) nastav(vstup + z); else prehravac.rimko.povedz(t.dlhe, 'povzbudzuje'); };
+  const zmaz = () => nastav(vstup.slice(0, -1));
+  const klav = klavesnicaEl(Object.keys(HODNOTY), { pridaj, zmaz, vymaz: () => nastav(''), t });
+  const skus = h('div', { class: 'skusit' }, h('span', {}, t.skus + ':'), t.priklady.map(z => h('button', { type: 'button', onclick: () => nastav(z) }, z)));
+  sekcia.append(displej, klav, skus, h('div', { class: 'scena' }), h('div', { class: 'ovladanie' }));
+  function nastav(v) {
+    vstup = v;
+    ukazNaDispleji(displej, v);
+    if (prehravac) prehravac.nastavKroky(krokyCitania(v));
+  }
+  KARTY.citanie = { sekcia, nastav, klaves: pridaj, zmaz, init(p) { prehravac = p; nastav(''); } };
+  return sekcia;
+}
+
+/* =====================================================================
+   KARTA: Časté chyby
+   ===================================================================== */
+function krokyChyby(i) {
+  const t = T.chyby, zle = CASTE_CHYBY[i], n = citajZlava(zle), r = toRoman(n), p = porusenePravidla(zle), rady = decompose(n);
+  const vyp = rady.length > 1 ? rady.join(' + ') : vypocet(n).split(' =')[0] || r;
+  return [
+    { text: p.length === 1 ? fmt(t.zle, { zle, p: p[0] }) : fmt(t.zleBez, { zle }), data: { typ: 'zle', zle }, vyraz: 'povzbudzuje' },
+    { text: rady.length > 1 ? fmt(t.rozklad, { n, zoznam: zoznamSlovami(rady) }) : fmt(t.rozkladJeden, { n }), data: { typ: 'rozklad', zle, n, rady } },
+    { text: fmt(t.spravne, { r, vypocet: vyp }), data: { typ: 'spravne', zle, n, rady, r }, vyraz: 'tesi' }
+  ];
+}
+function kresliChyby(krok) {
+  const d = krok.data;
+  const f = h('div', { class: 'scenaStred' });
+  if (d.typ === 'zle') { f.append(kameneZapisu(d.zle, 'p', { preskrtnute: true, hodnoty: false }), verdiktEl('zle')); return f; }
+  f.append(d.typ === 'spravne' ? opravaEl(d.zle, d.r) : kameneZapisu(d.zle, 'p', { preskrtnute: true, male: true, hodnoty: false }));
+  const sk = h('div', { class: 'skupiny' });
+  for (const hv of d.rady) {
+    const r = infoRadu(hv);
+    sk.append(h('div', { class: `skupina rad${r.rad}` },
+      h('div', { class: 'hlavicka', 'data-k': 'l' + hv }, ikonaRadu(r.rad), h('span', { class: 'cislo' }, hv)), kameneRadu(hv)));
+  }
+  f.append(sk);
+  if (d.typ === 'spravne') f.append(verdiktEl('ok'));
+  return f;
+}
+function postavChyby() {
+  const t = T.chyby, sekcia = kostraKarty('chyby');
+  const vyber = h('div', { class: 'vyberChyby', role: 'group', 'aria-label': t.vyber });
+  const tl = CASTE_CHYBY.map((zle, i) => h('button', { type: 'button', 'aria-pressed': String(i === 0),
+    'aria-label': fmt(t.aria, { zle, r: toRoman(citajZlava(zle)) }), onclick: () => zvol(i) }, '✘ ' + zle));
+  vyber.append(...tl);
+  sekcia.append(vyber, h('div', { class: 'scena' }), h('div', { class: 'ovladanie' }));
+  let prehravac = null;
+  function zvol(i) {
+    tl.forEach((b, j) => b.setAttribute('aria-pressed', String(j === i)));
+    if (prehravac) prehravac.nastavKroky(krokyChyby(i));
+  }
+  KARTY.chyby = { sekcia, zvol, init(p) { prehravac = p; zvol(0); } };
+  return sekcia;
+}
+
+/* =====================================================================
+   KARTA: Rímske hodiny
+   ===================================================================== */
+// tri ďalšie možnosti k hodine h: zámeny (IV ↔ VI, IX ↔ XI), susedia, potom náhodné
+function moznostiHodin(hh, rng = Math.random) {
+  const zrkadlo = { 4: 6, 6: 4, 9: 11, 11: 9, 1: 10, 10: 1, 2: 12, 12: 2, 3: 8, 8: 3, 5: 7, 7: 5 };
+  const kand = [zrkadlo[hh], hh % 12 + 1, (hh + 10) % 12 + 1, ...zamiesajR([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], rng)];
+  return [...new Set(kand)].filter(x => x !== hh).slice(0, 3);
+}
+function postavHodiny() {
+  const t = T.hodiny, sekcia = kostraKarty('hodiny');
+  const rimko = vytvorRimka($('.rimkoMiesto', sekcia));
+  let rezim = 0, hodina = 3, uhol = 90, svg = null, ruka = null, otazka = 0;
+  const tlRezimy = t.rezimy.map((r, i) => h('button', { type: 'button', 'aria-pressed': String(i === 0), onclick: () => zvolRezim(i) }, r));
+  const obal = h('div', { class: 'cifernikObal' });
+  const vysledok = h('div', { class: 'vysledokHodin', 'aria-live': 'polite' });
+  const spodok = h('div');
+  sekcia.append(h('div', { class: 'rezimy', role: 'group', 'aria-label': t.rezimAria }, tlRezimy), obal, vysledok, spodok, h('p', { class: 'poznamka' }, t.poznamka));
+  const nastavUhol = a => { uhol = a; ruka.setAttribute('transform', `rotate(${a.toFixed(2)} 150 150)`); };
+  // ručička sa plynulo otočí najkratšou cestou
+  function natoc(hh, animovat = true) {
+    hodina = hh;
+    const ciel = hodinyUhol(hh);
+    let rozdiel = ((ciel - uhol) % 360 + 540) % 360 - 180;
+    const od = uhol;
+    if (ruka) {
+      ruka.setAttribute('aria-valuenow', hh);
+      ruka.setAttribute('aria-valuetext', toRoman(hh));
+    }
+    if (!animovat || !smieHybat()) { nastavUhol(ciel); return; }
+    tween(320 / STAV.rychlost, p => nastavUhol(p >= 1 ? ciel : od + rozdiel * ease.inOut(p)));
+  }
+  function kresli() {
+    obal.innerHTML = cifernikSVG(hodina, { interaktivny: rezim === 0 });
+    svg = obal.firstElementChild;
+    ruka = $('.rucicka', svg);
+    uhol = hodinyUhol(hodina);
+    if (rezim === 2) {
+      Object.entries({ tabindex: '0', role: 'slider', 'aria-label': t.rucicka, 'aria-valuemin': '1', 'aria-valuemax': '12', 'aria-valuenow': hodina, 'aria-valuetext': toRoman(hodina) })
+        .forEach(([k, v]) => ruka.setAttribute(k, v));
+      ruka.addEventListener('keydown', e => {
+        if (['ArrowRight', 'ArrowUp'].includes(e.key)) { posun(1); e.preventDefault(); e.stopPropagation(); }
+        if (['ArrowLeft', 'ArrowDown'].includes(e.key)) { posun(-1); e.preventDefault(); e.stopPropagation(); }
+      });
+      pridajTahanieRucicky();
+    }
+    $$('.cislicaH', svg).forEach(g => {
+      const klik = () => {
+        const hh = +g.dataset.h;
+        $$('.cislicaH', svg).forEach(x => x.classList.toggle('vybrana', x === g));
+        natoc(hh);
+        vysledok.textContent = `${toRoman(hh)} = ${hh}`;
+        rimko.povedz(fmt(t.hodnota, { r: toRoman(hh), n: hh }), 'tesi');
+      };
+      g.addEventListener('click', klik);
+      g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { klik(); e.preventDefault(); } });
+    });
+  }
+  function ukazNastavene() {
+    vysledok.textContent = `${toRoman(hodina)} = ${hodina}`;
+    rimko.povedz(fmt(t.nastavene, { r: toRoman(hodina), n: hodina }), 'tesi');
+  }
+  function posun(smer) { natoc((hodina + smer + 11) % 12 + 1); ukazNastavene(); }
+  // ťahanie ručičky prstom alebo myšou; po pustení skočí na najbližšiu hodinu
+  function pridajTahanieRucicky() {
+    let tahame = false;
+    const uholZ = e => {
+      const r = svg.getBoundingClientRect();
+      return (Math.atan2(e.clientX - (r.left + r.width / 2), -(e.clientY - (r.top + r.height / 2))) * 180 / Math.PI + 360) % 360;
+    };
+    svg.addEventListener('pointerdown', e => { tahame = true; try { svg.setPointerCapture(e.pointerId); } catch (_) { /* nevadí */ } dokonciVsetky(); nastavUhol(uholZ(e)); });
+    svg.addEventListener('pointermove', e => { if (tahame) nastavUhol(uholZ(e)); });
+    const pusti = () => {
+      if (!tahame) return;
+      tahame = false;
+      natoc(Math.round(uhol / 30) % 12 || 12);
+      ukazNastavene();
+    };
+    svg.addEventListener('pointerup', pusti);
+    svg.addEventListener('pointercancel', pusti);
+  }
+  function novaOtazka() {
+    let hh;
+    do { hh = 1 + Math.floor(Math.random() * 12); } while (hh === otazka);
+    otazka = hh;
+    natoc(hh);
+    vysledok.textContent = '';
+    const moz = zamiesajR([hh, ...moznostiHodin(hh)]);
+    spodok.replaceChildren(h('div', { class: 'moznosti' }, moz.map(m => {
+      const b = h('button', { type: 'button', class: 'rimske', 'aria-label': toRoman(m), onclick: () => odpovedz(b, m) }, toRoman(m), h('span', { class: 'znacka', hidden: true }));
+      return b;
+    })));
+    rimko.povedz(t.uvod[1], 'premysla');
+  }
+  function odpovedz(b, m) {
+    const zn = $('.znacka', b);
+    zn.hidden = false;
+    if (m === otazka) {
+      b.classList.add('ok'); zn.textContent = '✔';
+      $$('.moznosti button', spodok).forEach(x => { x.disabled = true; });
+      vysledok.textContent = `${toRoman(m)} = ${m}`;
+      rimko.povedz(fmt(t.ok, { r: toRoman(m) }), 'tesi');
+      spodok.append(h('div', { class: 'akcie' }, h('button', { type: 'button', class: 'primary', onclick: novaOtazka }, t.dalsia, ikona('dalej'))));
+    } else {
+      b.classList.add('zle'); zn.textContent = '✘'; b.disabled = true;
+      rimko.povedz(t.zle, 'povzbudzuje');
+    }
+  }
+  function zvolRezim(i) {
+    rezim = i;
+    tlRezimy.forEach((b, j) => b.setAttribute('aria-pressed', String(j === i)));
+    vysledok.textContent = '';
+    spodok.replaceChildren();
+    kresli();
+    rimko.povedz(t.uvod[i], 'premysla');
+    if (i === 1) novaOtazka();
+    if (i === 2) {
+      spodok.append(h('div', { class: 'akcie' },
+        h('button', { type: 'button', 'aria-label': t.spat, onclick: () => posun(-1) }, ikona('spat')),
+        h('button', { type: 'button', 'aria-label': t.dopredu, onclick: () => posun(1) }, ikona('dalej'))));
+      ukazNastavene();
+    }
+  }
+  zvolRezim(0);
+  KARTY.hodiny = { sekcia, zvolRezim, natoc, hodina: () => hodina, uhol: () => uhol };
+  return sekcia;
+}
+
+/* =====================================================================
+   KARTA: Kde ich nájdeme
+   ===================================================================== */
+function postavKde() {
+  const t = T.kde, sekcia = kostraKarty('kde');
+  const rimko = vytvorRimka($('.rimkoMiesto', sekcia));
+  rimko.povedz(t.uvod, 'premysla', false);
+  const miesta = h('div', { class: 'miesta' }, t.miesta.map(m => h('div', { class: 'miesto' }, h('span', { html: OBRAZKY_KDE[m.obr], style: 'display:contents' }), h('span', {}, m.t))));
+  const rok = new Date().getFullYear();
+  const rokEl = h('div', { class: 'vysledokNastroja' }, rok >= 1 && rok <= 3999 ? [rok, ' = ', h('span', { class: 'rimske' }, toRoman(rok))] : rok);
+  // nástroj so vstupným políčkom: nič sa neukladá ani neodosiela
+  function nastroj(nadpis, label, maxDlzka, vyhodnot) {
+    const id = 'vstup-' + Math.random().toString(36).slice(2, 8);
+    const vystup = h('div', { class: 'vysledokNastroja', 'aria-live': 'polite' });
+    const input = h('input', { id, type: 'text', inputmode: 'numeric', autocomplete: 'off', maxlength: String(maxDlzka),
+      oninput: () => vystup.replaceChildren(...[].concat(vyhodnot(input.value.trim()))) });
+    return h('div', { class: 'nastroj' }, h('h3', {}, nadpis), h('label', { for: id }, label), input, vystup);
+  }
+  const cislo = (s, max) => (/^\d{1,4}$/.test(s) && +s >= 1 && +s <= max ? +s : null);
+  const vek = nastroj(t.vek, t.vekLabel, 2, s => {
+    if (!s) return [];
+    const n = cislo(s, 99);
+    return n ? [n, ' = ', h('span', { class: 'rimske' }, toRoman(n))] : [t.vekZle];
+  });
+  const stor = nastroj(t.storocie, t.storocieLabel, 4, s => {
+    if (!s) return [];
+    const n = cislo(s, 3999);
+    if (!n) return [t.storocieZle];
+    const st = storocie(n);
+    const [pred, za] = t.storocieText.split('{r}');
+    return [fmt(pred, { s: st }), h('span', { class: 'rimske' }, toRoman(st)), za];
+  });
+  sekcia.append(miesta, h('p', { class: 'poznamkaBodka' }, t.bodka),
+    h('div', { class: 'nastroj' }, h('h3', {}, t.rok), rokEl), vek, stor, zvedaveEl(t.zvedaveText));
+  KARTY.kde = { sekcia };
+  return sekcia;
+}
+
+/* =====================================================================
+   HRA: Postav číslo (10 kôl, bez prehry)
+   ===================================================================== */
+function postavPostav() {
+  const t = T.postav, sekcia = kostraKarty('postav'), KOL = 10;
+  const panel = h('div', { class: 'hra' });
+  const riesenieBox = h('div', { class: 'riesenie', hidden: true }, h('div', { class: 'scena' }), h('div', { class: 'ovladanie' }));
+  sekcia.append(vytvorVyberUrovne(), panel, riesenieBox);
+  const s = { kola: [], i: 0, hviezdy: 0, vstup: '', pokusy: 0, hotove: false, riesenie: false };
+  const el = {};
+  let p = null;
+  const n = () => s.kola[s.i];
+  function start() {
+    const max = NASTAVENIE.maximum, kola = new Set();
+    while (kola.size < KOL) kola.add(1 + Math.floor(Math.random() * max));
+    Object.assign(s, { kola: [...kola], i: 0, hviezdy: 0 });
+    kolo();
+  }
+  function kolo() {
+    Object.assign(s, { vstup: '', pokusy: 0, hotove: false, riesenie: false });
+    riesenieBox.hidden = true;
+    if (p) p.zastav();
+    el.displej = displejEl(t);
+    el.napoveda = h('div', { class: 'napoveda', 'aria-live': 'polite' });
+    el.hviezdy = h('span', { class: 'hviezdy', 'aria-label': fmt(t.hviezdyAria, { s: s.hviezdy }) }, '★ ' + s.hviezdy);
+    el.klav = klavesnicaEl(znakyPreUroven(NASTAVENIE.maximum), { pridaj, zmaz, vymaz: () => nastav(''), t });
+    el.hotovo = h('button', { type: 'button', class: 'primary', onclick: hotovo }, '✔ ' + t.hotovo);
+    el.dalej = h('div', { class: 'akcie' });
+    panel.replaceChildren(
+      h('div', { class: 'hraStav' }, h('span', {}, fmt(t.kolo, { i: s.i + 1, n: KOL })), el.hviezdy),
+      h('div', { class: 'zadanie' }, h('div', {}, t.zadanie), h('span', { class: 'velkeCislo' }, n())),
+      el.displej, el.klav, h('div', { class: 'akcie' }, el.hotovo), el.napoveda, el.dalej);
+    p.rimko.povedz(t.uvod, 'premysla');
+  }
+  function pridaj(z) { if (!s.hotove && s.vstup.length < 15) nastav(s.vstup + z); }
+  function zmaz() { if (!s.hotove) nastav(s.vstup.slice(0, -1)); }
+  function nastav(v) { s.vstup = v; ukazNaDispleji(el.displej, v); }
+  function tlacidloDalej() {
+    if ($('.tlDalej', el.dalej)) return;
+    const posledne = s.i >= KOL - 1;
+    el.dalej.append(h('button', { type: 'button', class: 'primary tlDalej', onclick: () => { if (posledne) koniec(); else { s.i++; kolo(); } } },
+      posledne ? t.vysledok : t.dalsie, ikona('dalej')));
+  }
+  function hotovo() {
+    if (s.hotove) return;
+    if (!s.vstup) { p.rimko.povedz(t.prazdne, 'povzbudzuje'); return; }
+    const r = fromRoman(s.vstup);
+    if (r.ok && r.hodnota === n()) {
+      s.hotove = true;
+      if (!s.riesenie) { s.hviezdy++; el.hviezdy.textContent = '★ ' + s.hviezdy; el.hviezdy.setAttribute('aria-label', fmt(t.hviezdyAria, { s: s.hviezdy })); vyskocHviezdu(el.hviezdy); }
+      p.rimko.povedz(fmt(t.ok, { r: r.text, n: n() }), 'tesi');
+      konfety();
+      $$('button', el.klav).forEach(b => { b.disabled = true; });
+      el.hotovo.disabled = true;
+      tlacidloDalej();
+      return;
+    }
+    s.pokusy++;
+    if (s.pokusy === 1) {
+      el.napoveda.textContent = `${n()} = ${decompose(n()).join(' + ')}`;
+      p.rimko.povedz(t.nap1, 'povzbudzuje');
+    } else if (s.pokusy === 2) {
+      if (r.ok) p.rimko.povedz(fmt(t.nap2Ine, { r: r.text, m: r.hodnota, n: n() }), 'povzbudzuje');
+      else if (r.pravidlo) {
+        const P = PRAVIDLA[r.pravidlo - 1];
+        el.napoveda.replaceChildren(h('span', { class: 'hlavickaPravidla' }, h('span', { class: 'cisloPravidla' }, P.cislo), h('span', { class: 'kratkoPravidla' }, P.kratko)));
+        p.rimko.povedz(T.citanie.pravidlo[r.pravidlo], 'povzbudzuje');
+      } else p.rimko.povedz(t.nap2Nevieme, 'povzbudzuje');
+    } else {
+      p.rimko.povedz(t.nap3, 'povzbudzuje');
+      if (!$('.tlRiesenie', el.dalej)) el.dalej.prepend(h('button', { type: 'button', class: 'tlRiesenie', onclick: ukazRiesenie }, t.ukazRiesenie));
+    }
+  }
+  function ukazRiesenie() {
+    s.riesenie = true;
+    riesenieBox.hidden = false;
+    p.nastavKroky(krokyPrevodu(n()));
+    tlacidloDalej();
+  }
+  function koniec() {
+    riesenieBox.hidden = true;
+    p.zastav();
+    const text = fmt(t.koniec, { s: s.hviezdy, n: KOL });
+    panel.replaceChildren(h('span', { html: IKONY.pohar, style: 'display:contents' }), h('p', { class: 'otazka' }, '★ ' + s.hviezdy),
+      h('p', {}, text), h('button', { type: 'button', class: 'primary', onclick: start }, ikona('znova'), t.hrajZnova));
+    p.rimko.povedz(text, 'tesi');
+  }
+  posluchaciUrovne.add(() => { if (p) start(); });
+  KARTY.postav = { sekcia, klaves: z => { if (znakyPreUroven(NASTAVENIE.maximum).includes(z)) pridaj(z); }, zmaz, stav: s, hotovo, nastav, start,
+    init(pr) { p = pr; start(); } };
+  return sekcia;
+}
+
+/* =====================================================================
+   KARTA: Kvíz – otázky sa generujú, správna odpoveď sa vždy počíta
+   ===================================================================== */
+function maOdcitanie(n) { return decompose(n).some(hv => infoRadu(hv).odcitanie); }
+function nahodneCislo(rng, max, podmienka) {
+  for (let i = 0; i < 2000; i++) { const n = 1 + Math.floor(rng() * max); if (!podmienka || podmienka(n)) return n; }
+  return 4;
+}
+// súčet všetkých znakov bez odčítania (IV by sa prečítalo ako 6)
+function scitanaHodnota(z) { return [...z].reduce((a, c) => a + HODNOTY[c], 0); }
+// nesprávne zápisy čísla n podľa častých chýb
+function chybneZapisy(n) {
+  const out = new Set(), rady = decompose(n), zap = rady.map(hv => infoRadu(hv).zapis);
+  // 1) bez odčítania: 4 → IIII, 9 → VIIII, 40 → XXXX, 900 → DCCCC
+  out.add(rady.map(hv => {
+    const r = infoRadu(hv);
+    if (!r.odcitanie) return r.zapis;
+    const [a, b] = ZNAKY_RADOV[r.rad];
+    return r.cifra === 4 ? a.repeat(4) : b + a.repeat(4);
+  }).join(''));
+  // 2) prehodené poradie v dvojici: IV → VI
+  rady.forEach((hv, k) => { if (infoRadu(hv).odcitanie) out.add(zap.map((z, j) => (j === k ? z[1] + z[0] : z)).join('')); });
+  // 3) nepovolené odčítanie na konci čísla: 99 → IC, 49 → IL, 45 → VL, 1999 → MIM
+  for (const delitel of [100, 1000]) {
+    const koniec = n % delitel;
+    if (!koniec) continue;
+    for (const m of Object.keys(HODNOTY)) for (const v of Object.keys(HODNOTY)) {
+      if (HODNOTY[v] - HODNOTY[m] === koniec && !DVOJICE.includes(m + v)) out.add((n - koniec ? toRoman(n - koniec) : '') + m + v);
+    }
+  }
+  out.delete(toRoman(n));
+  return [...out];
+}
+function vyberRozne(zoznam, pocet, vylucit) {
+  const out = [];
+  for (const x of zoznam) if (out.length < pocet && !vylucit.includes(x) && !out.includes(x)) out.push(x);
+  return out;
+}
+const SUSEDIA = [1, -1, 10, -10, 2, -2, 5, -5, 100, -100, 3, 20, -20, 50];
+function susedneZapisy(n, rng) { return zamiesajR(SUSEDIA, rng).map(d => n + d).filter(m => m >= 1 && m <= 3999).map(toRoman); }
+function otazkaKvizu(typ, rng, max) {
+  const t = T.kviz;
+  const moz = (zoznam, spravna) => zamiesajR(zoznam, rng).map(x => ({ text: String(x), spravna: x === spravna }));
+  if (typ === 'a') {
+    const n = nahodneCislo(rng, max, x => maOdcitanie(x) || rng() < 0.3), sp = toRoman(n);
+    const zle = vyberRozne([...zamiesajR(chybneZapisy(n), rng), ...susedneZapisy(n, rng)], 3, [sp]);
+    return { typ, n, otazka: fmt(t.a, { n }), rimske: true, moznosti: moz([sp, ...zle], sp), riesenie: krokyPrevodu(n) };
+  }
+  if (typ === 'b') {
+    const n = nahodneCislo(rng, max, maOdcitanie), z = toRoman(n), sucet = scitanaHodnota(z);
+    const ine = vyberRozne(zamiesajR(SUSEDIA, rng).map(d => n + d).filter(m => m >= 1), 2, [n, sucet]);
+    return { typ, n, z, sucet, otazka: t.b, zobraz: { typ: 'rimske', z }, moznosti: moz([n, sucet, ...ine], n), riesenie: krokyPrevodu(n) };
+  }
+  if (typ === 'c') {
+    const a = nahodneCislo(rng, max);
+    const obr = fromRoman(toRoman(a).split('').reverse().join(''));
+    let b = obr.ok && obr.hodnota !== a && obr.hodnota <= max && rng() < 0.6 ? obr.hodnota : 0;
+    while (!b || b === a) b = nahodneCislo(rng, max);
+    const A = toRoman(a), B = toRoman(b), vacsie = a > b ? A : B;
+    const d = { typ: 'porovnaj', A, B, a, b };
+    return { typ, a, b, otazka: t.c, rimske: true, moznosti: moz([A, B], vacsie),
+      riesenie: [{ text: fmt(t.c1, { a: A, x: a, b: B, y: b }), data: d }, { text: fmt(t.c2, { v: vacsie }), data: { ...d, vacsi: true }, vyraz: 'tesi' }] };
+  }
+  if (typ === 'd') {
+    const n = nahodneCislo(rng, max, maOdcitanie), sp = toRoman(n);
+    const kand = chybneZapisy(n).filter(z => !fromRoman(z).ok && citajZlava(z) === n);
+    const zle = kand[Math.floor(rng() * kand.length)];
+    const ine = vyberRozne([...zamiesajR(chybneZapisy(n), rng), ...susedneZapisy(n, rng)], 3, [sp, zle]);
+    return { typ, n, zle, otazka: t.d, zobraz: { typ: 'zle', z: zle }, rimske: true, moznosti: moz([sp, ...ine], sp), riesenie: krokyPrevodu(n) };
+  }
+  if (typ === 'e') {
+    const hh = 1 + Math.floor(rng() * 12), sp = toRoman(hh);
+    const d = { typ: 'hodiny', h: hh };
+    return { typ, h: hh, otazka: t.e, zobraz: { typ: 'hodiny', h: hh }, rimske: true, moznosti: moz([sp, ...moznostiHodin(hh, rng).map(toRoman)], sp),
+      riesenie: [{ text: fmt(t.e1, { n: hh }), data: d }, { text: fmt(t.e2, { n: hh, r: sp }), data: { ...d, r: sp }, vyraz: 'tesi' }] };
+  }
+  // f: hodnota znaku
+  const znaky = znakyPreUroven(max), z = znaky[Math.floor(rng() * znaky.length)], sp = HODNOTY[z];
+  const ine = vyberRozne(zamiesajR(Object.values(HODNOTY), rng), 3, [sp]);
+  return { typ: 'f', z, otazka: fmt(t.f, { z }), zobraz: { typ: 'rimske', z }, moznosti: moz([sp, ...ine], sp),
+    riesenie: [{ text: fmt(t.f1, { z, n: sp }), data: { typ: 'znak', z }, vyraz: 'tesi' }] };
+}
+function sadaKvizu(rng, max) {
+  return zamiesajR(['a', 'a', 'b', 'b', 'c', 'c', 'd', 'd', 'e', 'e', 'f', 'f'], rng).map(typ => otazkaKvizu(typ, rng, max));
+}
+function doskaEl(z, pred, rezerva = 0) {
+  return h('span', { class: 'doska', role: 'img', 'aria-label': z, style: `--w:${(sirkaZapisu(z) + rezerva).toFixed(2)}` }, [...z].map((c, j) => kamenEl(c, { kluc: `${pred}${j}` })));
+}
+// scéna riešenia v kvíze (prevod využije kresliPrevod z karty prevodu)
+function kresliRiesenia(krok) {
+  const d = krok.data;
+  if (['uvod', 'rozklad', 'rad', 'spoj'].includes(d.typ)) return kresliPrevod(krok);
+  const f = h('div', { class: 'scenaStred' });
+  if (d.typ === 'porovnaj') {
+    const vacsie = Math.max(d.a, d.b);
+    f.append(h('div', { class: 'skupiny' }, [[d.A, d.a], [d.B, d.b]].map(([z, x], i) =>
+      h('div', { class: 'skupina' + (d.vacsi && x === vacsie ? ' aktivna' : '') }, doskaEl(z, 'q' + i + '-', 1.5), h('span', { class: 'hodnotaSk', 'data-k': 'qv' + i }, x)))));
+  } else if (d.typ === 'hodiny') {
+    f.append(h('div', { class: 'kvizZobraz', html: cifernikSVG(d.h) }));
+    if (d.r) f.append(kamenEl(d.r, { kluc: 'hr' }));
+  } else if (d.typ === 'znak') {
+    f.append(kamenEl(d.z, { kluc: 'zn', hodnota: HODNOTY[d.z] }));
+  }
+  return f;
+}
+function postavKviz() {
+  const t = T.kviz, sekcia = kostraKarty('kviz');
+  const panel = h('div', { class: 'hra' });
+  const riesenieBox = h('div', { class: 'riesenie', hidden: true }, h('div', { class: 'scena' }), h('div', { class: 'ovladanie' }));
+  sekcia.append(vytvorVyberUrovne(), panel, riesenieBox);
+  const s = { otazky: [], i: 0, hviezdy: 0 };
+  let p = null;
+  function start() { Object.assign(s, { otazky: sadaKvizu(Math.random, NASTAVENIE.maximum), i: 0, hviezdy: 0 }); ukaz(); }
+  function zobrazEl(q) {
+    if (!q.zobraz) return null;
+    if (q.zobraz.typ === 'hodiny') return h('div', { class: 'kvizZobraz', html: cifernikSVG(q.zobraz.h) });
+    if (q.zobraz.typ === 'zle') return h('div', { class: 'kvizZobraz kvizZle' }, doskaEl(q.zobraz.z, 'z'), verdiktEl('zle'));
+    return h('div', { class: 'kvizZobraz' }, doskaEl(q.zobraz.z, 'k'));
+  }
+  function ukaz() {
+    riesenieBox.hidden = true;
+    p.zastav();
+    const q = s.otazky[s.i];
+    const hviezdy = h('span', { class: 'hviezdy', 'aria-label': fmt(t.hviezdyAria, { s: s.hviezdy }) }, '★ ' + s.hviezdy);
+    const dalej = h('div', { class: 'akcie' });
+    const moznosti = h('div', { class: 'moznosti' }, q.moznosti.map(m => {
+      const b = h('button', { type: 'button', class: q.rimske ? 'rimske' : '', onclick: () => odpovedz(b, m) }, m.text, h('span', { class: 'znacka', hidden: true }));
+      b._m = m;
+      return b;
+    }));
+    panel.replaceChildren(h('div', { class: 'hraStav' }, h('span', {}, fmt(t.kolo, { i: s.i + 1, n: s.otazky.length })), hviezdy),
+      h('p', { class: 'kvizOtazka' }, q.otazka), zobrazEl(q), moznosti, dalej);
+    p.rimko.povedz(t.uvod, 'premysla');
+    function odpovedz(b, m) {
+      const tl = $$('button', moznosti);
+      tl.forEach(x => { x.disabled = true; });
+      const spravne = tl.find(x => x._m.spravna);
+      spravne.classList.add('ok'); $('.znacka', spravne).hidden = false; $('.znacka', spravne).textContent = '✔';
+      if (m.spravna) {
+        s.hviezdy++;
+        hviezdy.textContent = '★ ' + s.hviezdy;
+        hviezdy.setAttribute('aria-label', fmt(t.hviezdyAria, { s: s.hviezdy }));
+        vyskocHviezdu(hviezdy);
+        odskok(b);
+        p.rimko.povedz(t.ok, 'tesi');
+      } else {
+        b.classList.add('zle'); $('.znacka', b).hidden = false; $('.znacka', b).textContent = '✘';
+        riesenieBox.hidden = false;
+        p.nastavKroky(q.riesenie);
+        p.rimko.povedz(t.zle, 'povzbudzuje');
+      }
+      const posledna = s.i >= s.otazky.length - 1;
+      dalej.append(h('button', { type: 'button', class: 'primary', onclick: () => { if (posledna) koniec(); else { s.i++; ukaz(); } } },
+        posledna ? t.vysledok : t.dalsia, ikona('dalej')));
+    }
+  }
+  function koniec() {
+    riesenieBox.hidden = true;
+    p.zastav();
+    const text = fmt(t.koniec, { s: s.hviezdy, n: s.otazky.length });
+    panel.replaceChildren(h('span', { html: IKONY.pohar, style: 'display:contents' }), h('p', { class: 'otazka' }, '★ ' + s.hviezdy),
+      h('p', {}, text), h('button', { type: 'button', class: 'primary', onclick: start }, ikona('znova'), t.hrajZnova));
+    p.rimko.povedz(text, 'tesi');
+  }
+  posluchaciUrovne.add(() => { if (p) start(); });
+  KARTY.kviz = { sekcia, stav: s, start, init(pr) { p = pr; start(); } };
+  return sekcia;
+}
+
+/* =====================================================================
+   KARTA: Ťaháčik na tlač (jedna strana A4, aj čiernobielo)
+   ===================================================================== */
+function listEl() {
+  const t = T.tlac;
+  const znaky = h('div', { class: 'znakyTlac' }, Object.keys(HODNOTY).map(z =>
+    h('div', { class: 'znakTlac' + (String(HODNOTY[z])[0] === '5' ? ' p' : '') }, h('b', {}, z), HODNOTY[z])));
+  const laco = h('p', {}, LACO.map(L => `${L.slabika} → ${L.znak} = ${L.hodnota}`).join(' · '), h('br'), t.lacoText);
+  const pravidla = h('ol', {}, PRAVIDLA.map(P => {
+    const ok = P.kroky.find(k => k.typ === 'ok'), zle = P.kroky.find(k => k.typ === 'zle'), op = P.kroky.find(k => k.typ === 'oprava');
+    return h('li', {}, P.nazov, h('span', { class: 'pr' }, `✔ ${ok.zapis}    ✘ ${zle.zapis} → ${op.zapisy.join(' / ')}`));
+  }));
+  const sablona = h('table', {}, h('tr', {}, h('th', {}), [1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => h('th', {}, d))),
+    [0, 1, 2, 3].map(rad => h('tr', {}, h('th', {}, T.prevod.nazvyRadov[rad]), [1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => h('td', {}, zapisSablony(rad, d) || '—')))));
+  const PRIKLADY = [4, 9, 40, 90, 400, 900, 2026];
+  const priklady = h('table', {}, h('tr', {}, h('th', {}, t.cislo), PRIKLADY.map(n => h('td', {}, n))),
+    h('tr', {}, h('th', {}, t.zapis), PRIKLADY.map(n => h('td', {}, toRoman(n)))));
+  return h('div', { class: 'list' }, h('h2', {}, t.nadpis),
+    h('div', { class: 'listStlpce' },
+      h('div', {}, h('h3', {}, t.znaky), znaky, h('p', { class: 'legendaTlac' }, t.legenda), h('h3', {}, t.laco), laco, h('h3', {}, t.priklady), priklady),
+      h('div', {}, h('h3', {}, t.pravidla), pravidla)),
+    h('h3', {}, t.sablona), sablona);
+}
+function postavTlac() {
+  const t = T.tlac, sekcia = kostraKarty('tlac');
+  const rimko = vytvorRimka($('.rimkoMiesto', sekcia));
+  rimko.povedz(t.uvod, 'premysla', false);
+  const list = listEl();
+  const nahlad = h('div', { class: 'nahladListu' }, list);
+  sekcia.append(h('div', { class: 'akcie' }, h('button', { type: 'button', class: 'primary', onclick: () => { try { window.print(); } catch (_) { /* tlač nie je dostupná */ } } }, ikona('tlac'), t.tlacidlo)), nahlad);
+  // náhľad: list A4 sa zmenší na šírku karty
+  function prisposob() {
+    if (sekcia.hidden) return;
+    const f = Math.min(1, nahlad.clientWidth / (list.offsetWidth || 1));
+    list.style.transform = `scale(${f.toFixed(4)})`;
+    nahlad.style.height = Math.ceil(list.offsetHeight * f) + 'px';
+  }
+  window.addEventListener('resize', prisposob);
+  KARTY.tlac = { sekcia, list, priZobrazeni: prisposob };
+  return sekcia;
+}
+
+/* =====================================================================
+   ŠTART
+   ===================================================================== */
+function init() {
+  document.title = T.titul;
+  $('#titul').textContent = T.titul;
+  $('#podtitul').textContent = T.podtitul;
+  $('#pata').textContent = T.pata;
+  $('#logo').innerHTML = rimkoSVG(true);
+  const nav = $('#karty');
+  nav.setAttribute('aria-label', T.kartyAria);
+  // na telefóne sa karty zbalia za tlačidlo „Témy“
+  const menu = h('button', { type: 'button', class: 'menuKariet', 'aria-expanded': 'false', 'aria-controls': 'karty',
+    onclick: () => { const o = nav.classList.toggle('otvorene'); menu.setAttribute('aria-expanded', String(o)); } },
+    h('span', {}, T.menu.temy), h('span', { class: 'aktualnaKarta' }));
+  nav.before(menu);
+  for (const id of PORADIE_KARIET) {
+    nav.append(h('button', { type: 'button', role: 'tab', id: 'tab-' + id, 'aria-controls': 'karta-' + id, 'aria-selected': 'false',
+      onclick: () => ukazKartu(id) }, h('span', { html: IKONY_KARIET[id], style: 'display:contents' }), T.karty[id].nazov));
+  }
+  // šípky vľavo/vpravo medzi kartami v lište
+  nav.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const i = PORADIE_KARIET.indexOf(STAV.karta), d = e.key === 'ArrowRight' ? 1 : -1;
+    const id = PORADIE_KARIET[(i + d + PORADIE_KARIET.length) % PORADIE_KARIET.length];
+    ukazKartu(id); $('#tab-' + id).focus(); e.preventDefault();
+  });
+  const obsah = $('#obsah');
+  obsah.append(postavZnaky(), postavPalice(), postavLcdm(), postavPravidla(), postavSablona(), postavPrevod(),
+    postavCitanie(), postavChyby(), postavHodiny(), postavKde(), postavPostav(), postavKviz(), postavTlac());
+  // engine krokov pre karty so scenárom
+  KARTY.palice.prehravac = vytvorPrehravac({ sekcia: KARTY.palice.sekcia, kresli: kresliPalice });
+  KARTY.palice.prehravac.nastavKroky(krokyPalice());
+  KARTY.lcdm.prehravac = vytvorPrehravac({ sekcia: KARTY.lcdm.sekcia, kresli: kresliLcdm });
+  initLcdm(KARTY.lcdm.prehravac);
+  KARTY.pravidla.prehravac = vytvorPrehravac({ sekcia: KARTY.pravidla.sekcia, kresli: kresliPravidlo });
+  KARTY.pravidla.init(KARTY.pravidla.prehravac);
+  KARTY.prevod.prehravac = vytvorPrehravac({ sekcia: KARTY.prevod.sekcia, kresli: kresliPrevod });
+  KARTY.prevod.init(KARTY.prevod.prehravac);
+  KARTY.citanie.prehravac = vytvorPrehravac({ sekcia: KARTY.citanie.sekcia, kresli: kresliCitanie });
+  KARTY.citanie.init(KARTY.citanie.prehravac);
+  KARTY.chyby.prehravac = vytvorPrehravac({ sekcia: KARTY.chyby.sekcia, kresli: kresliChyby });
+  KARTY.chyby.init(KARTY.chyby.prehravac);
+  // hra a kvíz: engine ukazuje riešenie (scenár z karty prevodu)
+  KARTY.postav.prehravac = vytvorPrehravac({ sekcia: KARTY.postav.sekcia, kresli: kresliPrevod });
+  KARTY.postav.init(KARTY.postav.prehravac);
+  KARTY.kviz.prehravac = vytvorPrehravac({ sekcia: KARTY.kviz.sekcia, kresli: kresliRiesenia });
+  KARTY.kviz.init(KARTY.kviz.prehravac);
+  // písmená I V X L C D M a Backspace z fyzickej klávesnice (čítanie a hra)
+  document.addEventListener('keydown', e => {
+    const k = KARTY[STAV.karta];
+    if (!k || !k.klaves || e.altKey || e.ctrlKey || e.metaKey || e.target.closest('input')) return;
+    const z = e.key.toUpperCase();
+    if (z.length === 1 && HODNOTY[z]) { k.klaves(z); e.preventDefault(); }
+    else if (e.key === 'Backspace') { k.zmaz(); e.preventDefault(); }
+  });
+  // čítanie nahlas: tlačidlo sa ukáže, až keď prehliadač nahlási slovenský hlas
+  try {
+    if (window.speechSynthesis) {
+      obnovHlas();
+      if (typeof speechSynthesis.addEventListener === 'function') speechSynthesis.addEventListener('voiceschanged', obnovHlas);
+    }
+  } catch (_) { /* bez čítania nahlas */ }
+  // šípky vľavo/vpravo v karte = Späť / Ďalej (mimo posuvníka a lišty)
+  document.addEventListener('keydown', e => {
+    const p = KARTY[STAV.karta] && KARTY[STAV.karta].prehravac;
+    if (!p || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.target.closest('input, #karty')) return;
+    if (e.key === 'ArrowRight') { p.zastav(); p.dalej(); e.preventDefault(); }
+    if (e.key === 'ArrowLeft') { p.zastav(); p.spat(); e.preventDefault(); }
+  });
+  const zHashu = () => location.hash.replace(/^#\/?/, '');
+  window.addEventListener('hashchange', () => ukazKartu(zHashu(), false));
+  ukazKartu(zHashu(), false);
+  if (new URLSearchParams(location.search).has('test')) spustiTesty();
+}
+
+/* =====================================================================
+   TESTY – spustia sa s ?test v adrese
+   ===================================================================== */
+function spustiTesty() {
+  const vysledky = [];
+  let ok = 0, zle = 0;
+  const over = (podmienka, popis) => { if (podmienka) ok++; else { zle++; vysledky.push('✘ ' + popis); } };
+  const vety = s => s.split(/(?<=[.!?])\s+/).filter(x => x.trim());
+
+  // 1. toRoman – presné hodnoty
+  const OCAK = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII', 8: 'VIII', 9: 'IX', 10: 'X', 11: 'XI', 14: 'XIV', 15: 'XV', 19: 'XIX', 20: 'XX', 24: 'XXIV', 26: 'XXVI', 29: 'XXIX', 30: 'XXX', 34: 'XXXIV', 38: 'XXXVIII', 39: 'XXXIX' };
+  for (const [n, r] of Object.entries(OCAK)) over(toRoman(+n) === r, `toRoman(${n}) = ${toRoman(+n)}, čakám ${r}`);
+  // navyše: celý rozsah – spätné čítanie dá to isté číslo, chybné vstupy hodia chybu
+  const precitaj = s => [...s].reduce((sum, z, i) => sum + (HODNOTY[z] < (HODNOTY[s[i + 1]] || 0) ? -HODNOTY[z] : HODNOTY[z]), 0);
+  let rozsahOk = true;
+  for (let n = 1; n <= 3999; n++) if (precitaj(toRoman(n)) !== n || /(.)\1\1\1/.test(toRoman(n))) rozsahOk = false;
+  over(rozsahOk, 'toRoman 1 až 3999: spätné čítanie alebo štyri rovnaké znaky');
+  over(toRoman(3999) === 'MMMCMXCIX' && toRoman(1994) === 'MCMXCIV' && toRoman(444) === 'CDXLIV', 'toRoman pre veľké čísla');
+  for (const zly of [0, 4000, 2.5, -1, NaN]) { let hodil = false; try { toRoman(zly); } catch (e) { hodil = true; } over(hodil, `toRoman(${zly}) má hodiť chybu`); }
+
+  // 2. decompose
+  const rovnake = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  over(rovnake(decompose(26), [20, 6]), 'decompose(26)');
+  over(rovnake(decompose(30), [30]), 'decompose(30)');
+  over(rovnake(decompose(7), [7]), 'decompose(7)');
+  over(rovnake(decompose(39), [30, 9]), 'decompose(39)');
+  over(rovnake(decompose(1904), [1000, 900, 4]), 'decompose(1904)');
+  for (let n = 1; n <= 39; n++) {
+    const d = decompose(n);
+    over(d.reduce((a, b) => a + b, 0) === n, `súčet rozkladu ${n}`);
+    over(d.map(hv => infoRadu(hv).zapis).join('') === toRoman(n), `spojenie zápisov rádov ${n}`);
+  }
+
+  // 3. počet krokov a dĺžka textov
+  over(krokyPrevodu(26).length === 5, 'kroky 26 = 5');
+  over(krokyPrevodu(7).length === 2, 'kroky 7 = 2');
+  over(krokyPrevodu(30).length === 2, 'kroky 30 = 2');
+  over(krokyPrevodu(39).length === 5, 'kroky 39 = 5');
+  const vsetkyTexty = [];
+  for (let n = 1; n <= NASTAVENIE.maximum; n++) krokyPrevodu(n).forEach(k => vsetkyTexty.push(k.text));
+  krokyPalice().forEach(k => vsetkyTexty.push(k.text));
+  for (const s of vsetkyTexty) {
+    over(s.length <= 80, `text dlhší ako 80 znakov: „${s}“`);
+    over(vety(s).length <= 2, `viac ako 2 vety: „${s}“`);
+    over(vety(s).every(v => v.split(/\s+/).length <= 12), `veta má viac ako 12 slov: „${s}“`);
+  }
+  over(krokyPrevodu(26).map(k => k.text).join(' | ') === 'Máme číslo 26. | Rozložíme ho: 20 a 6. | 20 je XX: dve desiatky. | 6 je VI: päť a jedna. | Spojíme: XXVI.', 'texty scenára pre 26');
+
+  // 4. krokovanie: stav po pohybe = čerstvo vykreslený stav pre ten istý index
+  const povodnaKarta = STAV.karta;
+  STAV.vynutPohyb = true;
+  let seed = 12345;
+  const nahoda = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+  const animPred = pocetSpustenychAnimacii;
+  let porovnani = 0, nezhody = 0;
+  const skusaj = (idKarty, pripravy, sekvencie) => {
+    ukazKartu(idKarty, false);
+    const p = KARTY[idKarty].prehravac;
+    for (let s = 0; s < sekvencie; s++) {
+      pripravy();
+      const dlzka = 5 + Math.floor(nahoda() * 15);
+      for (let m = 0; m < dlzka; m++) {
+        if (nahoda() < 0.6) p.dalej(); else p.spat();
+        dokonciVsetky();
+        const poPohybe = p.stav();
+        p.render(p.index(), false);
+        porovnani++;
+        if (poPohybe !== p.stav()) nezhody++;
+      }
+    }
+  };
+  for (let u = 0; u < NASTAVENIE.urovne.length; u++) {
+    nastavUroven(u);
+    skusaj('prevod', () => KARTY.prevod.nastavCislo(1 + Math.floor(nahoda() * NASTAVENIE.maximum)), u === 0 ? 200 : 60);
+  }
+  nastavUroven(0);
+  skusaj('palice', () => KARTY.palice.prehravac.render(Math.floor(nahoda() * 11), false), 50);
+  skusaj('lcdm', () => {
+    lcdmStav.ukazane = new Set(LACO.filter(() => nahoda() < 0.5).map(L => L.znak));
+    KARTY.lcdm.prehravac.render(Math.floor(nahoda() * 7), false);
+  }, 50);
+  skusaj('pravidla', () => KARTY.pravidla.zvol(Math.floor(nahoda() * PRAVIDLA.length)), 80);
+  over(nezhody === 0, `krokovanie: ${nezhody} nezhôd z ${porovnani}`);
+  const animacie = pocetSpustenychAnimacii - animPred;
+  over(animacie > 0, 'pri krokovaní sa spustili animácie');
+  STAV.vynutPohyb = false;
+  lcdmStav.ukazane = new Set();
+  KARTY.lcdm.prehravac.render(0, false);
+  KARTY.pravidla.zvol(0);
+  KARTY.prevod.nastavCislo(26);
+  KARTY.palice.prehravac.render(0, false);
+  ukazKartu(povodnaKarta, false);
+
+  /* ----- ČASŤ 2 ----- */
+  // P2-1. toRoman – presné hodnoty
+  const OCAK2 = { 40: 'XL', 49: 'XLIX', 50: 'L', 90: 'XC', 99: 'XCIX', 100: 'C', 400: 'CD', 444: 'CDXLIV', 500: 'D', 900: 'CM', 999: 'CMXCIX', 1000: 'M', 1666: 'MDCLXVI', 1994: 'MCMXCIV', 2026: 'MMXXVI', 3999: 'MMMCMXCIX' };
+  for (const [n, r] of Object.entries(OCAK2)) over(toRoman(+n) === r, `toRoman(${n}) = ${toRoman(+n)}, čakám ${r}`);
+  // P2-2. regulárny výraz, žiadne štyri rovnaké znaky, všetky výstupy rôzne
+  const VZOR_RIMSKY = /^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/;
+  const vystupy = new Set();
+  let zlyVzor = 0, styri = 0;
+  for (let n = 1; n <= 3999; n++) {
+    const r = toRoman(n);
+    if (!VZOR_RIMSKY.test(r)) zlyVzor++;
+    if (/(.)\1\1\1/.test(r)) styri++;
+    vystupy.add(r);
+  }
+  over(zlyVzor === 0, `regulárny výraz: ${zlyVzor} zlých zápisov`);
+  over(styri === 0, `štyri rovnaké znaky: ${styri}`);
+  over(vystupy.size === 3999, `rôznych výstupov ${vystupy.size} z 3999`);
+  // P2-3. nezávislý parser zľava doprava (menšia pred väčšou sa odčíta)
+  const NEZAV = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+  function parser(s) {
+    let sucet = 0;
+    for (let i = 0; i < s.length; i++) {
+      const a = NEZAV[s[i]], b = i + 1 < s.length ? NEZAV[s[i + 1]] : 0;
+      sucet += a < b ? -a : a;
+    }
+    return sucet;
+  }
+  let zlyParser = 0;
+  for (let n = 1; n <= 3999; n++) if (parser(toRoman(n)) !== n) zlyParser++;
+  over(zlyParser === 0, `nezávislý parser: ${zlyParser} nezhôd`);
+  // P2-4. LaCo DoMa
+  over(LACO.map(L => L.znak).join('') === 'LCDM', 'LaCo DoMa: poradie L, C, D, M');
+  over(rovnake(LACO.map(L => L.hodnota), [50, 100, 500, 1000]), 'LaCo DoMa: hodnoty 50, 100, 500, 1000');
+  over(LACO.every((L, i) => i === 0 || L.hodnota > LACO[i - 1].hodnota), 'LaCo DoMa: hodnoty rastú');
+  over(rovnake(LACO.map(L => L.slabika), ['La', 'Co', 'Do', 'Ma']) && LACO.map(L => L.slabika[0]).join('') === 'LCDM', 'LaCo DoMa: prvé písmená slabík');
+  // P2-5. šablóna
+  for (let rad = 0; rad <= 2; rad++) {
+    for (let d = 1; d <= 9; d++) {
+      over(zapisSablony(rad, d) === vymenZnaky(toRoman(d), rad), `šablóna rád ${rad}, cifra ${d}`);
+      over(zapisRadu(d, rad) === vymenZnaky(VZOR[d].replace(/[abc]/g, z => ({ a: 'I', b: 'V', c: 'X' })[z]), rad), `vzor rád ${rad}, cifra ${d}`);
+    }
+  }
+  over(rovnake([1, 2, 3].map(d => zapisSablony(3, d)), ['M', 'MM', 'MMM']), 'tisíce M, MM, MMM');
+  over([4, 5, 6, 7, 8, 9].every(d => zapisSablony(3, d) === null), 'tisíce 4 až 9 sa nepíšu');
+  over($$('#karta-sablona .bunka:not(.prazdna)').length === 30, 'šablóna má 30 vyplnených buniek');
+  // P2-6. počet krokov pre všetky n a dĺžka textov
+  let zlyPocet = 0, najviac = 0;
+  const texty2 = [];
+  for (let n = 1; n <= 3999; n++) {
+    const k = decompose(n).length, kroky = krokyPrevodu(n);
+    const ocak = 1 + (k > 1 ? 1 : 0) + k + (k > 1 ? 1 : 0);
+    if (kroky.length !== ocak) zlyPocet++;
+    najviac = Math.max(najviac, kroky.length);
+    kroky.forEach(x => texty2.push(x.text));
+  }
+  over(zlyPocet === 0, `počet krokov: ${zlyPocet} nezhôd`);
+  over(najviac <= 7, `najviac krokov ${najviac}`);
+  over(krokyPrevodu(1994).map(x => x.text).join(' | ') === 'Máme číslo 1994. | Rozložíme ho: 1000, 900, 90 a 4. | 1000 je M: jedna tisícka. | 900 je CM: tisíc bez sto. | 90 je XC: sto bez desať. | 4 je IV: päť bez jednej. | Spojíme: MCMXCIV.', 'scenár 1994');
+  krokyLcdm().forEach(x => texty2.push(x.text));
+  PRAVIDLA.forEach((P, i) => krokyPravidla(i).forEach(x => texty2.push(x.text)));
+  const zleTexty = [...new Set(texty2)].filter(s => s.length > 80 || vety(s).length > 2 || !vety(s).every(v => v.split(/\s+/).length <= 12));
+  over(zleTexty.length === 0, 'texty krokov (80 znakov, 2 vety, 12 slov): ' + zleTexty.slice(0, 3).join(' / '));
+  // pravidlá: príklady sedia s výpočtom a správne/nesprávne zápisy sú naozaj také
+  const spocitaj = s => s.split('=')[0].replace(/−/g, '-').replace(/\s/g, '').split(/(?=[+-])/).reduce((a, x) => a + Number(x), 0);
+  for (const P of PRAVIDLA) {
+    for (const k of P.kroky) {
+      if (k.rovnica) over(spocitaj(k.rovnica) === Number(k.rovnica.split('=')[1]), `pravidlo ${P.cislo}: rovnica ${k.rovnica}`);
+      const spravny = z => toRoman(parser(z)) === z;
+      if (k.typ === 'ok' || k.typ === 'zaujimavost') over(spravny(k.zapis) && (!k.rovnica || parser(k.zapis) === Number(k.rovnica.split('=')[1])), `pravidlo ${P.cislo}: ${k.zapis} má byť správne`);
+      const zlyZamer = z => k.zamer && parser(z) !== k.zamer;   // správny zápis, ale iného čísla
+      if (k.typ === 'zle') over(!spravny(k.zapis) || zlyZamer(k.zapis), `pravidlo ${P.cislo}: ${k.zapis} má byť nesprávne`);
+      if (k.typ === 'oprava') over(k.zapisy.every(spravny) && (!spravny(k.zle) || zlyZamer(k.zle)) && (!k.zamer || k.zapisy.includes(toRoman(k.zamer))), `pravidlo ${P.cislo}: oprava ${k.zle} → ${k.zapisy}`);
+    }
+    over(P.kroky.some(k => k.typ === 'ok') && P.kroky.some(k => k.typ === 'zle') && P.kroky.some(k => k.typ === 'oprava'), `pravidlo ${P.cislo}: má ✔, ✘ aj opravu`);
+  }
+  over(PRAVIDLA.length === 5 && PRAVIDLA.every((P, i) => P.cislo === i + 1), 'pravidlá majú čísla 1 až 5');
+  // P2-7. úrovne a kolieska
+  over(rovnake(NASTAVENIE.urovne, [39, 100, 1000, 3999]), 'maximá úrovní 39, 100, 1000, 3999');
+  let mimo = 0, zlyDisplej = 0;
+  for (let u = 0; u < 4; u++) {
+    nastavUroven(u);
+    const max = NASTAVENIE.maximum;
+    if (KARTY.prevod.cislo() > max) mimo++;
+    for (let i = 0; i < 400; i++) {
+      // čistá funkcia
+      const n = 1 + Math.floor(nahoda() * max), rad = Math.floor(nahoda() * 4), smer = nahoda() < 0.5 ? 1 : -1;
+      const m = posunKoliesko(n, rad, smer, max);
+      if (m < 1 || m > max) mimo++;
+      // skutočné tlačidlá
+      const k = KARTY.prevod.kolieska[rad], b = smer > 0 ? k.hore : k.dole;
+      if (!b.disabled) b.click();
+      const c = KARTY.prevod.cislo();
+      if (c < 1 || c > max) mimo++;
+      const disp = KARTY.prevod.kolieska.map(x => x.cifra.textContent).reverse().join('');
+      if (+disp !== c) zlyDisplej++;
+    }
+    for (let rad = 0; rad < 4; rad++) {
+      const vyp = KARTY.prevod.kolieska[rad].el.classList.contains('vypnute');
+      if (vyp !== (10 ** rad > max)) mimo++;
+    }
+  }
+  dokonciVsetky();
+  over(mimo === 0, `kolieska mimo rozsahu: ${mimo}`);
+  over(zlyDisplej === 0, `kolieska ukazujú iné číslo: ${zlyDisplej}`);
+  nastavUroven(3); KARTY.prevod.nastavCislo(3888); nastavUroven(0);
+  over(KARTY.prevod.cislo() === 39, 'prepnutie úrovne oreže číslo na maximum');
+  KARTY.prevod.nastavCislo(26);
+
+  /* ----- ČASŤ 3 ----- */
+  // P3-1. fromRoman
+  for (const [z, n] of [['MCMXCIV', 1994], ['XLII', 42], ['MMXXVI', 2026], ['MMMCMXCIX', 3999], ['XIV', 14], ['xiv', 14], [' x i v ', 14]]) {
+    const r = fromRoman(z);
+    over(r.ok && r.hodnota === n, `fromRoman(${z}) = ${n}`);
+  }
+  let zlySpat = 0;
+  for (let n = 1; n <= 3999; n++) { const r = fromRoman(toRoman(n)); if (!r.ok || r.hodnota !== n) zlySpat++; }
+  over(zlySpat === 0, `fromRoman(toRoman(n)) = n: ${zlySpat} nezhôd`);
+  // P3-2. neplatné zápisy a pravidlá
+  const NEPLATNE = { IIII: 2, VV: 3, VX: 5, IC: 5, IL: 5, XM: 5, IIX: 5, MMMM: 2, VIIII: 2, MIM: 5, '': null, ABC: null };
+  for (const [z, pr] of Object.entries(NEPLATNE)) {
+    const r = fromRoman(z);
+    over(!r.ok, `fromRoman(„${z}“) má byť neplatné`);
+    over(r.pravidlo === pr, `fromRoman(„${z}“): pravidlo ${r.pravidlo}, čakám ${pr}`);
+    if (pr === null) over(r.sprava === 'Takto sa to nepíše', `fromRoman(„${z}“): správa „Takto sa to nepíše“`);
+  }
+  over(fromRoman('VIV').pravidlo === null && fromRoman('VIV').sprava === 'Takto sa to nepíše', 'nejednoznačný zápis VIV');
+  over(rovnake(CASTE_CHYBY.map(z => fromRoman(z).oprava), ['IV', 'IX', 'XL', 'XCIX', 'XLIX', 'MCMXCIX']), 'opravy častých chýb');
+  over(fromRoman('VV').oprava === undefined && fromRoman('XM').oprava === undefined, 'oprava len pre zoznam častých chýb');
+  // P3-3. storočia
+  for (const [rok, st, r] of [[100, 1, 'I'], [101, 2, 'II'], [1900, 19, 'XIX'], [1901, 20, 'XX'], [2000, 20, 'XX'], [2001, 21, 'XXI'], [2026, 21, 'XXI']]) {
+    over(storocie(rok) === st && toRoman(storocie(rok)) === r, `storočie ${rok} → ${st} (${r})`);
+  }
+  // P3-4. hodiny
+  over(rovnake([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(toRoman), ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']), 'hodiny I až XII');
+  over(hodinyUhol(3) === 90 && hodinyUhol(6) === 180 && hodinyUhol(12) === 0, 'uhly ručičky 3 → 90°, 6 → 180°, 12 → 0°');
+  const cif = document.createElement('div');
+  cif.innerHTML = cifernikSVG(4, { interaktivny: true });
+  over($$('.cislicaH text', cif).map(x => x.textContent).join(',') === 'I,II,III,IV,V,VI,VII,VIII,IX,X,XI,XII', 'ciferník má číslice I až XII');
+  over(/rotate\(120 150 150\)/.test(cif.innerHTML), 'ručička na 4 je otočená o 120°');
+  // P3-5. kvíz: 1000 otázok všetkých úrovní, kontrola nezávislým výpočtom
+  let zleOtazky = 0;
+  const chybyKvizu = [];
+  const spravnyNezav = (z, n) => VZOR_RIMSKY.test(z) && parser(z) === n;
+  for (let i = 0; i < 1000; i++) {
+    const max = NASTAVENIE.urovne[i % 4], typ = 'abcdef'[i % 6];
+    const q = otazkaKvizu(typ, nahoda, max);
+    const texty = q.moznosti.map(m => m.text), spravne = q.moznosti.filter(m => m.spravna);
+    let dobre = spravne.length === 1 && new Set(texty).size === texty.length && texty.length === (typ === 'c' ? 2 : 4);
+    const sp = spravne[0] && spravne[0].text;
+    if (typ === 'a') dobre = dobre && spravnyNezav(sp, q.n) && texty.filter(x => x !== sp).every(x => !spravnyNezav(x, q.n));
+    if (typ === 'b') dobre = dobre && +sp === parser(q.z) && texty.includes(String(q.sucet)) && q.sucet !== +sp;
+    if (typ === 'c') dobre = dobre && q.a !== q.b && parser(texty[0]) !== parser(texty[1]) && parser(sp) === Math.max(parser(texty[0]), parser(texty[1]));
+    if (typ === 'd') dobre = dobre && !VZOR_RIMSKY.test(q.zle) && parser(q.zle) === q.n && spravnyNezav(sp, q.n) && texty.filter(x => x !== sp).every(x => !spravnyNezav(x, q.n)) && !texty.includes(q.zle);
+    if (typ === 'e') dobre = dobre && parser(sp) === q.h && texty.every(x => !/IIII/.test(x));
+    if (typ === 'f') dobre = dobre && +sp === NEZAV[q.z];
+    if (!dobre) { zleOtazky++; if (chybyKvizu.length < 3) chybyKvizu.push(typ + ':' + texty.join('/')); }
+  }
+  over(zleOtazky === 0, `kvíz: ${zleOtazky} zlých otázok z 1000 ${chybyKvizu.join(' ')}`);
+  over(sadaKvizu(nahoda, 39).length === 12, 'kvíz má 12 otázok');
+  // P3-6. čítanie nahlas: bez speechSynthesis alebo bez slovenského hlasu sa tlačidlo nezobrazí
+  let chybaHlasu = false, hlasy;
+  try {
+    hlasy = [slovenskyHlas(undefined), slovenskyHlas(null), slovenskyHlas({}), slovenskyHlas({ getVoices: () => [{ lang: 'en-US' }, { lang: 'cs-CZ' }] }),
+      slovenskyHlas({ getVoices: () => { throw new Error('x'); } }), slovenskyHlas({ getVoices: () => null })];
+  } catch (e) { chybaHlasu = true; }
+  over(!chybaHlasu && hlasy.every(x => x === null), 'bez slovenského hlasu: žiadny hlas, žiadna chyba');
+  over(slovenskyHlas({ getVoices: () => [{ lang: 'en-US' }, { lang: 'sk-SK', name: 'x' }] }).lang === 'sk-SK', 'slovenský hlas sa nájde');
+  over($$('.reproduktor').every(b => b.hidden === !NAHLAS.hlas), 'reproduktor je viditeľný len so slovenským hlasom');
+  // P3-7. tlačová verzia: výška listu pri šírke 186 mm (A4 bez okrajov 12 mm) a tlačové pravidlá
+  ukazKartu('tlac', false);
+  const vyskaMm = KARTY.tlac.list.offsetHeight * 25.4 / 96;
+  over(vyskaMm > 50 && vyskaMm <= 273, `ťaháčik má ${vyskaMm.toFixed(0)} mm, A4 dovolí 273 mm`);
+  let tlacPravidla = '';
+  for (const sh of document.styleSheets) for (const r of sh.cssRules) if (r.media && r.media.mediaText === 'print') tlacPravidla += r.cssText;
+  over(['#karty', '.menuKariet', '.karta:not(#karta-tlac)', '#karta-tlac > :not(.nahladListu)'].every(x => tlacPravidla.includes(x)), 'tlač skrýva ovládanie');
+  ukazKartu(povodnaKarta, false);
+  // krokovanie nových kariet
+  const porPred = porovnani, nezPred = nezhody;
+  STAV.vynutPohyb = true;
+  const vstupy = ['XXVI', 'XLIX', 'MCMXCIV', 'MMXXVI', 'IIII', 'IC', 'VIV', 'MMMDCCCLXXXVIII', 'V', ''];
+  skusaj('citanie', () => KARTY.citanie.nastav(vstupy[Math.floor(nahoda() * vstupy.length)]), 60);
+  skusaj('chyby', () => KARTY.chyby.zvol(Math.floor(nahoda() * CASTE_CHYBY.length)), 40);
+  STAV.vynutPohyb = false;
+  over(nezhody === nezPred, `krokovanie čítania a chýb: ${nezhody - nezPred} nezhôd z ${porovnani - porPred}`);
+  KARTY.citanie.nastav('');
+  KARTY.chyby.zvol(0);
+  ukazKartu(povodnaKarta, false);
+  // texty nových scenárov
+  const texty3 = [];
+  for (let n = 1; n <= 3999; n++) krokyCitania(toRoman(n)).forEach(x => texty3.push(x.text));
+  for (const z of [...Object.keys(NEPLATNE), 'VIV', 'XXL', 'IVX']) krokyCitania(z).forEach(x => texty3.push(x.text));
+  CASTE_CHYBY.forEach((z, i) => krokyChyby(i).forEach(x => texty3.push(x.text)));
+  for (let i = 0; i < 300; i++) otazkaKvizu('abcdef'[i % 6], nahoda, NASTAVENIE.urovne[i % 4]).riesenie.forEach(x => texty3.push(x.text));
+  const zleTexty3 = [...new Set(texty3)].filter(s => s.length > 80 || vety(s).length > 2 || !vety(s).every(v => v.split(/\s+/).length <= 12));
+  over(zleTexty3.length === 0, 'texty časti 3: ' + zleTexty3.slice(0, 3).join(' / '));
+  over(krokyCitania('MCMXCIV').map(x => x.text).join(' | ') === 'Hľadáme dvojice, kde menšia stojí pred väčšou. | Rozdelíme na skupiny: M | CM | XC | IV. | Hodnoty skupín: 1000, 900, 90, 4. | Spočítame: 1994.', 'scenár čítania MCMXCIV');
+  // žiadne externé adresy okrem GoatCounter
+  const html = document.documentElement.outerHTML;
+  const adresy = (html.match(/(https?:)?\/\/[a-z0-9.-]+\.[a-z]{2,}[^\s"'<>)]*/gi) || []).filter(a => !/goatcounter\.com|gc\.zgo\.at/.test(a));
+  over(adresy.length === 0, 'externé adresy: ' + adresy.slice(0, 3).join(' '));
+
+  // 6. práve jeden externý skript
+  const externe = $$('script[src]');
+  over(externe.length <= 1, 'najviac jeden externý skript');
+
+  const suhrn = `TESTY: ${ok} v poriadku, ${zle} chýb\n` +
+    `krokovanie: ${porovnani} porovnaní stavov, ${animacie} animácií prechodu\n` + vysledky.join('\n');
+  console.log(suhrn);
+  $('.wrap').prepend(h('pre', { id: 'testy' }, suhrn));
+  window.VYSLEDOK_TESTOV = { ok, zle, porovnani, animacie, chyby: vysledky };
+}
+
+// meranie pre test 5: dotykové ciele menšie ako 56 × 56 px a vodorovné posúvanie
+window.zmerajCiele = function () {
+  const male = [];
+  for (const e of $$('button, summary, input, .kamen, .doska, .dlazdica, .odpoved, .tabula, .slot')) {
+    if (e.closest('.doska') && !e.classList.contains('doska')) continue;   // časti spojenej dosky
+    const r = e.getBoundingClientRect();
+    if (!r.width && !r.height) continue;   // skryté
+    if (r.width < 55.5 || r.height < 55.5) male.push(`${e.tagName.toLowerCase()}.${e.className} „${e.textContent.trim().slice(0, 12)}“ ${Math.round(r.width)}×${Math.round(r.height)}`);
+  }
+  return { sirka: innerWidth, posuvanie: document.documentElement.scrollWidth > document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth, male };
+};
+
+init();
+</script>
+<script data-goatcounter="https://jasvarc.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
