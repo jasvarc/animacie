@@ -49,6 +49,9 @@ SUPPORT_JS = """  <script>
   })();
   </script>"""
 
+# Buy Me a Coffee – plávajúce tlačidlo vpravo dole (farba = zlatý akcent stránky)
+BMC_WIDGET = """  <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="jasvarc" data-description="Podporte ma kávou!" data-message="" data-color="#f3b453" data-position="Right" data-x_margin="18" data-y_margin="18"></script>"""
+
 # kľúč = prefix priečinka (malými písmenami) -> (zobrazovaný názov, akcentová farba)
 # Farby sú z palety animácií. Čo tu nie je, dostane prefix s veľkým prvým písmenom a zlatý akcent.
 SUBJECTS = {
@@ -229,6 +232,7 @@ doc = f"""<!DOCTYPE html>
     </div>
   </dialog>
 {SUPPORT_JS}
+{BMC_WIDGET}
 </body>
 </html>
 """
