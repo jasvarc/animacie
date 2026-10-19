@@ -124,7 +124,9 @@ body{margin:0;min-height:100vh;color:var(--text);background:var(--bg);
   background:var(--panel);border:1px solid var(--line);border-radius:14px;
   box-shadow:0 12px 40px rgba(0,0,0,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .hero{display:flex;gap:12px;align-items:stretch;margin:8px 0 28px}
-header.top{padding:18px 20px;display:block;flex:1 1 auto}
+header.top{padding:18px 20px;display:flex;align-items:center;gap:18px;flex:1 1 auto}
+.logo{width:96px;height:96px;flex:0 0 auto;border-radius:50%;display:block;
+  box-shadow:0 0 0 2px var(--line),0 6px 18px rgba(0,0,0,.45)}
 .support{flex:0 0 270px;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;padding:16px 18px}
 .support p{margin:0;color:var(--muted);font-size:14px;line-height:1.45}
 .support a{display:inline-block;padding:8px 14px;border-radius:999px;border:1px solid var(--gold);
@@ -150,6 +152,7 @@ li a:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
 li a:hover .go{transform:translateX(4px)}
 .empty{color:var(--muted)}
 @media (max-width:760px){.hero{flex-direction:column}.support{flex-basis:auto}}
+@media (max-width:420px){.logo{width:64px;height:64px}}
 @media (max-width:520px){ul{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){li a,.go,.support a{transition:none}li a:hover{transform:none}}
 """
@@ -168,6 +171,7 @@ doc = f"""<!DOCTYPE html>
   <div class="wrap">
     <div class="hero">
       <header class="top card">
+        <img class="logo" src="logo.png" width="96" height="96" alt="Logo – chlapec a ceruzka, jasvarc.github.io/animacie">
         <div>
           <h1>{html.escape(PAGE_TITLE)}</h1>
           <p class="sub">{html.escape(PAGE_SUB)}</p>
