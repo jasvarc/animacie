@@ -22,16 +22,31 @@ PAGE_SUB = "Interaktívne učebné animácie – vyber si predmet a téma sa otv
 OTHER_LABEL = "Ostatné"
 DEFAULT_ACCENT = "#f3b453"
 # Dobrovoľná podpora (Ko-fi) – box vpravo vedľa hlavičky
-SUPPORT_TEXT = "Robím to hlavne pre deti, ale môžete ma podporiť dobrovoľnou „kávou“ ☕ – tlačidlo nájdete vpravo dole."
-# Ko-fi plávajúce tlačidlo – po kliknutí otvorí okno len s platobným formulárom
-KOFI_WIDGET = """  <script src="https://storage.ko-fi.com/cdn/scripts/overlay-widget.js"></script>
-  <script>
-    kofiWidgetOverlay.draw('jasvarc', {
-      'type': 'floating-chat',
-      'floating-chat.donateButton.text': 'Support me',
-      'floating-chat.donateButton.background-color': '#f3b453',
-      'floating-chat.donateButton.text-color': '#04060c'
+SUPPORT_TEXT = "Robím to hlavne pre deti, ale môžete ma podporiť dobrovoľnou „kávou“ ☕"
+SUPPORT_BTN = "☕ Podporiť kávou"
+# Okno s platobným formulárom (Ko-fi embed, rovnaká adresa ako používa ich vlastný widget).
+# Ko-fi sa načíta až po kliknutí na tlačidlo.
+KOFI_PAGE = "https://ko-fi.com/jasvarc"
+KOFI_EMBED = "https://ko-fi.com/jasvarc/?hidefeed=true&widget=true&embed=true"
+SUPPORT_JS = """  <script>
+  (function () {
+    var dlg = document.getElementById('kofi-dialog');
+    var btn = document.getElementById('kofi-open');
+    var frame = document.getElementById('kofi-frame');
+    if (!dlg || !btn || !frame) return;
+    if (typeof dlg.showModal !== 'function') {   // starý prehliadač: otvor Ko-fi v novej karte
+      btn.addEventListener('click', function () {
+        window.open(btn.getAttribute('data-page'), '_blank', 'noopener');
+      });
+      return;
+    }
+    btn.addEventListener('click', function () {
+      if (!frame.getAttribute('src')) frame.setAttribute('src', frame.getAttribute('data-src'));
+      dlg.showModal();
     });
+    dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
+    dlg.querySelector('.kofi-close').addEventListener('click', function () { dlg.close(); });
+  })();
   </script>"""
 
 # kľúč = prefix priečinka (malými písmenami) -> (zobrazovaný názov, akcentová farba)
@@ -137,6 +152,22 @@ header.top{padding:18px 20px;display:flex;align-items:center;gap:18px;flex:1 1 a
   box-shadow:0 0 0 2px var(--line),0 6px 18px rgba(0,0,0,.45)}
 .support{flex:0 0 270px;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;padding:16px 18px}
 .support p{margin:0;color:var(--muted);font-size:14px;line-height:1.45}
+.support-btn{font:inherit;font-size:14px;font-weight:650;cursor:pointer;padding:8px 14px;border-radius:999px;
+  border:1px solid var(--gold);background:transparent;color:var(--gold2);transition:background .15s,color .15s}
+.support-btn:hover,.support-btn:focus-visible{background:var(--gold);color:#04060c}
+.support-btn:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
+dialog.kofi{padding:0;border:1px solid var(--line);border-radius:14px;background:#0c101c;color:var(--text);
+  width:min(360px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.6)}
+dialog.kofi::backdrop{background:rgba(4,6,12,.72)}
+.kofi-box{padding:10px 12px 12px}
+.kofi-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 8px}
+.kofi-bar span{font-size:13px;color:var(--muted)}
+.kofi-bar span a{color:var(--gold2)}
+.kofi-close{font:inherit;font-size:20px;line-height:1;cursor:pointer;width:34px;height:34px;border-radius:50%;
+  border:1px solid var(--line);background:transparent;color:var(--text)}
+.kofi-close:hover,.kofi-close:focus-visible{border-color:var(--gold);color:var(--gold2)}
+#kofi-frame{display:block;width:100%;height:min(690px,calc(100vh - 110px));border:0;border-radius:10px;background:#fff}
 h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
 .sub{color:var(--muted);margin:6px 0 0}
 .sum{color:var(--muted);font-size:14px;margin:10px 0 0;font-variant-numeric:tabular-nums}
@@ -183,11 +214,21 @@ doc = f"""<!DOCTYPE html>
       </header>
       <aside class="support card">
         <p>{html.escape(SUPPORT_TEXT)}</p>
+        <button type="button" class="support-btn" id="kofi-open" aria-haspopup="dialog" data-page="{html.escape(KOFI_PAGE)}">{html.escape(SUPPORT_BTN)}</button>
       </aside>
     </div>
 {body}
   </div>
-{KOFI_WIDGET}
+  <dialog class="kofi" id="kofi-dialog" aria-label="Podporiť kávou">
+    <div class="kofi-box">
+      <div class="kofi-bar">
+        <span>Nezobrazuje sa formulár? <a href="{html.escape(KOFI_PAGE)}" target="_blank" rel="noopener">Otvoriť na Ko-fi</a></span>
+        <button type="button" class="kofi-close" aria-label="Zavrieť">×</button>
+      </div>
+      <iframe id="kofi-frame" title="Podporiť kávou – Ko-fi" data-src="{html.escape(KOFI_EMBED)}" loading="lazy"></iframe>
+    </div>
+  </dialog>
+{SUPPORT_JS}
 </body>
 </html>
 """
