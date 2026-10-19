@@ -225,7 +225,7 @@ doc = f"""<!DOCTYPE html>
         <span>Nezobrazuje sa formulár? <a href="{html.escape(KOFI_PAGE)}" target="_blank" rel="noopener">Otvoriť na Ko-fi</a></span>
         <button type="button" class="kofi-close" aria-label="Zavrieť">×</button>
       </div>
-      <iframe id="kofi-frame" title="Podporiť kávou – Ko-fi" data-src="{html.escape(KOFI_EMBED)}" loading="lazy"></iframe>
+      <iframe id="kofi-frame" title="Podporiť kávou – Ko-fi" allow="payment" data-src="{html.escape(KOFI_EMBED)}" loading="lazy"></iframe>
     </div>
   </dialog>
 {SUPPORT_JS}
