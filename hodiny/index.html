@@ -513,6 +513,8 @@ footer{color:var(--muted);text-align:center;margin:18px 0 8px;font-size:18px}
 .cifernik.tahame .ruc{cursor:grabbing}
 .cifernik .halo{display:none}
 .cifernik .ruc.svieti .halo{display:inline}
+.cifernik .ruc.drzana .halo{display:inline;stroke:#ffb000;fill:#ffb000;opacity:.9}
+.cifernik .ruc.drzana circle.halo{r:24px}
 .cifernik .fokus{display:none}
 .cifernik .ruc:focus-visible .fokus{display:inline}
 .legenda{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;font-size:24px;color:var(--muted)}
@@ -1302,6 +1304,8 @@ function vytvorCifernik({ model, karta = null, krok = null, format12 = true, onT
   // ručička sa dá ťahať, ak je zvolená ona alebo obe
   const jeTahatelna = meno => nast.tahat === meno || nast.tahat === 'obe';
   let animacia = null, tah = null;
+  // plynulé zobrazenie: počas ťahania a dobiehania sa ručičky kreslia podľa prsta, nie podľa modelu
+  let zobrazenie = null, dobeh = null, zobrazeneUhly = { um: 0, uh: 0 };
   let zamena = 0;   // 0 = ručičky na svojom mieste, 1 = zamenené (Hodinárova dielňa)
 
   const svg = s('svg', { viewBox: '0 0 400 400', class: 'cifernik', role: 'group', 'aria-label': T.cifernik.aria });
@@ -1407,11 +1411,31 @@ function vytvorCifernik({ model, karta = null, krok = null, format12 = true, onT
   const el = h('div', { class: 'cifernikObal' }, svg, legenda, digital);
 
   // vykreslenie podľa času (aj necelé minúty počas animácie)
-  function kresli(t) {
+  // uhly ručičiek pre čas t (aj necelé minúty; pri zámene ručičky vymenené)
+  function uhlyCasu(t) {
     let um = uholMinutovej(t), uh = uholHodinovej(t);
     if (zamena) { const a = um; um = medziUhlami(um, uh, zamena); uh = medziUhlami(uh, a, zamena); }
+    return { um, uh };
+  }
+  function kresliUhly(um, uh) {
+    zobrazeneUhly = { um, uh };
     rMin.setAttribute('transform', `rotate(${um.toFixed(2)} 200 200)`);
     rHod.setAttribute('transform', `rotate(${uh.toFixed(2)} 200 200)`);
+  }
+  function kresli(t) { const u = uhlyCasu(t); kresliUhly(u.um, u.uh); }
+  // ručičky plynulo dobehnú z toho, kde sú nakreslené, na čas v modeli (po pustení alebo po šípke)
+  function dobehni(ms = 220) {
+    zastavDobeh();
+    const od = { ...zobrazeneUhly }, ciel = uhlyCasu(model.getTime());
+    zobrazenie = 'dobeh';
+    dobeh = tween(ms, p => {
+      const q = ease.out(p);
+      kresliUhly(medziUhlami(od.um, ciel.um, q), medziUhlami(od.uh, ciel.uh, q));
+    }, () => { dobeh = null; zobrazenie = null; kresli(model.getTime()); });
+  }
+  function zastavDobeh() {
+    if (dobeh) { const d = dobeh; dobeh = null; d.zrus(); }
+    zobrazenie = null;
   }
   function obnovPopisy() {
     const t = model.getTime();
@@ -1423,7 +1447,7 @@ function vytvorCifernik({ model, karta = null, krok = null, format12 = true, onT
       }
     }
   }
-  model.subscribe(t => { if (!animacia) kresli(t); obnovPopisy(); });
+  model.subscribe(t => { if (!animacia && !zobrazenie) kresli(t); obnovPopisy(); });
   kresli(model.getTime()); obnovPopisy();
 
   // nastavenie, ktorá ručička sa ťahá, či sa dá ťukať a či sa dá ťuknúť na číslicu
@@ -1454,30 +1478,34 @@ function vytvorCifernik({ model, karta = null, krok = null, format12 = true, onT
     model.setTime(novy);
     if (onZmena) onZmena({ delta, ruka: meno });
   }
-  // nová poloha ručičky podľa uhla (prichytávanie podľa kroku)
-  function posunNaUhol(meno, a) {
-    const t = model.getTime(), k = dajKrok();
+  // plynulé ťahanie: ručička ide presne za prstom (tah.plynulo = necelý čas, bez skokov cez 12),
+  // model času sa prichytí na najbližší povolený čas (krok); po pustení ručička dobehne na toto miesto
+  function tahajPlynulo(a) {
+    const meno = tah.meno, k = dajKrok();
     if (meno === 'minuta') {
-      // minúty v rámci hodiny; rozdiel sa berie najkratšou cestou, preto pri prechode cez 12 sa hodina zmení len o jednu
-      const m = (Math.round(a / 6 / k) * k) % 60;
-      let d = m - (t % 60);
+      let d = a / 6 - (((tah.plynulo % 60) + 60) % 60);
       if (d > 30) d -= 60; else if (d <= -30) d += 60;
-      zmen(t + d, d, meno);
-    } else if (nast.drzMinuty) {
-      // malá ručička mení len hodinu, minúty ostávajú (napr. 7:30 → 8:30 → 9:30)
-      const m = t % 60;
-      const hh = Math.round((a * 2 - m) / 60);
-      let d = ((((hh % 12) + 12) % 12) * 60 + m) - (t % 720);
-      if (d > 360) d -= 720; else if (d <= -360) d += 720;
-      zmen(t + d, d, meno);
+      tah.plynulo += d;
+      prichyt(Math.round(tah.plynulo / k) * k, meno);
+      const u = uhlyCasu(tah.plynulo);
+      kresliUhly(u.um, u.uh);
     } else {
-      // malá ručička: poloha v rámci 12 hodín (720 minút), prichytená na krok (pri kroku 60 na číslice)
-      const kh = Math.max(k, 1);
-      const m = (Math.round(a * 2 / kh) * kh) % 720;
-      let d = m - (t % 720);
+      // malá ručička: poloha v rámci 12 hodín (720 minút)
+      let d = a * 2 - (((tah.plynulo % 720) + 720) % 720);
       if (d > 360) d -= 720; else if (d <= -360) d += 720;
-      zmen(t + d, d, meno);
+      tah.plynulo += d;
+      const m = ((tah.snap % 60) + 60) % 60;
+      // drzMinuty: mení sa len hodina; inak prichytenie na krok (pri celých hodinách na číslice)
+      prichyt(nast.drzMinuty ? Math.round((tah.plynulo - m) / 60) * 60 + m : Math.round(tah.plynulo / Math.max(k, 1)) * Math.max(k, 1), meno);
+      kresliUhly(uhlyCasu(model.getTime()).um, ((tah.plynulo * 0.5) % 360 + 360) % 360);
     }
+  }
+  // nový prichytený čas → model (len keď sa zmení; delta sa ráta bez skoku cez polnoc)
+  function prichyt(snap, meno) {
+    if (snap === tah.snap) return;
+    const d = snap - tah.snap;
+    tah.snap = snap;
+    zmen(model.getTime() + d, d, meno);
   }
   function uholBodu(e) {
     const r = svg.getBoundingClientRect();
@@ -1489,7 +1517,12 @@ function vytvorCifernik({ model, karta = null, krok = null, format12 = true, onT
     g.addEventListener('pointerdown', e => {
       if (animacia || (!jeTahatelna(meno) && !nast.tukat)) return;
       e.preventDefault();
-      tah = { meno, id: e.pointerId, x0: e.clientX, y0: e.clientY, pohyb: false };
+      zastavDobeh();
+      kresli(model.getTime());
+      const t = model.getTime();
+      tah = { meno, id: e.pointerId, x0: e.clientX, y0: e.clientY, pohyb: false, plynulo: t, snap: t, svietila: g.classList.contains('svieti') };
+      // ručička, ktorú dieťa drží, sa hneď zvýrazní
+      if (jeTahatelna(meno)) { g.classList.add('svieti', 'drzana'); svg.classList.add('tahame'); }
       try { svg.setPointerCapture(e.pointerId); } catch (_) { /* syntetické udalosti */ }
     });
     // klávesnica: šípky menia čas o krok, Enter a medzera = ťuknutie
@@ -1501,7 +1534,10 @@ function vytvorCifernik({ model, karta = null, krok = null, format12 = true, onT
         const t = model.getTime(), k = meno === 'hodina' ? Math.max(dajKrok(), 60) : dajKrok();
         const novy = meno === 'hodina' && nast.drzMinuty ? t + (vpred ? 60 : -60)
           : vpred ? (Math.floor(t / k) + 1) * k : (Math.ceil(t / k) - 1) * k;
+        zastavDobeh();
+        zobrazenie = 'klaves';   // model sa zmení hneď, ručičky k nemu plynulo dobehnú
         zmen(novy, novy - t, meno);
+        dobehni(260);
         if (onPustenie) onPustenie();
       } else if ((e.key === 'Enter' || e.key === ' ') && nast.tukat) {
         e.preventDefault();
@@ -1513,14 +1549,22 @@ function vytvorCifernik({ model, karta = null, krok = null, format12 = true, onT
     if (!tah || e.pointerId !== tah.id) return;
     if (!tah.pohyb && Math.hypot(e.clientX - tah.x0, e.clientY - tah.y0) > 8) tah.pohyb = true;
     if (tah.pohyb && jeTahatelna(tah.meno) && !animacia) {
-      svg.classList.add('tahame');
-      posunNaUhol(tah.meno, uholBodu(e));
+      zobrazenie = 'tah';
+      tahajPlynulo(uholBodu(e));
     }
   });
+  // po ťahaní: zvýraznenie späť, ako bolo, a ručičky dobehnú na prichytený čas
+  function pustRucku(t) {
+    const g = ruky[t.meno];
+    g.classList.remove('drzana');
+    if (!t.svietila) g.classList.remove('svieti');
+    svg.classList.remove('tahame');
+    if (zobrazenie === 'tah') dobehni();
+  }
   const koniecTahu = e => {
     if (!tah || (e && e.pointerId !== tah.id)) return;
     const t = tah; tah = null;
-    svg.classList.remove('tahame');
+    pustRucku(t);
     if (e && e.type === 'pointercancel') { if (t.pohyb && onPustenie) onPustenie(); return; }
     if (!t.pohyb) { if (nast.tukat && onTukni) onTukni(t.meno); }
     else if (onPustenie) onPustenie();
@@ -1532,6 +1576,7 @@ function vytvorCifernik({ model, karta = null, krok = null, format12 = true, onT
   // plynulý posun času o delta minút; naKrok(p) sa volá počas animácie
   function animujO(delta, ms, { krivka = ease.inOut, naKrok = null, hotovo = null } = {}) {
     if (animacia) animacia.zrus();
+    zastavDobeh();
     const od = model.getTime();
     let a;
     a = tween(ms, p => {
@@ -1622,7 +1667,7 @@ function vytvorCifernik({ model, karta = null, krok = null, format12 = true, onT
       duch.setAttribute('opacity', 1); duchMin.setAttribute('opacity', 1);
     },
     // zamenené ručičky: hneď (zamen) alebo plynulo (animujZamenu)
-    zamen(v) { zamena = v ? 1 : 0; kresli(model.getTime()); },
+    zamen(v) { zastavDobeh(); zamena = v ? 1 : 0; kresli(model.getTime()); },
     zamenene: () => zamena === 1,
     animujZamenu(ciel, ms, hotovo) {
       if (animacia) animacia.zrus();
@@ -1640,8 +1685,11 @@ function vytvorCifernik({ model, karta = null, krok = null, format12 = true, onT
     animujO, animujNaHodinu,
     animuje: () => !!animacia,
     dokonciAnimaciu() { if (animacia) animacia.dokonci(); },
-    zastavAnimaciu() { if (animacia) { const a = animacia; animacia = null; a.zrus(); kresli(model.getTime()); } },
-    ukonciTahanie() { if (tah) { const id = tah.id; tah = null; svg.classList.remove('tahame'); try { svg.releasePointerCapture(id); } catch (_) { /* nič */ } } },
+    zastavAnimaciu() { if (animacia) { const a = animacia; animacia = null; a.zrus(); } zastavDobeh(); kresli(model.getTime()); },
+    ukonciTahanie() {
+      if (tah) { const t = tah; tah = null; pustRucku(t); try { svg.releasePointerCapture(t.id); } catch (_) { /* nič */ } }
+      zastavDobeh(); kresli(model.getTime());
+    },
     kresli
   };
 }
@@ -4045,6 +4093,26 @@ function spustiTesty() {
   over(model.getTime() === 7 * 60 + 15, `krok 15: ${digitalny(model.getTime())}`);
   krokTestu = 1; tahaj('minuta', [90, 92.4]);
   over(model.getTime() === 7 * 60 + 15, `krok 1: ${digitalny(model.getTime())}`);
+  // krok 30 (Polhodina): dá sa ťahať dopredu aj dozadu, zastaví sa len na :00 a :30
+  krokTestu = 30; model.setTime(8 * 60);
+  tahaj('minuta', [0, 350, 300, 250, 200, 185]);
+  over(model.getTime() === 7 * 60 + 30, `krok 30 dozadu 8:00 → ${digitalny(model.getTime())}`);
+  model.setTime(7 * 60);
+  tahaj('minuta', [0, 30, 90, 150, 175]);
+  over(model.getTime() === 7 * 60 + 30, `krok 30 dopredu 7:00 → ${digitalny(model.getTime())}`);
+  model.setTime(7 * 60);
+  tahaj('minuta', [0, 40, 80]);
+  over(model.getTime() === 7 * 60, `krok 30: pri 80° (13 minút) ostane 7:00 → ${digitalny(model.getTime())}`);
+  // počas ťahania ručička ide plynulo za prstom a je zvýraznená; po pustení je na povolenom mieste
+  krokTestu = 15; model.setTime(7 * 60);
+  udalost(c.hit('minuta'), 'pointerdown', 0);
+  const svietiPriChyteni = c.ruka('minuta').classList.contains('svieti');
+  udalost(c.svg, 'pointermove', 20); udalost(c.svg, 'pointermove', 40); udalost(c.svg, 'pointermove', 60);
+  const uholPocas = Number(c.ruka('minuta').getAttribute('transform').match(/rotate\(([-\d.]+)/)[1]);
+  udalost(c.svg, 'pointerup', 60);
+  over(svietiPriChyteni && Math.abs(uholPocas - 60) < 3, `ťahaná ručička je zvýraznená a ide plynulo (uhol ${uholPocas.toFixed(1)}°)`);
+  over(!c.ruka('minuta').classList.contains('svieti') && model.getTime() === 7 * 60 + 15, `po pustení zvýraznenie zmizne a čas je na kroku: ${digitalny(model.getTime())}`);
+  krokTestu = 5;
   // ťuknutie bez pohybu nemení čas
   model.setTime(7 * 60); tahaj('minuta', [0]);
   over(model.getTime() === 7 * 60, 'ťuknutie bez pohybu nemení čas');
