@@ -21,6 +21,10 @@ PAGE_TITLE = "Pachove animácie"
 PAGE_SUB = "Interaktívne učebné animácie – vyber si predmet a téma sa otvorí na celú obrazovku."
 OTHER_LABEL = "Ostatné"
 DEFAULT_ACCENT = "#f3b453"
+# Dobrovoľná podpora (Ko-fi) – box vpravo vedľa hlavičky
+SUPPORT_URL = "https://ko-fi.com/jasvarc"
+SUPPORT_TEXT = "Robím to hlavne pre deti, ale môžete ma podporiť dobrovoľnou „kávou“."
+SUPPORT_BTN = "☕ Podporiť kávou"
 
 # kľúč = prefix priečinka (malými písmenami) -> (zobrazovaný názov, akcentová farba)
 # Farby sú z palety animácií. Čo tu nie je, dostane prefix s veľkým prvým písmenom a zlatý akcent.
@@ -119,7 +123,15 @@ body{margin:0;min-height:100vh;color:var(--text);background:var(--bg);
 .card{display:flex;align-items:center;justify-content:space-between;gap:12px;
   background:var(--panel);border:1px solid var(--line);border-radius:14px;
   box-shadow:0 12px 40px rgba(0,0,0,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-header.top{padding:18px 20px;margin:8px 0 28px;display:block}
+.hero{display:flex;gap:12px;align-items:stretch;margin:8px 0 28px}
+header.top{padding:18px 20px;display:block;flex:1 1 auto}
+.support{flex:0 0 270px;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;padding:16px 18px}
+.support p{margin:0;color:var(--muted);font-size:14px;line-height:1.45}
+.support a{display:inline-block;padding:8px 14px;border-radius:999px;border:1px solid var(--gold);
+  color:var(--gold2);font-weight:650;font-size:14px;text-decoration:none;
+  transition:background .15s,color .15s}
+.support a:hover,.support a:focus-visible{background:var(--gold);color:#04060c}
+.support a:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
 h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
 .sub{color:var(--muted);margin:6px 0 0}
 .sum{color:var(--muted);font-size:14px;margin:10px 0 0;font-variant-numeric:tabular-nums}
@@ -137,8 +149,9 @@ li a:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
 .go{color:var(--acc);font-size:20px;line-height:1;transition:transform .15s}
 li a:hover .go{transform:translateX(4px)}
 .empty{color:var(--muted)}
+@media (max-width:760px){.hero{flex-direction:column}.support{flex-basis:auto}}
 @media (max-width:520px){ul{grid-template-columns:1fr}}
-@media (prefers-reduced-motion:reduce){li a,.go{transition:none}li a:hover{transform:none}}
+@media (prefers-reduced-motion:reduce){li a,.go,.support a{transition:none}li a:hover{transform:none}}
 """
 
 doc = f"""<!DOCTYPE html>
@@ -153,13 +166,19 @@ doc = f"""<!DOCTYPE html>
 </head>
 <body>
   <div class="wrap">
-    <header class="top card">
-      <div>
-        <h1>{html.escape(PAGE_TITLE)}</h1>
-        <p class="sub">{html.escape(PAGE_SUB)}</p>
-        <p class="sum">{summary}</p>
-      </div>
-    </header>
+    <div class="hero">
+      <header class="top card">
+        <div>
+          <h1>{html.escape(PAGE_TITLE)}</h1>
+          <p class="sub">{html.escape(PAGE_SUB)}</p>
+          <p class="sum">{summary}</p>
+        </div>
+      </header>
+      <aside class="support card">
+        <p>{html.escape(SUPPORT_TEXT)}</p>
+        <a href="{html.escape(SUPPORT_URL)}" target="_blank" rel="noopener">{html.escape(SUPPORT_BTN)}</a>
+      </aside>
+    </div>
 {body}
   </div>
 </body>
