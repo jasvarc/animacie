@@ -22,9 +22,17 @@ PAGE_SUB = "Interaktívne učebné animácie – vyber si predmet a téma sa otv
 OTHER_LABEL = "Ostatné"
 DEFAULT_ACCENT = "#f3b453"
 # Dobrovoľná podpora (Ko-fi) – box vpravo vedľa hlavičky
-SUPPORT_URL = "https://ko-fi.com/jasvarc"
-SUPPORT_TEXT = "Robím to hlavne pre deti, ale môžete ma podporiť dobrovoľnou „kávou“."
-SUPPORT_BTN = "☕ Podporiť kávou"
+SUPPORT_TEXT = "Robím to hlavne pre deti, ale môžete ma podporiť dobrovoľnou „kávou“ ☕ – tlačidlo nájdete vpravo dole."
+# Ko-fi plávajúce tlačidlo – po kliknutí otvorí okno len s platobným formulárom
+KOFI_WIDGET = """  <script src="https://storage.ko-fi.com/cdn/scripts/overlay-widget.js"></script>
+  <script>
+    kofiWidgetOverlay.draw('jasvarc', {
+      'type': 'floating-chat',
+      'floating-chat.donateButton.text': 'Support me',
+      'floating-chat.donateButton.background-color': '#f3b453',
+      'floating-chat.donateButton.text-color': '#04060c'
+    });
+  </script>"""
 
 # kľúč = prefix priečinka (malými písmenami) -> (zobrazovaný názov, akcentová farba)
 # Farby sú z palety animácií. Čo tu nie je, dostane prefix s veľkým prvým písmenom a zlatý akcent.
@@ -129,11 +137,6 @@ header.top{padding:18px 20px;display:flex;align-items:center;gap:18px;flex:1 1 a
   box-shadow:0 0 0 2px var(--line),0 6px 18px rgba(0,0,0,.45)}
 .support{flex:0 0 270px;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;padding:16px 18px}
 .support p{margin:0;color:var(--muted);font-size:14px;line-height:1.45}
-.support a{display:inline-block;padding:8px 14px;border-radius:999px;border:1px solid var(--gold);
-  color:var(--gold2);font-weight:650;font-size:14px;text-decoration:none;
-  transition:background .15s,color .15s}
-.support a:hover,.support a:focus-visible{background:var(--gold);color:#04060c}
-.support a:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
 h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
 .sub{color:var(--muted);margin:6px 0 0}
 .sum{color:var(--muted);font-size:14px;margin:10px 0 0;font-variant-numeric:tabular-nums}
@@ -154,7 +157,7 @@ li a:hover .go{transform:translateX(4px)}
 @media (max-width:760px){.hero{flex-direction:column}.support{flex-basis:auto}}
 @media (max-width:420px){.logo{width:64px;height:64px}}
 @media (max-width:520px){ul{grid-template-columns:1fr}}
-@media (prefers-reduced-motion:reduce){li a,.go,.support a{transition:none}li a:hover{transform:none}}
+@media (prefers-reduced-motion:reduce){li a,.go{transition:none}li a:hover{transform:none}}
 """
 
 doc = f"""<!DOCTYPE html>
@@ -180,11 +183,11 @@ doc = f"""<!DOCTYPE html>
       </header>
       <aside class="support card">
         <p>{html.escape(SUPPORT_TEXT)}</p>
-        <a href="{html.escape(SUPPORT_URL)}" target="_blank" rel="noopener">{html.escape(SUPPORT_BTN)}</a>
       </aside>
     </div>
 {body}
   </div>
+{KOFI_WIDGET}
 </body>
 </html>
 """
