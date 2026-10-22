@@ -28,6 +28,11 @@ SUPPORT_BTN = "☕ Podporiť kávou"
 # Ko-fi sa načíta až po kliknutí na tlačidlo.
 KOFI_PAGE = "https://ko-fi.com/jasvarc"
 KOFI_EMBED = "https://ko-fi.com/jasvarc/?hidefeed=true&widget=true&embed=true"
+# Odkaz na súrodeneckú stránku (statické učebné materiály) v pätičke, s malým logom
+SISTER_URL = "https://jasvarc.github.io/ucebne-materialy/"
+SISTER_LOGO = "logo-materialy.png"
+SISTER_TEXT = "Učebné materiály na čítanie a tlač:"
+SISTER_HOST = "jasvarc.github.io/ucebne-materialy"
 SUPPORT_JS = """  <script>
   (function () {
     var dlg = document.getElementById('kofi-dialog');
@@ -185,11 +190,25 @@ li a:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
 .go{color:var(--acc);font-size:20px;line-height:1;transition:transform .15s}
 li a:hover .go{transform:translateX(4px)}
 .empty{color:var(--muted)}
+.pata{text-align:center;margin:36px 0 0}
+a.sister{display:inline-flex;align-items:center;gap:10px;padding:8px 16px 8px 10px;border:1px solid var(--line);
+  border-radius:999px;background:var(--panel);color:var(--muted);text-decoration:none;font-size:14px;
+  transition:border-color .15s,background .15s}
+a.sister img{width:32px;height:32px;border-radius:50%;flex:0 0 auto;display:block}
+a.sister b{color:var(--gold2);font-weight:600}
+a.sister:hover,a.sister:focus-visible{border-color:var(--gold);background:rgba(255,255,255,.07)}
+a.sister:focus-visible{outline:3px solid var(--gold2);outline-offset:2px}
 @media (max-width:760px){.hero{flex-direction:column}.support{flex-basis:auto}}
 @media (max-width:420px){.logo{width:64px;height:64px}}
 @media (max-width:520px){ul{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){li a,.go{transition:none}li a:hover{transform:none}}
 """
+
+FOOTER = (
+    f'    <p class="pata"><a class="sister" href="{html.escape(SISTER_URL)}">'
+    f'<img src="{html.escape(SISTER_LOGO)}" width="32" height="32" alt="">'
+    f'<span>{html.escape(SISTER_TEXT)} <b>{html.escape(SISTER_HOST)}</b></span></a></p>'
+)
 
 doc = f"""<!DOCTYPE html>
 <html lang="sk">
@@ -218,6 +237,7 @@ doc = f"""<!DOCTYPE html>
       </aside>
     </div>
 {body}
+{FOOTER}
   </div>
   <dialog class="kofi" id="kofi-dialog" aria-label="Podporiť kávou">
     <div class="kofi-box">
