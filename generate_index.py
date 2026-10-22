@@ -217,7 +217,8 @@ doc = f"""<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#04060c">
   <title>{html.escape(PAGE_TITLE)}</title>
-  <link rel="icon" href="data:,">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <style>{CSS}</style>
 </head>
 <body>
