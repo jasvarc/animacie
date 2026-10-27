@@ -5,6 +5,7 @@ Spúšťa sa automaticky pri každom push (GitHub Actions), lokálne: python gen
 Pravidlá:
 - zahrnie len priečinky, v ktorých existuje index.html
 - ignoruje priečinky začínajúce na "." alebo "_"
+- ignoruje presmerovania: index.html s <meta http-equiv="refresh"> (stará adresa premenovanej animácie)
 - priečinok má tvar <predmet>-<nazov>; skupina = text pred prvou pomlčkou
 - názov odkazu = <title> z index.html animácie, inak názov priečinka
 - priečinok bez pomlčky patrí do skupiny "Ostatné"
@@ -103,6 +104,9 @@ for d in sorted(ROOT.iterdir(), key=lambda p: p.name.lower()):
     if not page.is_file():
         continue
     text = page.read_text(encoding="utf-8", errors="ignore")
+    # presmerovanie zo starej adresy (napr. hodiny/ → cap-hodiny/) nie je samostatná animácia
+    if re.search(r"""<meta[^>]+http-equiv\s*=\s*["']?refresh""", text, re.I):
+        continue
     m = re.search(r"<title>(.*?)</title>", text, re.I | re.S)
     title = " ".join(m.group(1).split()) if m else ""
     key, label, accent = subject_of(d.name)
