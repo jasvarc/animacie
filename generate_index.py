@@ -66,6 +66,10 @@ SUBJECTS = {
     "dejepis":     ("Dejepis",     "#e0a36a"),
     "vlastiveda":  ("Vlastiveda",  "#9ad66a"),
     "prirodoveda": ("Prírodoveda", "#7fdc8f"),
+    # vzdelávacie oblasti (prefix priečinka = skratka): cas-<nazov>, cap-<nazov>, casp-<nazov>
+    "cas":         ("Človek a spoločnosť",  "#f08fb5"),
+    "cap":         ("Človek a príroda",     "#6fd0a8"),
+    "casp":        ("Človek a svet práce",  "#e8e06a"),
 }
 
 
